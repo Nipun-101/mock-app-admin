@@ -1,0 +1,21 @@
+work status
+18/08/22
+
+1.supplier> sidebar access restricted for emails (email list updated) 
+	status:done
+2.supplier> "required" warning text removed from ispublished radio buttons,
+	status:done
+
+3.supplier> language translation - .en , language removed from supplier
+	branch:ar-en-translation
+	status:done
+
+work status
+19/08/22
+
+1.admin> language translation - .en , language removed 
+	branch:ar-en-translation
+	status:done
+
+
+
