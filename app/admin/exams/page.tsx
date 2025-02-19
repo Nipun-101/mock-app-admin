@@ -125,7 +125,13 @@ export default function ExamsPage() {
           </div>
 
           <Form.Item className="mb-0">
-            <Button type="primary" htmlType="submit" size="large" icon={<PlusOutlined />}>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              size="large" 
+              icon={<PlusOutlined />}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Create Exam
             </Button>
           </Form.Item>
