@@ -4,12 +4,22 @@ import { Button, Card, Form, Input, InputNumber, Select, Table, Typography } fro
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
+import { showConfirmModal } from '@/components/ConfirmModal';
+import { useRouter } from "next/navigation";
 
 const { Title } = Typography;
 
 export default function ExamsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [exams, setExams] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  const router = useRouter();
 
   const columns = [
     {
@@ -39,12 +49,21 @@ export default function ExamsPage() {
     {
       title: "Actions",
       key: "actions",
-      render: () => (
+      render: (record: any) => (
         <>
-          <Button type="link" size="small">
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => router.push(`/admin/exams/${record._id}`)}
+          >
             Edit
           </Button>
-          <Button type="link" size="small" danger>
+          <Button 
+            type="link" 
+            size="small" 
+            danger 
+            onClick={() => handleDelete(record._id)}
+          >
             Delete
           </Button>
         </>
@@ -52,25 +71,18 @@ export default function ExamsPage() {
     },
   ];
   
-  const [exams, setExams] = useState([]);
-
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
+  const fetchExams = async () => {
+    const response = await fetch(`/api/exam/list?page=${pagination.current}&limit=${pagination.pageSize}`);
+    const data = await response.json();
+    console.log(data);
+    setExams(data.exams);
+    setPagination(prev => ({
+      ...prev,
+      total: data?.pagination?.total
+    }));
+  };
 
   useEffect(() => {
-    const fetchExams = async () => {
-      const response = await fetch(`/api/exam/list?page=${pagination.current}&limit=${pagination.pageSize}`);
-      const data = await response.json();
-      console.log(data);
-      setExams(data.exams);
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination.total
-      }));
-    };
     fetchExams();
   }, [pagination.current, pagination.pageSize]);
 
@@ -84,12 +96,37 @@ export default function ExamsPage() {
       const data = await response.json();
       console.log(data);
       form.resetFields();
+      fetchExams();
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDelete = async (id: string) => {
+    showConfirmModal({
+      title: 'Delete Exam',
+      content: 'Are you sure you want to delete this exam? This action cannot be undone.',
+      onConfirm: async () => {
+        setTableLoading(true);
+        try {
+          const response = await fetch(`/api/exam/${id}`, {
+            method: "DELETE"
+          });
+          const data = await response.json();
+          console.log(data);
+          // Reload the table after successful deletion
+          fetchExams();
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setTableLoading(false);
+        }
+      }
+    });
+  };
+  
 
   return (
     <div className="space-y-6">
@@ -186,6 +223,7 @@ export default function ExamsPage() {
       >
         <Table 
           columns={columns} 
+          loading={tableLoading}
           dataSource={exams} 
           scroll={{ x: true }}
           pagination={{
