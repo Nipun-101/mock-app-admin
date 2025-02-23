@@ -79,7 +79,7 @@ export default function SubjectsPage() {
   const fetchSubjects = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/subject/list?page=${pagination.current}&limit=${pagination.pageSize}`);
+      const response = await fetch(`/api/subject/simple?page=${pagination.current}&limit=${pagination.pageSize}`);
       const data = await response.json();
       setSubjects(data.subjects);
       setPagination(prev => ({
@@ -97,15 +97,11 @@ export default function SubjectsPage() {
     try {
       const response = await fetch('/api/tag/list?limit=100');
       const data = await response.json();
-      if (data.tags) {
-        const options = data.tags.map((tag: any) => ({
-          value: tag._id,
-          label: tag.name,
-        }));
-        setTagOptions(options);
-      } else {
-        console.error('No tags found in response:', data);
-      }
+      const options = data?.tags?.map((tag: any) => ({
+        value: tag._id,
+        label: tag.name,
+      }));
+      setTagOptions(options);
     } catch (error) {
       console.error('Failed to fetch tags:', error);
     }

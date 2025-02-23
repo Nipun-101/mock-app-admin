@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Tag from "./Tag"; // Import Tag model
 
 const SubjectSchema = new mongoose.Schema({
   name: {
@@ -27,4 +28,5 @@ const SubjectSchema = new mongoose.Schema({
   timestamps: true
 });
 
-export default mongoose.models.Subject || mongoose.model("Subject", SubjectSchema);
+const Subject = mongoose.models.Subject || mongoose.model("Subject", SubjectSchema);
+export default Subject;

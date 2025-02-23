@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import Subject from "@/models/Subject";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function GET(request) {
   try {
-    // Get URL parameters
+    await connectToDatabase();
+    
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "100"); // Default to 100 for dropdowns
     const skip = (page - 1) * limit;
 
     // Query for active, non-deleted subjects
@@ -15,10 +17,10 @@ export async function GET(request) {
     // Get total count for pagination
     const totalSubjects = await Subject.countDocuments(query);
     
-    // Get paginated results
+    // Get paginated results without populating tags
     const subjects = await Subject.find(query)
-      .populate('tags', '_id name')
-      .sort({ createdAt: -1 }) // Sort by newest first
+      .select('_id name tags') // Only select id and name
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -32,8 +34,6 @@ export async function GET(request) {
       }
     });
   } catch (error) {
-    
-    console.log("XXX >>>>>>", error);
     return NextResponse.json(
       { error: "Failed to fetch subjects", details: error.message },
       { status: 500 }
