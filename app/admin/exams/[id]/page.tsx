@@ -10,6 +10,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [subjects, setSubjects] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,6 +32,19 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
 
     fetchExam();
   }, [params.id, form]);
+
+  const fetchSubjects = async () => {
+    const response = await fetch(`/api/subject/simple`);
+    const data = await response.json();
+    setSubjects(data.subjects?.map((subject: any) => ({
+      value: subject._id,
+      label: subject.name
+    })));
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
@@ -85,20 +99,13 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
 
             <Form.Item
               label="Subjects"
-              name="subject"
+              name="subjects"
             >
               <Select
                 placeholder="Select subjects"
                 size="large"
                 mode="multiple"
-                options={[
-                  { value: "math", label: "Mathematics" },
-                  { value: "science", label: "Science" },
-                  { value: "english", label: "English" },
-                  { value: "hindi", label: "Hindi" },
-                  { value: "urdu", label: "Urdu" },
-                  { value: "sanskrit", label: "Sanskrit" },
-                ]}
+                options={subjects}
               />
             </Form.Item>
 

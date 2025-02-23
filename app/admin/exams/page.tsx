@@ -19,6 +19,7 @@ export default function ExamsPage() {
     pageSize: 10,
     total: 0
   });
+  const [subjects, setSubjects] = useState([]);
   const router = useRouter();
 
   const columns = [
@@ -43,8 +44,15 @@ export default function ExamsPage() {
     },
     {
       title: "Subjects",
-      dataIndex: "subject",
-      key: "subject",
+      dataIndex: "subjects",
+      key: "subjects",
+      render: (subjectIds: any) => {
+        const subjectNames = subjectIds?.map((subjectId: any) => {
+          const subject : any = subjects.find((s: any) => s.value === subjectId);
+          return subject?.label || '';
+        });
+        return subjectNames.join(', ');
+      }
     },
     {
       title: "Actions",
@@ -82,8 +90,18 @@ export default function ExamsPage() {
     }));
   };
 
+  const fetchSubjects = async () => {
+    const response = await fetch(`/api/subject/simple?page=${pagination.current}&limit=${pagination.pageSize}`);
+    const data = await response.json();
+    setSubjects(data.subjects?.map((subject: any) => ({
+      value: subject._id,
+      label: subject.name
+    })));
+  };
+
   useEffect(() => {
     fetchExams();
+    fetchSubjects();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
@@ -159,21 +177,14 @@ export default function ExamsPage() {
 
             <Form.Item
               label="Subjects"
-              name="subject"
+              name="subjects"
               // rules={[{ required: true, message: "Please select subjects" }]}
             >
                 <Select
                   placeholder="Select subjects"
                   size="large"
                   mode="multiple"
-                  options={[
-                    { value: "math", label: "Mathematics" },
-                    { value: "science", label: "Science" },
-                    { value: "english", label: "English" },
-                    { value: "hindi", label: "Hindi" },
-                    { value: "urdu", label: "Urdu" },
-                    { value: "sanskrit", label: "Sanskrit" },
-                  ]}
+                  options={subjects}
                 />
             </Form.Item>
 
@@ -191,14 +202,6 @@ export default function ExamsPage() {
               // rules={[{ required: true, message: "Please enter total questions" }]}
             >
               <InputNumber min={1} className="w-full" size="large" />
-            </Form.Item>
-
-            <Form.Item
-              label="Passing Score (%)"
-              name="passingScore"
-              // rules={[{ required: true, message: "Please enter passing score" }]}
-            >
-              <InputNumber min={1} max={100} className="w-full" size="large" />
             </Form.Item>
           </div>
 
