@@ -11,12 +11,12 @@ export async function POST(request) {
     console.log("XXX", body);
 
     // Validate required fields
-    if (!body.questionText?.en?.text) {
-      return NextResponse.json(
-        { error: "Question text in English is required" },
-        { status: 400 }
-      );
-    }
+    // if (!body.questionText?.en?.text) {
+    //   return NextResponse.json(
+    //     { error: "Question text in English is required" },
+    //     { status: 400 }
+    //   );
+    // }
 
     if (!body.options || !Array.isArray(body.options) || body.options.length !== 4) {
       return NextResponse.json(
@@ -43,6 +43,10 @@ export async function POST(request) {
           text: body.questionText.ml.text || null,
           image: body.questionText.ml.image || null
         }
+      },
+      explanation: {
+        en: body.explanation.en || null,
+        ml: body.explanation.ml || null
       },
       options: body.options.map(option => ({
         id: option.id,
@@ -83,6 +87,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating question:', error);
+    console.log("XXX error", error);
     return NextResponse.json(
       { 
         error: "Failed to create question", 

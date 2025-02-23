@@ -141,7 +141,7 @@ export default function TagsPage() {
             <Form.Item
               label="Description"
               name="description"
-              rules={[{ required: true, message: "Please enter description" }]}
+              //rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea 
                 placeholder="Enter tag description" 

@@ -21,6 +21,10 @@ const QuestionSchema = new mongoose.Schema({
     ml: { type: String },
     url: { type: String }
   }],
+  explanation: {
+    en: { type: String },
+    ml: { type: String }
+  },
   correctAnswer: { type: String },
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],

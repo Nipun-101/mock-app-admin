@@ -75,21 +75,25 @@ export default function AdminPage() {
       const transformedValues = {
         questionText: {
           en: {
-            text: values.questionText?.en?.text,
+            text: values.questionText?.en?.text || null,
             image: values.questionText?.en?.image?.[0]?.response?.url || null
           },
           ml: {
-            text: values.questionText?.ml?.text,
+            text: values.questionText?.ml?.text || null,
             image: values.questionText?.ml?.image?.[0]?.response?.url || null
           }
         },
         options: OPTIONS.map((option, index) => ({
           id: option.id,
           type: values.options[index]?.type || 'text',
-          en: values.options[index]?.en,
-          ml: values.options[index]?.ml,
+          en: values.options[index]?.en || null,
+          ml: values.options[index]?.ml || null,
           url: values.options[index]?.url || null
         })),
+        explanation: {
+          en: values.explanation?.en || null,
+          ml: values.explanation?.ml || null
+        },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
         tags: values.tags || [],
@@ -104,12 +108,15 @@ export default function AdminPage() {
 
       if (response.ok) {
         message.success('Question created successfully');
-        form.resetFields(['questionText', 'options', 'correctAnswer']);
+        form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation']);
       } else {
+        console.log("error", response);
         throw new Error('Failed to create question');
+        message.error('Failed to create question');
       }
     } catch (error) {
       console.error('Error creating question:', error);
+      message.error('Failed to create question');
     } finally {
       setLoading(false);
     }
@@ -128,7 +135,7 @@ export default function AdminPage() {
             <Form.Item label="Question (English)">
               <Form.Item
                 name={["questionText", "en", "text"]}
-                rules={[{ required: true, message: "Please enter the question in English" }]}
+                // rules={[{ required: true, message: "Please enter the question in English" }]}
               >
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
@@ -212,6 +219,31 @@ export default function AdminPage() {
                   </Select.Option>
                 ))}
               </Select>
+            </Form.Item>
+
+            {/* Explanation in English */}
+            <Form.Item label="Explanation (English)">
+              <Form.Item
+                name={["explanation", "en"]}
+                // rules={[{ required: true, message: "Please enter explanation in English" }]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Enter explanation in English"
+                />
+              </Form.Item>
+            </Form.Item>
+
+            {/* Explanation in Malayalam */}
+            <Form.Item label="Explanation (Malayalam)">
+              <Form.Item
+                name={["explanation", "ml"]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Enter explanation in Malayalam"
+                />
+              </Form.Item>
             </Form.Item>
 
             {/* Subject */}

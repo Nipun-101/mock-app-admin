@@ -100,7 +100,7 @@ export default function EditSubjectPage({ params }: { params: { id: string } }) 
             <Form.Item
               label="Description"
               name="description"
-              rules={[{ required: true, message: "Please enter description" }]}
+              // rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea 
                 placeholder="Enter subject description" 
