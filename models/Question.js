@@ -28,7 +28,9 @@ const QuestionSchema = new mongoose.Schema({
   correctAnswer: { type: String },
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
-  exams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }]
+  exams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }],
+  isActive: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false }
 }, {
   timestamps: true
 });

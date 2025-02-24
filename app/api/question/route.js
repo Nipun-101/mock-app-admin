@@ -55,7 +55,9 @@ export async function POST(request) {
         ml: option.ml || null,
         url: option.url || null
       })),
-      correctAnswer: body.correctAnswer
+      correctAnswer: body.correctAnswer,
+      isActive: true,
+      isDeleted: false
     };
 
     // Add optional fields if they exist
