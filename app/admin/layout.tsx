@@ -8,6 +8,7 @@ import {
   DashboardOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  QuestionCircleOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,6 +41,11 @@ export default function AdminLayout({
       key: "/admin",
       icon: <DashboardOutlined />,
       label: <Link href="/admin">Dashboard</Link>,
+    },
+    {
+      key: "/admin/questions",
+      icon: <QuestionCircleOutlined />,
+      label: <Link href="/admin/questions">Questions</Link>,
     },
     {
       key: "/admin/exams",
