@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, message, Pagination, Tag } from 'antd';
+import { Table, Button, Space, message, Pagination, Tag, Select } from 'antd';
 import Link from 'next/link';
 import { showConfirmModal } from '@/components/ConfirmModal';
 
@@ -13,13 +13,56 @@ export default function QuestionsPage() {
     total: 0
   });
   const [tableLoading, setTableLoading] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [exams, setExams] = useState([]);
+  const [selectedExam, setSelectedExam] = useState(null);
+  const [tags, setTags] = useState([]);
+  const [selectedTag, setSelectedTag] = useState(null);
+
+  const fetchSubjects = async () => {
+    try {
+      const res = await fetch(`/api/subject/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`);
+      const data = await res.json();
+      setSubjects(data.subjects);
+    } catch (error) {
+      message.error('Failed to fetch subjects');
+    }
+  };
+
+  const fetchExams = async () => {
+    try {
+      const res = await fetch(`/api/exam/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`);
+      const data = await res.json();
+      setExams(data.exams);
+    } catch (error) {
+      message.error('Failed to fetch exams');
+    }
+  };
+
+  const fetchTagsBySubject = async (subjectId) => {
+    if (!subjectId) {
+      setTags([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tag/subject/${subjectId}`);
+      const data = await res.json();
+      setTags(data.tags);
+    } catch (error) {
+      message.error('Failed to fetch tags');
+      setTags([]);
+    }
+  };
 
   const fetchQuestions = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/question/list?page=${page}&limit=${limit}`);
+      const subjectQuery = selectedSubject ? `&subject=${selectedSubject}` : '';
+      const examQuery = selectedExam ? `&exam=${selectedExam}` : '';
+      const tagQuery = selectedTag ? `&tag=${selectedTag}` : '';
+      const res = await fetch(`/api/question/list?page=${page}&limit=${limit}${subjectQuery}${examQuery}${tagQuery}`);
       const data = await res.json();
-      console.log("XXX", data);
       setQuestions(data.questions);
       setPagination({
         ...pagination,
@@ -33,9 +76,23 @@ export default function QuestionsPage() {
   };
 
   useEffect(() => {
+    fetchSubjects();
+    fetchExams();
     fetchQuestions();
   }, []);
- 
+
+  useEffect(() => {
+    if (selectedSubject) {
+      fetchTagsBySubject(selectedSubject);
+    } else {
+      setTags([]);
+      setSelectedTag(null);
+    }
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    fetchQuestions(1);
+  }, [selectedSubject, selectedExam, selectedTag]);
 
   const handleDelete = async (id) => {
     showConfirmModal({
@@ -117,7 +174,44 @@ export default function QuestionsPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Questions</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Questions</h1>
+          <Select
+            placeholder="Filter by exam"
+            allowClear
+            style={{ width: 200 }}
+            onChange={(value) => setSelectedExam(value)}
+            options={exams.map((exam) => ({
+              value: exam._id,
+              label: exam.name,
+            }))}
+          />
+          <Select
+            placeholder="Filter by subject"
+            allowClear
+            style={{ width: 200 }}
+            onChange={(value) => {
+              setSelectedSubject(value);
+              setSelectedTag(null);
+            }}
+            options={subjects.map((subject) => ({
+              value: subject._id,
+              label: subject.name,
+            }))}
+          />
+          <Select
+            placeholder="Filter by tag"
+            allowClear
+            disabled={!selectedSubject}
+            style={{ width: 200 }}
+            value={selectedTag}
+            onChange={(value) => setSelectedTag(value)}
+            options={tags.map((tag) => ({
+              value: tag._id,
+              label: tag.name,
+            }))}
+          />
+        </div>
         <Link href="/admin">
           <Button type="primary" className="bg-blue-600 hover:bg-blue-700">Add Question</Button>
         </Link>

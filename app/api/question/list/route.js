@@ -8,9 +8,24 @@ export async function GET(request) {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    const subject = searchParams.get("subject") || undefined;
+    const exam = searchParams.get("exam") || undefined;
+    const tag = searchParams.get("tag") || undefined;
     const skip = (page - 1) * limit;
 
     const query = { isDeleted: false, isActive: true };
+
+    if (subject) {
+      query.subject = subject;
+    }
+
+    if (exam) {
+      query.exams = exam;
+    }
+
+    if (tag) {
+      query.tags = tag;
+    }
 
     const totalQuestions = await Question.countDocuments(query);
     const questions = await Question.find(query)
