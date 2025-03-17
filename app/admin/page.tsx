@@ -135,7 +135,7 @@ export default function AdminPage() {
             <Form.Item label="Question (English)">
               <Form.Item
                 name={["questionText", "en", "text"]}
-                // rules={[{ required: true, message: "Please enter the question in English" }]}
+                rules={[{ required: true, message: "Please enter the question in English" }]}
               >
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>

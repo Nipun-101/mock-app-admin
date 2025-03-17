@@ -123,9 +123,9 @@ export default function QuestionsPage() {
       key: 'question',
       render: (record) => (
         <div>
-          <div>{record.questionText.en.text.length > 20 ? `${record.questionText.en.text.substring(0, 20)}...` : record.questionText.en.text}</div>
-          {record.questionText.ml.text && (
-            <div className="text-gray-500 mt-1">{record.questionText.ml.text.length > 20 ? `${record.questionText.ml.text.substring(0, 20)}...` : record.questionText.ml.text}</div>
+          <div>{record?.questionText?.en?.text?.length > 20 ? `${record.questionText.en.text.substring(0, 20)}...` : record?.questionText?.en?.text}</div>
+          {record?.questionText?.ml?.text && (
+            <div className="text-gray-500 mt-1">{record?.questionText?.ml?.text?.length > 20 ? `${record.questionText.ml.text.substring(0, 20)}...` : record?.questionText?.ml?.text}</div>
           )}
         </div>
       ),
