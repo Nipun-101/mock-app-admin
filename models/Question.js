@@ -3,15 +3,25 @@ import Tag from "./Tag"; // Import Tag model
 import Subject from "./Subject"; // Import Subject model
 import Exam from "./Exam"; // Import Exam model
 
+const ImageMetadataSchema = new mongoose.Schema({
+  key: { type: String, required: true }, // S3 object key
+  bucket: { type: String, required: true }, // S3 bucket name
+  region: { type: String, required: true }, // AWS region
+  contentType: { type: String }, // File MIME type
+  size: { type: Number }, // File size in bytes
+  lastModified: { type: Date }, // Upload timestamp
+  url: { type: String }, // Pre-signed URL (will need periodic refresh)
+});
+
 const QuestionSchema = new mongoose.Schema({
   questionText: {
     en: {
       text: { type: String },
-      image: { type: String }
+      image: ImageMetadataSchema
     },
     ml: {
       text: { type: String },
-      image: { type: String }
+      image: ImageMetadataSchema
     }
   },
   options: [{
@@ -19,7 +29,7 @@ const QuestionSchema = new mongoose.Schema({
     type: { type: String, enum: ['text', 'image'] },
     en: { type: String },
     ml: { type: String },
-    url: { type: String }
+    image: ImageMetadataSchema
   }],
   explanation: {
     en: { type: String },

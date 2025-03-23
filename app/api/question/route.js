@@ -51,9 +51,12 @@ export async function POST(request) {
       options: body.options.map(option => ({
         id: option.id,
         type: option.type || 'text',
-        en: option.en,
-        ml: option.ml || null,
-        url: option.url || null
+        ...(option.type === 'text' ? {
+          en: option.en || null,
+          ml: option.ml || null,
+        } : {
+          image: option.image || null  // Changed from url to image to match schema
+        })
       })),
       correctAnswer: body.correctAnswer,
       isActive: true,

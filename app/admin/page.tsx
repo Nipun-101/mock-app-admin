@@ -4,6 +4,7 @@ import { Button, Card, Form, Input, Select, Upload, Radio, message } from "antd"
 import { useState, useEffect } from "react";
 import { PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
+import { ImageUpload } from '@/app/components/ImageUpload';
 
 export default function AdminPage() {
   const [form] = Form.useForm();
@@ -15,10 +16,10 @@ export default function AdminPage() {
   
   // Move OPTIONS to state to maintain consistent IDs
   const [OPTIONS] = useState([
-    { id: uuidv4(), label: 'A' },
-    { id: uuidv4(), label: 'B' },
-    { id: uuidv4(), label: 'C' },
-    { id: uuidv4(), label: 'D' }
+    { id: uuidv4(), label: 'A', type: 'text' },
+    { id: uuidv4(), label: 'B', type: 'text' },
+    { id: uuidv4(), label: 'C', type: 'text' },
+    { id: uuidv4(), label: 'D', type: 'text' }
   ]);
 
   // Separate function to fetch tags by subject
@@ -76,20 +77,26 @@ export default function AdminPage() {
         questionText: {
           en: {
             text: values.questionText?.en?.text || null,
-            image: values.questionText?.en?.image?.[0]?.response?.url || null
+            image: values.questionText?.en?.image || null
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image?.[0]?.response?.url || null
+            image: values.questionText?.ml?.image || null
           }
         },
-        options: OPTIONS.map((option, index) => ({
-          id: option.id,
-          type: values.options[index]?.type || 'text',
-          en: values.options[index]?.en || null,
-          ml: values.options[index]?.ml || null,
-          url: values.options[index]?.url || null
-        })),
+        options: OPTIONS.map((option, index) => {
+          const type = values.options?.[index]?.type || 'text';
+          return {
+            id: option.id,
+            type,
+            ...(type === 'text' ? {
+              en: values.options?.[index]?.en || null,
+              ml: values.options?.[index]?.ml || null,
+            } : {
+              image: values.options?.[index]?.image || null
+            })
+          };
+        }),
         explanation: {
           en: values.explanation?.en || null,
           ml: values.explanation?.ml || null
@@ -139,11 +146,7 @@ export default function AdminPage() {
               >
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
-              <Form.Item name={["questionText", "en", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
-              </Form.Item>
+              <ImageUpload name={["questionText", "en", "image"]} />
             </Form.Item>
 
             {/* Malayalam Question */}
@@ -151,11 +154,7 @@ export default function AdminPage() {
               <Form.Item name={["questionText", "ml", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
               </Form.Item>
-              <Form.Item name={["questionText", "ml", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
-              </Form.Item>
+              <ImageUpload name={["questionText", "ml", "image"]} />
             </Form.Item>
 
             {/* Options */}
@@ -171,34 +170,39 @@ export default function AdminPage() {
                       <Input type="hidden" />
                     </Form.Item>
                     
-                    <Form.Item name={["options", index, "type"]}>
-                      <Radio.Group defaultValue="text">
+                    <Form.Item 
+                      name={["options", index, "type"]}
+                      initialValue="text"
+                    >
+                      <Radio.Group>
                         <Radio value="text">Text</Radio>
                         <Radio value="image">Image</Radio>
                       </Radio.Group>
                     </Form.Item>
                     
-                    <Form.Item name={["options", index, "en"]}>
-                      <Input placeholder={`Option ${option.label} in English`} />
-                    </Form.Item>
-
-                    <Form.Item name={["options", index, "ml"]}>
-                      <Input placeholder={`Option ${option.label} in Malayalam`} />
-                    </Form.Item>
-
-                    <Form.Item 
-                      name={["options", index, "url"]}
+                    <Form.Item
                       noStyle
-                      shouldUpdate={(prevValues: any, currentValues: any) => {
+                      shouldUpdate={(prevValues, currentValues) => {
                         return prevValues?.options?.[index]?.type !== currentValues?.options?.[index]?.type;
                       }}
                     >
                       {({ getFieldValue }) => {
-                        return getFieldValue(["options", index, "type"]) === "image" ? (
-                          <Upload>
-                            <Button icon={<UploadOutlined />}>Upload Image</Button>
-                          </Upload>
-                        ) : null;
+                        const type = getFieldValue(["options", index, "type"]);
+                        
+                        if (type === "image") {
+                          return <ImageUpload name={["options", index, "image"]} />;
+                        }
+                        
+                        return (
+                          <>
+                            <Form.Item name={["options", index, "en"]}>
+                              <Input placeholder={`Option ${option.label} in English`} />
+                            </Form.Item>
+                            <Form.Item name={["options", index, "ml"]}>
+                              <Input placeholder={`Option ${option.label} in Malayalam`} />
+                            </Form.Item>
+                          </>
+                        );
                       }}
                     </Form.Item>
                   </Form.Item>
