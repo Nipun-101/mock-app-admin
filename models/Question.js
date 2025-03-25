@@ -33,7 +33,8 @@ const QuestionSchema = new mongoose.Schema({
   }],
   explanation: {
     en: { type: String },
-    ml: { type: String }
+    ml: { type: String },
+    image: ImageMetadataSchema
   },
   correctAnswer: { type: String },
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },

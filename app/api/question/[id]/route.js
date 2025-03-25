@@ -58,7 +58,8 @@ export async function PUT(request, { params }) {
       },
       explanation: {
         en: body.explanation.en || null,
-        ml: body.explanation.ml || null
+        ml: body.explanation.ml || null,
+        image: body.explanation.image || null
       },
       options: body.options.map(option => ({
         id: option.id,

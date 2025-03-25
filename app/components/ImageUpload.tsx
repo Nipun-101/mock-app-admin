@@ -1,5 +1,5 @@
-import { Upload, Button, message } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { Upload, Button, message, Modal } from "antd";
+import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
 import { uploadToS3 } from "@/app/services/storage";
 import { Form } from "antd";
 import { useState } from "react";
@@ -25,14 +25,39 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   
   const { url: signedUrl } = usePresignedUrl(isValidMetadata ? formMetadata : null);
 
+  // Determine if an image is already uploaded
+  const hasImage = fileList.length > 0;
+
   return (
     <Form.Item name={name} label={label}>
       <Upload
+        onPreview={async (file) => {
+          const previewUrl = signedUrl || file.url;
+          if (previewUrl) {
+            Modal.info({
+              title: 'Image Preview',
+              content: (
+                <div style={{ textAlign: 'center' }}>
+                  <img 
+                    alt="preview" 
+                    src={previewUrl}
+                    style={{ maxWidth: '100%' }}
+                  />
+                </div>
+              ),
+              width: '60%',
+              maskClosable: true,
+              footer: null,
+              closable: true,
+              closeIcon: <CloseOutlined />
+            });
+          }
+        }}
         fileList={fileList.map((file) => ({
           ...file,
           // Use the refreshed signed URL for displaying the image
           url: signedUrl || file.url,
-        }))}
+        }))}     
         customRequest={async (options: any) => {
           const { file, onSuccess, onError } = options;
           try {
@@ -88,7 +113,12 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
           return isImage;
         }}
       >
-        <Button icon={<UploadOutlined />}>Upload Image</Button>
+        <Button 
+          icon={<UploadOutlined />}
+          disabled={hasImage}
+        >
+          Upload Image
+        </Button>
       </Upload>
     </Form.Item>
   );
