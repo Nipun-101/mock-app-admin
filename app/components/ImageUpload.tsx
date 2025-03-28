@@ -2,7 +2,7 @@ import { Upload, Button, message, Modal } from "antd";
 import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
 import { uploadToS3 } from "@/app/services/storage";
 import { Form } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePresignedUrl } from "@/app/hooks/usePresignedUrl";
 
 interface ImageUploadProps {
@@ -25,6 +25,18 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   
   const { url: signedUrl } = usePresignedUrl(isValidMetadata ? formMetadata : null);
 
+  // Watch for form reset
+  useEffect(() => {
+    const resetHandler = () => {
+      setFileList([]);
+    };
+
+    const fieldValue = form.getFieldValue(name);
+    if (fieldValue === undefined) {
+      resetHandler();
+    }
+  }, [form, name]);
+
   // Determine if an image is already uploaded
   const hasImage = fileList.length > 0;
 
@@ -32,8 +44,9 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
     <Form.Item name={name} label={label}>
       <Upload
         onPreview={async (file) => {
+          // Only show preview if we have a signed URL or file URL and form value exists
           const previewUrl = signedUrl || file.url;
-          if (previewUrl) {
+          if (previewUrl && formMetadata) {
             Modal.info({
               title: 'Image Preview',
               content: (
@@ -99,18 +112,18 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
         }}
         listType="picture"
         maxCount={1}
-        accept="image/*"
+        accept="image/jpeg,image/png"
         onRemove={() => {
           setFileList([]);
           form.setFieldValue(name, undefined);
           return true;
         }}
         beforeUpload={(file) => {
-          const isImage = file.type.startsWith("image/");
-          if (!isImage) {
-            message.error("You can only upload image files!");
+          const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+          if (!isJpgOrPng) {
+            message.error('You can only upload JPG/PNG files!');
           }
-          return isImage;
+          return isJpgOrPng;
         }}
       >
         <Button 

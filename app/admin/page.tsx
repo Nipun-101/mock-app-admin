@@ -75,7 +75,7 @@ export default function AdminPage() {
 
     //if question type is image, then if any option is not image, then show error
     if (values.questionType === 'image') {
-      if (!values.options.every((option: any) => option.image.key)) {
+      if (!values.options.every((option: any) => option?.image?.key)) {
         message.error('Please upload images for all options');
         setLoading(false);
         return;
@@ -87,11 +87,11 @@ export default function AdminPage() {
         questionText: {
           en: {
             text: values.questionText?.en?.text || null,
-            image: values.questionText?.en?.image?.key || null
+            image: values.questionText?.en?.image || null
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image?.key || values.questionText?.en?.image?.key || null
+            image: values.questionText?.ml?.image || values.questionText?.en?.image || null
           }
         },
         options: OPTIONS.map((option, index) => {
@@ -103,14 +103,14 @@ export default function AdminPage() {
               en: values.options?.[index]?.en || null,
               ml: values.options?.[index]?.ml || null,
             } : {
-              image: values.options?.[index]?.image?.key || null
+              image: values.options?.[index]?.image || null
             })
           };
         }),
         explanation: {
           en: values.explanation?.en || null,
           ml: values.explanation?.ml || null,
-          image: values.explanation?.image?.key || null
+          image: values.explanation?.image || null
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
