@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Upload, Radio, message } from "antd";
+import { Button, Card, Form, Input, Select, Upload, Radio, message, Tooltip } from "antd";
 import { useState, useEffect } from "react";
-import { UploadOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined, UploadOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
+import { ImageUpload } from "@/app/components/ImageUpload";
 
 interface Option {
   id: string;
@@ -22,18 +23,13 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
 
   // Fetch tags by subject
   const fetchTagsBySubject = async (subjectId: string) => {
-    console.log("XXXYYYZZ subjectId", subjectId);
-    console.log("XXXYYYZZ subjects", subjects);
 
     const subject: any = subjects?.find((subject: any) => subject.value === subjectId);
-    console.log("XXXYYYZZ subject", subject);
 
     const tagsData = subject?.tags?.map((tag: any) => ({
       value: tag._id,
       label: tag.name
     })) || [];
-
-    console.log("XXXYYYZZ tags", tagsData);
     
     setTags(tagsData);
   };
@@ -80,12 +76,6 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   }, []);
 
 
-  useEffect(() => {
-    // console.log("XXX TEST subjects", subjects);
-    // console.log("XXX TEST tags", tags);
-    // console.log("XXX TEST exams", exams);
-  }, [subjects, tags, exams]);
-
 
   const fetchQuestion = async () => {
     try {
@@ -117,17 +107,19 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
             image: question.questionText.ml.image
           }
         },
+        optionType: question.optionType || 'text',
         options: question.options.map((opt: any) => ({
           id: opt.id,
-          type: opt.type || 'text',
+          type: opt.type,
           en: opt.en,
           ml: opt.ml,
-          url: opt.url
+          image: opt.image
         })),
         correctAnswer: question.correctAnswer,
         explanation: {
           en: question.explanation?.en,
-          ml: question.explanation?.ml
+          ml: question.explanation?.ml,
+          image: question.explanation?.image
         },
         subject: question.subject,
         tags: question.tags,
@@ -147,29 +139,46 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   };
 
   const handleSubmit = async (values: any) => {
-    setLoading(true);
+
+    //if question type is image, then if any option is not image, then show error
+    if (values.optionType === 'image') {
+      if (!values.options.every((option: any) => option?.image?.key)) {
+        message.error('Please upload images for all options');
+        setLoading(false);
+        return;
+      }
+    }
+    
     try {
       const transformedValues = {
         questionText: {
           en: {
             text: values.questionText?.en?.text || null,
-            image: values.questionText?.en?.image?.[0]?.response?.url || null
+            image: values.questionText?.en?.image || null
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image?.[0]?.response?.url || null
+            image: values.questionText?.ml?.image || values.questionText?.en?.image || null
           }
         },
-        options: OPTIONS.map((option, index) => ({
-          id: option.id,
-          type: values.options[index]?.type || 'text',
-          en: values.options[index]?.en || null,
-          ml: values.options[index]?.ml || null,
-          url: values.options[index]?.url || null
-        })),
+        optionType: values.optionType,
+        options: OPTIONS.map((option, index) => {
+          const type = values.optionType || 'text';
+          return {
+            id: option.id,
+            type,
+            ...(type === 'text' ? {
+              en: values.options?.[index]?.en || null,
+              ml: values.options?.[index]?.ml || null,
+            } : {
+              image: values.options?.[index]?.image || null
+            })
+          };
+        }),
         explanation: {
           en: values.explanation?.en || null,
-          ml: values.explanation?.ml || null
+          ml: values.explanation?.ml || null,
+          image: values.explanation?.image || null
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
@@ -211,10 +220,8 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               <Form.Item name={["questionText", "en", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
-              <Form.Item name={["questionText", "en", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
+              <Form.Item name={["questionText", "en", "image"]} label="Question Image">
+                <ImageUpload name={["questionText", "en", "image"]} />
               </Form.Item>
             </Form.Item>
 
@@ -223,11 +230,45 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               <Form.Item name={["questionText", "ml", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
               </Form.Item>
-              <Form.Item name={["questionText", "ml", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
+              <Form.Item name={["questionText", "ml", "image"]} label="Question Image">
+                <ImageUpload name={["questionText", "ml", "image"]} />
               </Form.Item>
+            </Form.Item>
+
+              {/* Question Type */}
+              <Form.Item 
+              label={
+                <>
+                  Options Type
+                  <Tooltip title="Switching between text/image will reset the options entered" placement="top">
+                    <InfoCircleOutlined className="ml-2" />
+                  </Tooltip>
+                </>
+              }
+              name="optionType"
+              initialValue="text"
+            >
+              <Radio.Group 
+                onChange={(e) => {
+                  console.log("option type changed:", e.target.value);
+                  // Clear text fields when switching to image
+                  if (e.target.value === 'image') {
+                    OPTIONS.forEach((_, i) => {
+                      form.setFieldValue(['options', i, 'en'], undefined);
+                      form.setFieldValue(['options', i, 'ml'], undefined);
+                    });
+                  }
+                  // Clear image field when switching to text 
+                  if (e.target.value === 'text') {
+                    OPTIONS.forEach((_, i) => {
+                      form.setFieldValue(['options', i, 'image'], undefined);
+                    });
+                  }
+                }}
+              >
+                <Radio value="text">Text</Radio>
+                <Radio value="image">Image</Radio>
+              </Radio.Group>
             </Form.Item>
 
             {/* Options */}
@@ -243,34 +284,29 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
                       <Input type="hidden" />
                     </Form.Item>
                     
-                    <Form.Item name={["options", index, "type"]}>
-                      <Radio.Group defaultValue="text">
-                        <Radio value="text">Text</Radio>
-                        <Radio value="image">Image</Radio>
-                      </Radio.Group>
-                    </Form.Item>
-                    
-                    <Form.Item name={["options", index, "en"]}>
-                      <Input placeholder={`Option ${option.label} in English`} />
-                    </Form.Item>
-
-                    <Form.Item name={["options", index, "ml"]}>
-                      <Input placeholder={`Option ${option.label} in Malayalam`} />
-                    </Form.Item>
-
-                    <Form.Item 
-                      name={["options", index, "url"]}
+                    <Form.Item
                       noStyle
-                      shouldUpdate={(prevValues: any, currentValues: any) => {
-                        return prevValues?.options?.[index]?.type !== currentValues?.options?.[index]?.type;
+                      shouldUpdate={(prevValues, currentValues) => {
+                        return prevValues?.optionType !== currentValues?.optionType;
                       }}
                     >
                       {({ getFieldValue }) => {
-                        return getFieldValue(["options", index, "type"]) === "image" ? (
-                          <Upload>
-                            <Button icon={<UploadOutlined />}>Upload Image</Button>
-                          </Upload>
-                        ) : null;
+                        const type = getFieldValue("optionType");
+                        
+                        if (type === "image") {
+                          return <ImageUpload name={["options", index, "image"]} />;
+                        }
+                        
+                        return (
+                          <>
+                            <Form.Item name={["options", index, "en"]} rules={[{ required: true, message: "Please enter the option in English" }]}>
+                              <Input placeholder={`Option ${option.label} in English`} />
+                            </Form.Item>
+                            <Form.Item name={["options", index, "ml"]}>
+                              <Input placeholder={`Option ${option.label} in Malayalam`} />
+                            </Form.Item>
+                          </>
+                        );
                       }}
                     </Form.Item>
                   </Form.Item>
@@ -303,6 +339,13 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
             <Form.Item label="Explanation (Malayalam)">
               <Form.Item name={["explanation", "ml"]}>
                 <Input.TextArea rows={4} placeholder="Enter explanation in Malayalam" />
+              </Form.Item>
+            </Form.Item>
+            
+            {/* Explanation Image */}
+            <Form.Item label="Explanation Image">
+              <Form.Item name={["explanation", "image"]}>
+                <ImageUpload name={["explanation", "image"]} />
               </Form.Item>
             </Form.Item>
 

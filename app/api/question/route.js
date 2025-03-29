@@ -46,14 +46,19 @@ export async function POST(request) {
       },
       explanation: {
         en: body.explanation.en || null,
-        ml: body.explanation.ml || null
+        ml: body.explanation.ml || null,
+        image: body.explanation.image || null
       },
+      optionType: body.optionType || 'text',
       options: body.options.map(option => ({
         id: option.id,
         type: option.type || 'text',
-        en: option.en,
-        ml: option.ml || null,
-        url: option.url || null
+        ...(option.type === 'text' ? {
+          en: option.en || null,
+          ml: option.ml || null,
+        } : {
+          image: option.image || null  // Changed from url to image to match schema
+        })
       })),
       correctAnswer: body.correctAnswer,
       isActive: true,

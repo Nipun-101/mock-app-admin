@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Upload, Radio, message } from "antd";
+import { Button, Card, Form, Input, Select, Upload, Radio, message, Tooltip } from "antd";
 import { useState, useEffect } from "react";
-import { PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
+import { ImageUpload } from '@/app/components/ImageUpload';
 
 export default function AdminPage() {
   const [form] = Form.useForm();
@@ -15,10 +16,10 @@ export default function AdminPage() {
   
   // Move OPTIONS to state to maintain consistent IDs
   const [OPTIONS] = useState([
-    { id: uuidv4(), label: 'A' },
-    { id: uuidv4(), label: 'B' },
-    { id: uuidv4(), label: 'C' },
-    { id: uuidv4(), label: 'D' }
+    { id: uuidv4(), label: 'A', type: 'text' },
+    { id: uuidv4(), label: 'B', type: 'text' },
+    { id: uuidv4(), label: 'C', type: 'text' },
+    { id: uuidv4(), label: 'D', type: 'text' }
   ]);
 
   // Separate function to fetch tags by subject
@@ -71,28 +72,46 @@ export default function AdminPage() {
   const handleSubmit = async (values: any) => {
     console.log("XXX", values);
     setLoading(true);
+
+    //if question type is image, then if any option is not image, then show error
+    if (values.optionType === 'image') {
+      if (!values.options.every((option: any) => option?.image?.key)) {
+        message.error('Please upload images for all options');
+        setLoading(false);
+        return;
+      }
+    }
+    
     try {
       const transformedValues = {
         questionText: {
           en: {
             text: values.questionText?.en?.text || null,
-            image: values.questionText?.en?.image?.[0]?.response?.url || null
+            image: values.questionText?.en?.image || null
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image?.[0]?.response?.url || null
+            image: values.questionText?.ml?.image || values.questionText?.en?.image || null
           }
         },
-        options: OPTIONS.map((option, index) => ({
-          id: option.id,
-          type: values.options[index]?.type || 'text',
-          en: values.options[index]?.en || null,
-          ml: values.options[index]?.ml || null,
-          url: values.options[index]?.url || null
-        })),
+        optionType: values.optionType,
+        options: OPTIONS.map((option, index) => {
+          const type = values.optionType || 'text';
+          return {
+            id: option.id,
+            type,
+            ...(type === 'text' ? {
+              en: values.options?.[index]?.en || null,
+              ml: values.options?.[index]?.ml || null,
+            } : {
+              image: values.options?.[index]?.image || null
+            })
+          };
+        }),
         explanation: {
           en: values.explanation?.en || null,
-          ml: values.explanation?.ml || null
+          ml: values.explanation?.ml || null,
+          image: values.explanation?.image || null
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
@@ -111,8 +130,9 @@ export default function AdminPage() {
         form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation']);
       } else {
         console.log("error", response);
-        throw new Error('Failed to create question');
         message.error('Failed to create question');
+        throw new Error('Failed to create question');
+        
       }
     } catch (error) {
       console.error('Error creating question:', error);
@@ -139,11 +159,7 @@ export default function AdminPage() {
               >
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
-              <Form.Item name={["questionText", "en", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
-              </Form.Item>
+              <ImageUpload name={["questionText", "en", "image"]} />
             </Form.Item>
 
             {/* Malayalam Question */}
@@ -151,11 +167,43 @@ export default function AdminPage() {
               <Form.Item name={["questionText", "ml", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
               </Form.Item>
-              <Form.Item name={["questionText", "ml", "image"]}>
-                <Upload>
-                  <Button icon={<UploadOutlined />}>Upload Image</Button>
-                </Upload>
-              </Form.Item>
+              <ImageUpload name={["questionText", "ml", "image"]} />
+            </Form.Item>
+
+            {/* Question Type */}
+            <Form.Item 
+              label={
+                <>
+                  Options Type
+                  <Tooltip title="Switching between text/image will reset the options entered" placement="top">
+                    <InfoCircleOutlined className="ml-2" />
+                  </Tooltip>
+                </>
+              }
+              name="optionType"
+              initialValue="text"
+            >
+              <Radio.Group 
+                onChange={(e) => {
+                  console.log("option type changed:", e.target.value);
+                  // Clear text fields when switching to image
+                  if (e.target.value === 'image') {
+                    OPTIONS.forEach((_, i) => {
+                      form.setFieldValue(['options', i, 'en'], undefined);
+                      form.setFieldValue(['options', i, 'ml'], undefined);
+                    });
+                  }
+                  // Clear image field when switching to text 
+                  if (e.target.value === 'text') {
+                    OPTIONS.forEach((_, i) => {
+                      form.setFieldValue(['options', i, 'image'], undefined);
+                    });
+                  }
+                }}
+              >
+                <Radio value="text">Text</Radio>
+                <Radio value="image">Image</Radio>
+              </Radio.Group>
             </Form.Item>
 
             {/* Options */}
@@ -171,34 +219,29 @@ export default function AdminPage() {
                       <Input type="hidden" />
                     </Form.Item>
                     
-                    <Form.Item name={["options", index, "type"]}>
-                      <Radio.Group defaultValue="text">
-                        <Radio value="text">Text</Radio>
-                        <Radio value="image">Image</Radio>
-                      </Radio.Group>
-                    </Form.Item>
-                    
-                    <Form.Item name={["options", index, "en"]}>
-                      <Input placeholder={`Option ${option.label} in English`} />
-                    </Form.Item>
-
-                    <Form.Item name={["options", index, "ml"]}>
-                      <Input placeholder={`Option ${option.label} in Malayalam`} />
-                    </Form.Item>
-
-                    <Form.Item 
-                      name={["options", index, "url"]}
+                    <Form.Item
                       noStyle
-                      shouldUpdate={(prevValues: any, currentValues: any) => {
-                        return prevValues?.options?.[index]?.type !== currentValues?.options?.[index]?.type;
+                      shouldUpdate={(prevValues, currentValues) => {
+                        return prevValues?.optionType !== currentValues?.optionType;
                       }}
                     >
                       {({ getFieldValue }) => {
-                        return getFieldValue(["options", index, "type"]) === "image" ? (
-                          <Upload>
-                            <Button icon={<UploadOutlined />}>Upload Image</Button>
-                          </Upload>
-                        ) : null;
+                        const type = getFieldValue("optionType");
+                        
+                        if (type === "image") {
+                          return <ImageUpload name={["options", index, "image"]} />;
+                        }
+                        
+                        return (
+                          <>
+                            <Form.Item name={["options", index, "en"]} rules={[{ required: true, message: "Please enter the option in English" }]}>
+                              <Input placeholder={`Option ${option.label} in English`} />
+                            </Form.Item>
+                            <Form.Item name={["options", index, "ml"]}>
+                              <Input placeholder={`Option ${option.label} in Malayalam`} />
+                            </Form.Item>
+                          </>
+                        );
                       }}
                     </Form.Item>
                   </Form.Item>
@@ -219,6 +262,16 @@ export default function AdminPage() {
                   </Select.Option>
                 ))}
               </Select>
+            </Form.Item>
+
+
+            {/* Explanation Image */}
+            <Form.Item label="Explanation Image">
+              <Form.Item
+                name={["explanation", "image"]}
+              >
+                <ImageUpload name={["explanation", "image"]} />
+              </Form.Item>
             </Form.Item>
 
             {/* Explanation in English */}

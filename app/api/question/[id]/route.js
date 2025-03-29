@@ -56,16 +56,18 @@ export async function PUT(request, { params }) {
           image: body.questionText.ml.image || null
         }
       },
+      optionType: body.optionType || 'text',
       explanation: {
         en: body.explanation.en || null,
-        ml: body.explanation.ml || null
+        ml: body.explanation.ml || null,
+        image: body.explanation.image || null
       },
       options: body.options.map(option => ({
         id: option.id,
         type: option.type || 'text',
         en: option.en,
         ml: option.ml || null,
-        url: option.url || null
+        image: option.image || null
       })),
       correctAnswer: body.correctAnswer
     };
