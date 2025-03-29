@@ -23,18 +23,13 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
 
   // Fetch tags by subject
   const fetchTagsBySubject = async (subjectId: string) => {
-    console.log("XXXYYYZZ subjectId", subjectId);
-    console.log("XXXYYYZZ subjects", subjects);
 
     const subject: any = subjects?.find((subject: any) => subject.value === subjectId);
-    console.log("XXXYYYZZ subject", subject);
 
     const tagsData = subject?.tags?.map((tag: any) => ({
       value: tag._id,
       label: tag.name
     })) || [];
-
-    console.log("XXXYYYZZ tags", tagsData);
     
     setTags(tagsData);
   };
@@ -80,12 +75,6 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
     fetchData();
   }, []);
 
-
-  useEffect(() => {
-    // console.log("XXX TEST subjects", subjects);
-    // console.log("XXX TEST tags", tags);
-    // console.log("XXX TEST exams", exams);
-  }, [subjects, tags, exams]);
 
 
   const fetchQuestion = async () => {

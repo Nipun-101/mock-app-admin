@@ -67,7 +67,7 @@ export async function PUT(request, { params }) {
         type: option.type || 'text',
         en: option.en,
         ml: option.ml || null,
-        url: option.url || null
+        image: option.image || null
       })),
       correctAnswer: body.correctAnswer
     };
