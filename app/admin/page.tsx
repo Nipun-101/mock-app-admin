@@ -130,8 +130,9 @@ export default function AdminPage() {
         form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation']);
       } else {
         console.log("error", response);
-        throw new Error('Failed to create question');
         message.error('Failed to create question');
+        throw new Error('Failed to create question');
+        
       }
     } catch (error) {
       console.error('Error creating question:', error);

@@ -174,7 +174,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         },
         optionType: values.optionType,
         options: OPTIONS.map((option, index) => {
-          const type = values.options[index]?.type || 'text';
+          const type = values.optionType || 'text';
           return {
             id: option.id,
             type,
