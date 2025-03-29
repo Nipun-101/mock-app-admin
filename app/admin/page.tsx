@@ -174,7 +174,7 @@ export default function AdminPage() {
             <Form.Item 
               label={
                 <>
-                  Question Type
+                  Options Type
                   <Tooltip title="Switching between text/image will reset the options entered" placement="top">
                     <InfoCircleOutlined className="ml-2" />
                   </Tooltip>

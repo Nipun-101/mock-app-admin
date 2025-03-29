@@ -118,7 +118,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
             image: question.questionText.ml.image
           }
         },
-        optionType: question.optionType,
+        optionType: question.optionType || 'text',
         options: question.options.map((opt: any) => ({
           id: opt.id,
           type: opt.type,
@@ -250,7 +250,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               <Form.Item 
               label={
                 <>
-                  Question Type
+                  Options Type
                   <Tooltip title="Switching between text/image will reset the options entered" placement="top">
                     <InfoCircleOutlined className="ml-2" />
                   </Tooltip>
