@@ -56,6 +56,7 @@ export async function PUT(request, { params }) {
           image: body.questionText.ml.image || null
         }
       },
+      optionType: body.optionType || 'text',
       explanation: {
         en: body.explanation.en || null,
         ml: body.explanation.ml || null,

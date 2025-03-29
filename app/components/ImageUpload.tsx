@@ -25,6 +25,13 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   
   const { url: signedUrl } = usePresignedUrl(isValidMetadata ? formMetadata : null);
 
+  //when signedUrl is changed, update the fileList
+  useEffect(() => {
+    if (signedUrl) {
+      setFileList([{ url: signedUrl }]);
+    }
+  }, [signedUrl]);
+
   // Watch for form reset
   useEffect(() => {
     const resetHandler = () => {
@@ -36,6 +43,7 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
       resetHandler();
     }
   }, [form, name]);
+
 
   // Determine if an image is already uploaded
   const hasImage = fileList.length > 0;

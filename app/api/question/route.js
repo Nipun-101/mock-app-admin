@@ -49,6 +49,7 @@ export async function POST(request) {
         ml: body.explanation.ml || null,
         image: body.explanation.image || null
       },
+      optionType: body.optionType || 'text',
       options: body.options.map(option => ({
         id: option.id,
         type: option.type || 'text',

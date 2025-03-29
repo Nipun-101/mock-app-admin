@@ -24,6 +24,7 @@ const QuestionSchema = new mongoose.Schema({
       image: ImageMetadataSchema
     }
   },
+  optionType: { type: String, enum: ['text', 'image'] },
   options: [{
     id: { type: String },
     type: { type: String, enum: ['text', 'image'] },

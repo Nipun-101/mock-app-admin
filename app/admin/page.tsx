@@ -74,7 +74,7 @@ export default function AdminPage() {
     setLoading(true);
 
     //if question type is image, then if any option is not image, then show error
-    if (values.questionType === 'image') {
+    if (values.optionType === 'image') {
       if (!values.options.every((option: any) => option?.image?.key)) {
         message.error('Please upload images for all options');
         setLoading(false);
@@ -94,8 +94,9 @@ export default function AdminPage() {
             image: values.questionText?.ml?.image || values.questionText?.en?.image || null
           }
         },
+        optionType: values.optionType,
         options: OPTIONS.map((option, index) => {
-          const type = values.questionType || 'text';
+          const type = values.optionType || 'text';
           return {
             id: option.id,
             type,
@@ -178,12 +179,12 @@ export default function AdminPage() {
                   </Tooltip>
                 </>
               }
-              name="questionType"
+              name="optionType"
               initialValue="text"
             >
               <Radio.Group 
                 onChange={(e) => {
-                  console.log("question type changed:", e.target.value);
+                  console.log("option type changed:", e.target.value);
                   // Clear text fields when switching to image
                   if (e.target.value === 'image') {
                     OPTIONS.forEach((_, i) => {
@@ -220,11 +221,11 @@ export default function AdminPage() {
                     <Form.Item
                       noStyle
                       shouldUpdate={(prevValues, currentValues) => {
-                        return prevValues?.questionType !== currentValues?.questionType;
+                        return prevValues?.optionType !== currentValues?.optionType;
                       }}
                     >
                       {({ getFieldValue }) => {
-                        const type = getFieldValue("questionType");
+                        const type = getFieldValue("optionType");
                         
                         if (type === "image") {
                           return <ImageUpload name={["options", index, "image"]} />;
