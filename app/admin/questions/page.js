@@ -136,6 +136,22 @@ export default function QuestionsPage() {
       key: 'subject',
     },
     {
+      title: 'Difficulty',
+      key: 'difficultyLevel',
+      render: (record) => {
+        const colorMap = {
+          easy: 'green',
+          medium: 'orange',
+          hard: 'red'
+        };
+        return record.difficultyLevel ? (
+          <Tag color={colorMap[record.difficultyLevel]}>
+            {record.difficultyLevel.charAt(0).toUpperCase() + record.difficultyLevel.slice(1)}
+          </Tag>
+        ) : '-';
+      },
+    },
+    {
       title: 'Tags',
       key: 'tags',
       render: (record) => (

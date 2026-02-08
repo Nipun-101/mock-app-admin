@@ -116,7 +116,8 @@ export default function AdminPage() {
         correctAnswer: values.correctAnswer,
         subject: values.subject,
         tags: values.tags || [],
-        exams: values.exams || []
+        exams: values.exams || [],
+        difficultyLevel: values.difficultyLevel
       };
 
       const response = await fetch("/api/question", {
@@ -127,7 +128,7 @@ export default function AdminPage() {
 
       if (response.ok) {
         message.success('Question created successfully');
-        form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation']);
+        form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation', 'difficultyLevel']);
       } else {
         console.log("error", response);
         message.error('Failed to create question');
@@ -336,6 +337,19 @@ export default function AdminPage() {
                 placeholder="Select exams"
                 options={exams}
               />
+            </Form.Item>
+
+            {/* Difficulty Level */}
+            <Form.Item
+              label="Difficulty Level"
+              name="difficultyLevel"
+              rules={[{ required: true, message: "Please select difficulty level" }]}
+            >
+              <Select placeholder="Select difficulty level">
+                <Select.Option value="easy">Easy</Select.Option>
+                <Select.Option value="medium">Medium</Select.Option>
+                <Select.Option value="hard">Hard</Select.Option>
+              </Select>
             </Form.Item>
 
             <Form.Item>

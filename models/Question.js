@@ -41,6 +41,7 @@ const QuestionSchema = new mongoose.Schema({
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
   exams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }],
+  difficultyLevel: { type: String, enum: ['easy', 'medium', 'hard'] },
   isActive: { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false }
 }, {

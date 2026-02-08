@@ -123,7 +123,8 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         },
         subject: question.subject,
         tags: question.tags,
-        exams: question.exams
+        exams: question.exams,
+        difficultyLevel: question.difficultyLevel
       });
     } catch (error) {
       console.error('Error fetching question:', error);
@@ -183,7 +184,8 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         correctAnswer: values.correctAnswer,
         subject: values.subject,
         tags: values.tags || [],
-        exams: values.exams || []
+        exams: values.exams || [],
+        difficultyLevel: values.difficultyLevel
       };
 
       const response = await fetch(`/api/question/${params.id}`, {
@@ -386,6 +388,19 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
                 placeholder="Select exams"
                 options={exams}
               />
+            </Form.Item>
+
+            {/* Difficulty Level */}
+            <Form.Item
+              label="Difficulty Level"
+              name="difficultyLevel"
+              rules={[{ required: true, message: "Please select difficulty level" }]}
+            >
+              <Select placeholder="Select difficulty level">
+                <Select.Option value="easy">Easy</Select.Option>
+                <Select.Option value="medium">Medium</Select.Option>
+                <Select.Option value="hard">Hard</Select.Option>
+              </Select>
             </Form.Item>
 
             <Form.Item>
