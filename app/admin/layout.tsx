@@ -64,9 +64,9 @@ export default function AdminLayout({
       label: <Link href="/admin/subjects">Subjects</Link>,
     },
     {
-      key: "/admin/tags",
+      key: "/admin/topics",
       icon: <TagOutlined />,
-      label: <Link href="/admin/tags">Tags</Link>,
+      label: <Link href="/admin/topics">Topics</Link>,
     },
   ];
 

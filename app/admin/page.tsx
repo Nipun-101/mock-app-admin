@@ -10,7 +10,7 @@ export default function AdminPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState([]);
-  const [tags, setTags] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [exams, setExams] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   
@@ -22,12 +22,12 @@ export default function AdminPage() {
     { id: uuidv4(), label: 'D', type: 'text' }
   ]);
 
-  // Separate function to fetch tags by subject
-  const fetchTagsBySubject = async (subjectId: string) => {
+  // Separate function to fetch topics by subject
+  const fetchTopicsBySubject = async (subjectId: string) => {
       const subject : any = subjects.find((subject: any) => subject.value === subjectId);
-      setTags(subject?.tags?.map((tag: any) => ({
-        value: tag._id,
-        label: tag.name
+      setTopics(subject?.topics?.map((topic: any) => ({
+        value: topic._id,
+        label: topic.name
       })) || []);
     
   };
@@ -47,7 +47,7 @@ export default function AdminPage() {
         setSubjects(subjectsData.subjects?.map((subject: any) => ({
           value: subject._id,
           label: subject.name,
-          tags: subject.tags
+          topics: subject.topics
         })) || []);
 
         setExams(examsData.exams?.map((exam: any) => ({
@@ -65,8 +65,8 @@ export default function AdminPage() {
   // Handle subject change
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
-    form.setFieldValue('tags', []); // Clear selected tags when subject changes
-    fetchTagsBySubject(value);
+    form.setFieldValue('topic', undefined); // Clear selected topic when subject changes
+    fetchTopicsBySubject(value);
   };
 
   const handleSubmit = async (values: any) => {
@@ -115,7 +115,7 @@ export default function AdminPage() {
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
-        tags: values.tags || [],
+        topic: values.topic || null,
         exams: values.exams || [],
         difficultyLevel: values.difficultyLevel
       };
@@ -313,17 +313,17 @@ export default function AdminPage() {
               />
             </Form.Item>
 
-            {/* Tags */}
+            {/* Topic */}
             <Form.Item
-              label="Tags"
-              name="tags"
+              label="Topic"
+              name="topic"
               dependencies={['subject']}
             >
               <Select
-                mode="multiple"
-                placeholder={selectedSubject ? "Select tags" : "Please select a subject first"}
-                options={tags}
+                placeholder={selectedSubject ? "Select topic" : "Please select a subject first"}
+                options={topics}
                 disabled={!selectedSubject}
+                allowClear
               />
             </Form.Item>
 

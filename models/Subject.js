@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Tag from "./Tag"; // Import Tag model
+import Topic from "./Topic"; // Import Topic model
 
 const SubjectSchema = new mongoose.Schema({
   name: {
@@ -11,9 +11,9 @@ const SubjectSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  tags: [{
+  topics: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Tag",
+    ref: "Topic",
     default: []
   }],
   isActive: {

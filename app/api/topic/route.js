@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Tag from "@/models/Tag";
+import Topic from "@/models/Topic";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(request) {
@@ -7,20 +7,20 @@ export async function POST(request) {
     await connectToDatabase();
     const body = await request.json();
     
-    const tag = await Tag.create({
+    const topic = await Topic.create({
       ...body,
       isActive: true,
       isDeleted: false
     });
     
     return NextResponse.json(
-      { message: "Tag created successfully", tag },
+      { message: "Topic created successfully", topic },
       { status: 201 }
     );
 
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to create tag", details: error.message },
+      { error: "Failed to create topic", details: error.message },
       { status: 500 }
     );
   }

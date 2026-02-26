@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Tag from "@/models/Tag";
+import Topic from "@/models/Topic";
 import Subject from "@/models/Subject";
 import { connectToDatabase } from "@/lib/mongodb";
 
@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
     await connectToDatabase();
     const { subjectId } = params;
 
-    // First, get the subject and its tag references
+    // First, get the subject and its topic references
     const subject = await Subject.findById(subjectId);
     if (!subject) {
       return NextResponse.json(
@@ -17,24 +17,24 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get the tag IDs from the subject
-    const tagIds = subject.tags || [];
+    // Get the topic IDs from the subject
+    const topicIds = subject.topics || [];
 
-    // Then fetch all active, non-deleted tags that match these IDs
-    const tags = await Tag.find({
-      _id: { $in: tagIds },
+    // Then fetch all active, non-deleted topics that match these IDs
+    const topics = await Topic.find({
+      _id: { $in: topicIds },
       isActive: true,
       isDeleted: false
     }).sort({ createdAt: -1 });
 
     return NextResponse.json({
-      tags,
+      topics,
       success: true
     });
 
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch tags", details: error.message },
+      { error: "Failed to fetch topics", details: error.message },
       { status: 500 }
     );
   }

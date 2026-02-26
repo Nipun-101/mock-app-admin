@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Tag from "./Tag"; // Import Tag model
+import Topic from "./Topic"; // Import Topic model
 import Subject from "./Subject"; // Import Subject model
 import Exam from "./Exam"; // Import Exam model
 
@@ -39,7 +39,7 @@ const QuestionSchema = new mongoose.Schema({
   },
   correctAnswer: { type: String },
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
-  tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
+  topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic' },
   exams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }],
   difficultyLevel: { type: String, enum: ['easy', 'medium', 'hard'] },
   isActive: { type: Boolean, default: true },

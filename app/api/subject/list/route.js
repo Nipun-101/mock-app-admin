@@ -17,7 +17,7 @@ export async function GET(request) {
     
     // Get paginated results
     const subjects = await Subject.find(query)
-      .populate('tags', '_id name')
+      .populate('topics', '_id name')
       .sort({ createdAt: -1 }) // Sort by newest first
       .skip(skip)
       .limit(limit);

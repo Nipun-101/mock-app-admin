@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 
 const { Title } = Typography;
 
-export default function TagsPage() {
+export default function TopicsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [tags, setTags] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -23,7 +23,7 @@ export default function TagsPage() {
 
   const columns = [
     {
-      title: "Tag Name",
+      title: "Topic Name",
       dataIndex: "name",
       key: "name",
     },
@@ -41,7 +41,7 @@ export default function TagsPage() {
           <Button 
             type="link" 
             size="small"
-            onClick={() => router.push(`/admin/tags/${record._id}`)}
+            onClick={() => router.push(`/admin/topics/${record._id}`)}
           >
             Edit
           </Button>
@@ -58,12 +58,12 @@ export default function TagsPage() {
     },
   ];
 
-  const fetchTags = async () => {
+  const fetchTopics = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/tag/list?page=${pagination.current}&limit=${pagination.pageSize}`);
+      const response = await fetch(`/api/topic/list?page=${pagination.current}&limit=${pagination.pageSize}`);
       const data = await response.json();
-      setTags(data.tags);
+      setTopics(data.topics);
       setPagination(prev => ({
         ...prev,
         total: data?.pagination?.total
@@ -76,19 +76,19 @@ export default function TagsPage() {
   };
 
   useEffect(() => {
-    fetchTags();
+    fetchTopics();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/tag", {
+      const response = await fetch("/api/topic", {
         method: "POST",
         body: JSON.stringify(values),
       });
       const data = await response.json();
       form.resetFields();
-      fetchTags();
+      fetchTopics();
     } catch (error) {
       console.error(error);
     } finally {
@@ -98,16 +98,16 @@ export default function TagsPage() {
 
   const handleDelete = async (id: string) => {
     showConfirmModal({
-      title: 'Delete Tag',
-      content: 'Are you sure you want to delete this tag? This action cannot be undone.',
+      title: 'Delete Topic',
+      content: 'Are you sure you want to delete this topic? This action cannot be undone.',
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          const response = await fetch(`/api/tag/${id}`, {
+          const response = await fetch(`/api/topic/${id}`, {
             method: "DELETE"
           });
           const data = await response.json();
-          fetchTags();
+          fetchTopics();
         } catch (error) {
           console.error(error);
         } finally {
@@ -120,7 +120,7 @@ export default function TagsPage() {
   return (
     <div className="space-y-6">
       <Card
-        title={<Title level={4} className="mb-0">Add New Tag</Title>}
+        title={<Title level={4} className="mb-0">Add New Topic</Title>}
         className="w-full shadow-sm"
       >
         <Form
@@ -131,11 +131,11 @@ export default function TagsPage() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
-              label="Tag Name"
+              label="Topic Name"
               name="name"
-              rules={[{ required: true, message: "Please enter tag name" }]}
+              rules={[{ required: true, message: "Please enter topic name" }]}
             >
-              <Input placeholder="Enter tag name" size="large" />
+              <Input placeholder="Enter topic name" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -144,7 +144,7 @@ export default function TagsPage() {
               //rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea 
-                placeholder="Enter tag description" 
+                placeholder="Enter topic description" 
                 size="large"
                 autoSize={{ minRows: 2, maxRows: 6 }}
               />
@@ -160,26 +160,26 @@ export default function TagsPage() {
               className="bg-blue-600 hover:bg-blue-700"
               loading={loading}
             >
-              Create Tag
+              Create Topic
             </Button>
           </Form.Item>
         </Form>
       </Card>
 
       <Card 
-        title={<Title level={4} className="mb-0">Tags List</Title>}
+        title={<Title level={4} className="mb-0">Topics List</Title>}
         className="shadow-sm"
       >
         <Table 
           columns={columns} 
-          dataSource={tags} 
+          dataSource={topics} 
           loading={tableLoading}
           scroll={{ x: true }}
           pagination={{
             ...pagination,
             position: ["bottomCenter"],
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} tags`,
+            showTotal: (total) => `Total ${total} topics`,
             onChange: (page, pageSize) => {
               setPagination(prev => ({
                 ...prev,

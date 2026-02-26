@@ -74,7 +74,7 @@ export async function PUT(request, { params }) {
 
     // Add optional fields if they exist
     if (body.subject) questionData.subject = body.subject;
-    if (body.tags?.length > 0) questionData.tags = body.tags;
+    if (body.topic) questionData.topic = body.topic;
     if (body.exams?.length > 0) questionData.exams = body.exams;
     if (body.difficultyLevel) questionData.difficultyLevel = body.difficultyLevel;
 
@@ -86,7 +86,7 @@ export async function PUT(request, { params }) {
         runValidators: true 
       }
     ).populate('subject', 'name')
-     .populate('tags', 'name')
+     .populate('topic', 'name')
      .populate('exams', 'name');
 
     if (!question) {

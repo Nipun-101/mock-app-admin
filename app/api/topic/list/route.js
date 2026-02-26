@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Tag from "@/models/Tag";
+import Topic from "@/models/Topic";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export async function GET(request) {
@@ -8,33 +8,33 @@ export async function GET(request) {
     // Get URL parameters
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "100"); // Ensure limit is set to fetch all tags
+    const limit = parseInt(searchParams.get("limit") || "100"); // Ensure limit is set to fetch all topics
     const skip = (page - 1) * limit;
 
-    // Query for active, non-deleted tags
+    // Query for active, non-deleted topics
     const query = { isActive: true, isDeleted: false };
 
     // Get total count for pagination
-    const totalTags = await Tag.countDocuments(query);
+    const totalTopics = await Topic.countDocuments(query);
     
     // Get paginated results
-    const tags = await Tag.find(query)
+    const topics = await Topic.find(query)
       .sort({ createdAt: -1 }) // Sort by newest first
       .skip(skip)
       .limit(limit);
 
     return NextResponse.json({
-      tags,
+      topics,
       pagination: {
-        total: totalTags,
+        total: totalTopics,
         page,
         limit,
-        totalPages: Math.ceil(totalTags / limit)
+        totalPages: Math.ceil(totalTopics / limit)
       }
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch tags", details: error.message },
+      { error: "Failed to fetch topics", details: error.message },
       { status: 500 }
     );
   }

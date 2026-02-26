@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
     await connectToDatabase();
     const { id } = params;
     const subject = await Subject.findOne({ _id: id, isDeleted: false })
-      .populate('tags', 'name');
+      .populate('topics', 'name');
     
     if (!subject) {
       return NextResponse.json(
