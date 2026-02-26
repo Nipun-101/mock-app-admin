@@ -11,19 +11,19 @@ export default function EditSubjectPage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const router = useRouter();
-  const [tagOptions, setTagOptions] = useState([]);
+  const [topicOptions, setTopicOptions] = useState([]);
 
-  const fetchTags = async () => {
+  const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/tag/list?limit=100');
+      const response = await fetch('/api/topic/list?limit=100');
       const data = await response.json();
-      const options = data?.tags?.map((tag: any) => ({
-        value: tag._id,
-        label: tag.name,
+      const options = data?.topics?.map((topic: any) => ({
+        value: topic._id,
+        label: topic.name,
       }));
-      setTagOptions(options);
+      setTopicOptions(options);
     } catch (error) {
-      console.error('Failed to fetch tags:', error);
+      console.error('Failed to fetch topics:', error);
     }
   };
 
@@ -31,7 +31,7 @@ export default function EditSubjectPage({ params }: { params: { id: string } }) 
 
   const fetchData = async () => {
     try {
-      await fetchTags();
+      await fetchTopics();
       const response = await fetch(`/api/subject/${params.id}`);
       const data = await response.json();
       if (data.error) {
@@ -40,7 +40,7 @@ export default function EditSubjectPage({ params }: { params: { id: string } }) 
       form?.setFieldsValue({
         name: data?.name,
         description: data?.description,
-        tags: data?.tags?.map((tag: any) => tag._id),
+        topics: data?.topics?.map((topic: any) => topic._id),
       });
     } catch (error) {
       console.error(error);
@@ -110,14 +110,14 @@ export default function EditSubjectPage({ params }: { params: { id: string } }) 
             </Form.Item>
 
             <Form.Item
-              label="Tags"
-              name="tags"
+              label="Topics"
+              name="topics"
             >
               <Select
                 mode="multiple"
-                placeholder="Select tags"
+                placeholder="Select topics"
                 size="large"
-                options={tagOptions}
+                options={topicOptions}
                 optionFilterProp="label"
               />
             </Form.Item>

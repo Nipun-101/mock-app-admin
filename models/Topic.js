@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const TagSchema = new mongoose.Schema({
+const TopicSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "Tag name is required"],
+    required: [true, "Topic name is required"],
     trim: true,
   },
   description: {
@@ -22,5 +22,5 @@ const TagSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const Tag = mongoose.models.Tag || mongoose.model("Tag", TagSchema);
-export default Tag; 
+const Topic = mongoose.models.Topic || mongoose.model("Topic", TopicSchema);
+export default Topic;

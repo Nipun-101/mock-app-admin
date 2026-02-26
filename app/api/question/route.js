@@ -67,7 +67,7 @@ export async function POST(request) {
 
     // Add optional fields if they exist
     if (body.subject) questionData.subject = body.subject;
-    if (body.tags?.length > 0) questionData.tags = body.tags;
+    if (body.topic) questionData.topic = body.topic;
     if (body.exams?.length > 0) questionData.exams = body.exams;
     if (body.difficultyLevel) questionData.difficultyLevel = body.difficultyLevel;
 
@@ -78,7 +78,7 @@ export async function POST(request) {
     // Populate references for response if they exist
     const populateFields = [];
     if (question.subject) populateFields.push({ path: 'subject', select: 'name' });
-    if (question.tags?.length > 0) populateFields.push({ path: 'tags', select: 'name' });
+    if (question.topic) populateFields.push({ path: 'topic', select: 'name' });
     if (question.exams?.length > 0) populateFields.push({ path: 'exams', select: 'name' });
 
     if (populateFields.length > 0) {

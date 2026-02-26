@@ -10,7 +10,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const subject = searchParams.get("subject") || undefined;
     const exam = searchParams.get("exam") || undefined;
-    const tag = searchParams.get("tag") || undefined;
+    const topic = searchParams.get("topic") || undefined;
     const skip = (page - 1) * limit;
 
     const query = { isDeleted: false, isActive: true };
@@ -23,8 +23,8 @@ export async function GET(request) {
       query.exams = exam;
     }
 
-    if (tag) {
-      query.tags = tag;
+    if (topic) {
+      query.topic = topic;
     }
 
     const totalQuestions = await Question.countDocuments(query);
@@ -33,7 +33,7 @@ export async function GET(request) {
         .skip(skip)
         .limit(limit)
         .populate('subject', 'name')
-        .populate('tags', 'name')
+        .populate('topic', 'name')
         .populate('exams', 'name');
 
 

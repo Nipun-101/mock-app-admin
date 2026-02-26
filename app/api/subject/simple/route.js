@@ -17,9 +17,9 @@ export async function GET(request) {
     // Get total count for pagination
     const totalSubjects = await Subject.countDocuments(query);
     
-    // Get paginated results without populating tags
+    // Get paginated results without populating topics
     const subjects = await Subject.find(query)
-      .select('_id name tags') // Only select id and name
+      .select('_id name topics') // Only select id and name
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

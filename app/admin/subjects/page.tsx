@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 
 const { Title } = Typography;
 
-interface TagOption {
+interface TopicOption {
   value: string;
   label: string;
 }
@@ -25,7 +25,7 @@ export default function SubjectsPage() {
     total: 0
   });
   const router = useRouter();
-  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
+  const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
 
   const columns = [
     {
@@ -40,15 +40,15 @@ export default function SubjectsPage() {
       responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
     },
     {
-      title: "Tags",
-      dataIndex: "tags",
-      key: "tags",
-      render: (tags: string[]) => {
-        const tagNames = tags?.map((tagId: string) => {
-          const tag = tagOptions.find((t: TagOption) => t.value === tagId);
-          return tag?.label || tagId;
+      title: "Topics",
+      dataIndex: "topics",
+      key: "topics",
+      render: (topics: string[]) => {
+        const topicNames = topics?.map((topicId: string) => {
+          const topic = topicOptions.find((t: TopicOption) => t.value === topicId);
+          return topic?.label || topicId;
         });
-        return tagNames?.join(', ') || '-';
+        return topicNames?.join(', ') || '-';
       },
     },
     {
@@ -93,23 +93,23 @@ export default function SubjectsPage() {
     }
   };
 
-  const fetchTags = async () => {
+  const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/tag/list?limit=100');
+      const response = await fetch('/api/topic/list?limit=100');
       const data = await response.json();
-      const options = data?.tags?.map((tag: any) => ({
-        value: tag._id,
-        label: tag.name,
+      const options = data?.topics?.map((topic: any) => ({
+        value: topic._id,
+        label: topic.name,
       }));
-      setTagOptions(options);
+      setTopicOptions(options);
     } catch (error) {
-      console.error('Failed to fetch tags:', error);
+      console.error('Failed to fetch topics:', error);
     }
   };
 
   useEffect(() => {
     fetchSubjects();
-    fetchTags();
+    fetchTopics();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
@@ -187,14 +187,14 @@ export default function SubjectsPage() {
             </Form.Item>
 
             <Form.Item
-              label="Tags"
-              name="tags"
+              label="Topics"
+              name="topics"
             >
               <Select
                 mode="multiple"
-                placeholder="Select tags"
+                placeholder="Select topics"
                 size="large"
-                options={tagOptions}
+                options={topicOptions}
                 optionFilterProp="label"
               />
             </Form.Item>

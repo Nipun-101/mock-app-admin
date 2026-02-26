@@ -17,8 +17,8 @@ export default function QuestionsPage() {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [exams, setExams] = useState([]);
   const [selectedExam, setSelectedExam] = useState(null);
-  const [tags, setTags] = useState([]);
-  const [selectedTag, setSelectedTag] = useState(null);
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   const fetchSubjects = async () => {
     try {
@@ -40,18 +40,18 @@ export default function QuestionsPage() {
     }
   };
 
-  const fetchTagsBySubject = async (subjectId) => {
+  const fetchTopicsBySubject = async (subjectId) => {
     if (!subjectId) {
-      setTags([]);
+      setTopics([]);
       return;
     }
     try {
-      const res = await fetch(`/api/tag/subject/${subjectId}`);
+      const res = await fetch(`/api/topic/subject/${subjectId}`);
       const data = await res.json();
-      setTags(data.tags);
+      setTopics(data.topics);
     } catch (error) {
-      message.error('Failed to fetch tags');
-      setTags([]);
+      message.error('Failed to fetch topics');
+      setTopics([]);
     }
   };
 
@@ -60,8 +60,8 @@ export default function QuestionsPage() {
     try {
       const subjectQuery = selectedSubject ? `&subject=${selectedSubject}` : '';
       const examQuery = selectedExam ? `&exam=${selectedExam}` : '';
-      const tagQuery = selectedTag ? `&tag=${selectedTag}` : '';
-      const res = await fetch(`/api/question/list?page=${page}&limit=${limit}${subjectQuery}${examQuery}${tagQuery}`);
+      const topicQuery = selectedTopic ? `&topic=${selectedTopic}` : '';
+      const res = await fetch(`/api/question/list?page=${page}&limit=${limit}${subjectQuery}${examQuery}${topicQuery}`);
       const data = await res.json();
       setQuestions(data.questions);
       setPagination({
@@ -83,16 +83,16 @@ export default function QuestionsPage() {
 
   useEffect(() => {
     if (selectedSubject) {
-      fetchTagsBySubject(selectedSubject);
+      fetchTopicsBySubject(selectedSubject);
     } else {
-      setTags([]);
-      setSelectedTag(null);
+      setTopics([]);
+      setSelectedTopic(null);
     }
   }, [selectedSubject]);
 
   useEffect(() => {
     fetchQuestions(1);
-  }, [selectedSubject, selectedExam, selectedTag]);
+  }, [selectedSubject, selectedExam, selectedTopic]);
 
   const handleDelete = async (id) => {
     showConfirmModal({
@@ -152,13 +152,13 @@ export default function QuestionsPage() {
       },
     },
     {
-      title: 'Tags',
-      key: 'tags',
+      title: 'Topic',
+      key: 'topic',
       render: (record) => (
         <>
-          {record.tags?.map((tag) => (
-            <Tag key={tag._id}>{tag.name}</Tag>
-          ))}
+          {record.topic ? (
+            <Tag key={record.topic._id}>{record.topic.name}</Tag>
+          ) : '-'}
         </>
       ),
     },
@@ -208,7 +208,7 @@ export default function QuestionsPage() {
             style={{ width: 200 }}
             onChange={(value) => {
               setSelectedSubject(value);
-              setSelectedTag(null);
+              setSelectedTopic(null);
             }}
             options={subjects.map((subject) => ({
               value: subject._id,
@@ -216,15 +216,15 @@ export default function QuestionsPage() {
             }))}
           />
           <Select
-            placeholder="Filter by tag"
+            placeholder="Filter by topic"
             allowClear
             disabled={!selectedSubject}
             style={{ width: 200 }}
-            value={selectedTag}
-            onChange={(value) => setSelectedTag(value)}
-            options={tags.map((tag) => ({
-              value: tag._id,
-              label: tag.name,
+            value={selectedTopic}
+            onChange={(value) => setSelectedTopic(value)}
+            options={topics.map((topic) => ({
+              value: topic._id,
+              label: topic.name,
             }))}
           />
         </div>

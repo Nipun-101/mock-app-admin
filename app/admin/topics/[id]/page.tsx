@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 
 const { Title } = Typography;
 
-export default function EditTagPage({ params }: { params: { id: string } }) {
+export default function EditTopicPage({ params }: { params: { id: string } }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchTag = async () => {
+    const fetchTopic = async () => {
       try {
-        const response = await fetch(`/api/tag/${params.id}`);
+        const response = await fetch(`/api/topic/${params.id}`);
         const data = await response.json();
         if (data.error) {
           throw new Error(data.error);
@@ -28,13 +28,13 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
       }
     };
 
-    fetchTag();
+    fetchTopic();
   }, [params.id, form]);
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/tag/${params.id}`, {
+      const response = await fetch(`/api/topic/${params.id}`, {
         method: "PUT",
         body: JSON.stringify(values),
       });
@@ -42,7 +42,7 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
       if (data.error) {
         throw new Error(data.error);
       }
-      router.push('/admin/tags');
+      router.push('/admin/topics');
     } catch (error) {
       console.error(error);
     } finally {
@@ -57,7 +57,7 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-6">
       <Card
-        title={<Title level={4} className="mb-0">Edit Tag</Title>}
+        title={<Title level={4} className="mb-0">Edit Topic</Title>}
         className="w-full shadow-sm"
       >
         <Form
@@ -68,11 +68,11 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
-              label="Tag Name"
+              label="Topic Name"
               name="name"
-              rules={[{ required: true, message: "Please enter tag name" }]}
+              rules={[{ required: true, message: "Please enter topic name" }]}
             >
-              <Input placeholder="Enter tag name" size="large" />
+              <Input placeholder="Enter topic name" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -81,7 +81,7 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
               //rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea 
-                placeholder="Enter tag description" 
+                placeholder="Enter topic description" 
                 size="large"
                 autoSize={{ minRows: 2, maxRows: 6 }}
               />
@@ -96,12 +96,12 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
               className="bg-blue-600 hover:bg-blue-700"
               loading={loading}
             >
-              Update Tag
+              Update Topic
             </Button>
             <Button 
               className="ml-2" 
               size="large"
-              onClick={() => router.push('/admin/tags')}
+              onClick={() => router.push('/admin/topics')}
             >
               Cancel
             </Button>

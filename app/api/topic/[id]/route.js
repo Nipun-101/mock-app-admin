@@ -1,67 +1,67 @@
 import { NextResponse } from "next/server";
-import Tag from "@/models/Tag";
+import Topic from "@/models/Topic";
 import { connectToDatabase } from "@/lib/mongodb";
 
-// Get single tag
+// Get single topic
 export async function GET(request, { params }) {
   try {
     await connectToDatabase();
     const { id } = params;
-    const tag = await Tag.findOne({ _id: id, isDeleted: false });
+    const topic = await Topic.findOne({ _id: id, isDeleted: false });
     
-    if (!tag) {
+    if (!topic) {
       return NextResponse.json(
-        { error: "Tag not found" },
+        { error: "Topic not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(tag);
+    return NextResponse.json(topic);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch tag", details: error.message },
+      { error: "Failed to fetch topic", details: error.message },
       { status: 500 }
     );
   }
 }
 
-// Update tag
+// Update topic
 export async function PUT(request, { params }) {
   try {
     const { id } = params;
     const body = await request.json();
 
-    const tag = await Tag.findOneAndUpdate(
+    const topic = await Topic.findOneAndUpdate(
       { _id: id, isDeleted: false },
       { $set: body },
       { new: true, runValidators: true }
     );
 
-    if (!tag) {
+    if (!topic) {
       return NextResponse.json(
-        { error: "Tag not found" },
+        { error: "Topic not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
-      message: "Tag updated successfully",
-      tag
+      message: "Topic updated successfully",
+      topic
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to update tag", details: error.message },
+      { error: "Failed to update topic", details: error.message },
       { status: 500 }
     );
   }
 }
 
-// Soft delete tag
+// Soft delete topic
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
 
-    const tag = await Tag.findOneAndUpdate(
+    const topic = await Topic.findOneAndUpdate(
       { _id: id, isDeleted: false },
       { 
         $set: { 
@@ -73,19 +73,19 @@ export async function DELETE(request, { params }) {
       { new: true }
     );
 
-    if (!tag) {
+    if (!topic) {
       return NextResponse.json(
-        { error: "Tag not found" },
+        { error: "Topic not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
-      message: "Tag deleted successfully"
+      message: "Topic deleted successfully"
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to delete tag", details: error.message },
+      { error: "Failed to delete topic", details: error.message },
       { status: 500 }
     );
   }
