@@ -200,6 +200,20 @@ export default function ExamsPage() {
             </Form.Item>
 
             <Form.Item
+              label="Category"
+              name="category"
+              rules={[{ required: true, message: "Please select a category" }]}
+            >
+              <Select
+                placeholder="Select category"
+                size="large"
+                options={categories}
+                optionFilterProp="label"
+                showSearch
+              />
+            </Form.Item>
+
+            <Form.Item
               label="Subjects"
               name="subjects"
               // rules={[{ required: true, message: "Please select subjects" }]}
