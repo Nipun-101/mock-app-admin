@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Topic from "./Topic"; // Import Topic model
 import Subject from "./Subject"; // Import Subject model
 import Exam from "./Exam"; // Import Exam model
+import Tag from "./Tag"; // Import Tag model
 
 const ImageMetadataSchema = new mongoose.Schema({
   key: { type: String, required: true }, // S3 object key
@@ -41,6 +42,7 @@ const QuestionSchema = new mongoose.Schema({
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
   topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic' },
   exams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exam' }],
+  tag: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag' },
   difficultyLevel: { type: String, enum: ['easy', 'medium', 'hard'] },
   isActive: { type: Boolean, default: true },
   isDeleted: { type: Boolean, default: false }
@@ -48,5 +50,10 @@ const QuestionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const Question = mongoose.models.Question || mongoose.model("Question", QuestionSchema);
+// Delete cached model to ensure schema updates take effect on hot-reload
+if (mongoose.models.Question) {
+  delete mongoose.models.Question;
+}
+
+const Question = mongoose.model("Question", QuestionSchema);
 export default Question;

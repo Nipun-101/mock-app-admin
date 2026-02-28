@@ -4,6 +4,7 @@ import { Layout, Menu, Button } from "antd";
 import {
   BookOutlined,
   TagOutlined,
+  TagsOutlined,
   FormOutlined,
   DashboardOutlined,
   MenuFoldOutlined,
@@ -73,6 +74,11 @@ export default function AdminLayout({
       key: "/admin/topics",
       icon: <TagOutlined />,
       label: <Link href="/admin/topics">Topics</Link>,
+    },
+    {
+      key: "/admin/tags",
+      icon: <TagsOutlined />,
+      label: <Link href="/admin/tags">Tags</Link>,
     },
   ];
 

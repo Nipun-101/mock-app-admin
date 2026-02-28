@@ -18,7 +18,9 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [exams, setExams] = useState([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
 
   // Fetch topics by subject
@@ -32,6 +34,23 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
     })) || [];
     
     setTopics(topicsData);
+  };
+
+  // Fetch tags by subject and topic
+  const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
+    try {
+      const response = await fetch(`/api/tag/list?limit=100&subject=${subjectId}&topic=${topicId}`);
+      const data = await response.json();
+      setTags(
+        data.tags?.map((tag: any) => ({
+          value: tag._id,
+          label: tag.name,
+        })) || []
+      );
+    } catch (error) {
+      console.error('Failed to fetch tags:', error);
+      setTags([]);
+    }
   };
 
   useEffect(() => {
@@ -91,7 +110,15 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
       // Set selected subject and fetch related topics
       if (question.subject) {
         setSelectedSubject(question.subject);
-        // await fetchTagsBySubject(question.subject);
+      }
+
+      if (question.topic) {
+        setSelectedTopic(question.topic);
+      }
+
+      // Fetch tags if both subject and topic exist
+      if (question.subject && question.topic) {
+        await fetchTagsBySubjectAndTopic(question.subject, question.topic);
       }
 
 
@@ -124,6 +151,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         subject: question.subject,
         topic: question.topic,
         exams: question.exams,
+        tag: question.tag || null,
         difficultyLevel: question.difficultyLevel
       });
     } catch (error) {
@@ -135,8 +163,22 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   // Handle subject change
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
-    form.setFieldValue('topic', undefined); // Clear selected topic
+    setSelectedTopic(null);
+    form.setFieldValue('topic', undefined);
+    form.setFieldValue('tag', undefined);
+    setTags([]);
     fetchTopicsBySubject(value);
+  };
+
+  // Handle topic change
+  const handleTopicChange = (value: string) => {
+    setSelectedTopic(value);
+    form.setFieldValue('tag', undefined);
+    if (selectedSubject && value) {
+      fetchTagsBySubjectAndTopic(selectedSubject, value);
+    } else {
+      setTags([]);
+    }
   };
 
   const handleSubmit = async (values: any) => {
@@ -185,6 +227,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         subject: values.subject,
         topic: values.topic || null,
         exams: values.exams || [],
+        tag: values.tag || null,
         difficultyLevel: values.difficultyLevel
       };
 
@@ -369,11 +412,26 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               label="Topic"
               name="topic"
               dependencies={['subject']}
+              rules={[{ required: true, message: "Please select a topic" }]}
             >
               <Select
                 placeholder={selectedSubject ? "Select topic" : "Please select a subject first"}
                 options={topics}
                 disabled={!selectedSubject}
+                onChange={handleTopicChange}
+                allowClear
+              />
+            </Form.Item>
+
+            {/* Tag */}
+            <Form.Item
+              label="Tag"
+              name="tag"
+            >
+              <Select
+                placeholder={selectedSubject && selectedTopic ? "Select tag" : "Please select subject and topic first"}
+                options={tags}
+                disabled={!selectedSubject || !selectedTopic}
                 allowClear
               />
             </Form.Item>
