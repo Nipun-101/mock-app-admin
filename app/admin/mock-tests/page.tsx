@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Form, Input, InputNumber, Select, Table, Typography, Switch, Space, message, Tag } from "antd";
+import { Button, Card, Form, Input, InputNumber, Select, Slider, Table, Typography, Switch, Space, message, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
@@ -23,7 +23,22 @@ export default function MockTestsPage() {
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
+  const [difficulty, setDifficulty] = useState({ easy: 0, medium: 0, hard: 0 });
   const router = useRouter();
+
+  const computeDefaults = (total: number) => {
+    const base = Math.floor(total / 3);
+    const remainder = total % 3;
+    return {
+      easy: base,
+      medium: base + (remainder >= 2 ? 1 : 0),
+      hard: base + (remainder >= 1 ? 1 : 0),
+    };
+  };
+
+  const difficultySum = difficulty.easy + difficulty.medium + difficulty.hard;
+  const isDifficultyValid = totalQuestions !== null && difficultySum === totalQuestions;
 
   const columns = [
     {
@@ -163,12 +178,20 @@ export default function MockTestsPage() {
   }, []);
 
   const handleSubmit = async (values: any) => {
+    if (!isDifficultyValid) {
+      message.error('Difficulty distribution must sum to total questions');
+      return;
+    }
     setLoading(true);
     try {
+      const payload = {
+        ...values,
+        difficultyDistribution: difficulty,
+      };
       const response = await fetch('/api/mock-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -176,6 +199,8 @@ export default function MockTestsPage() {
       if (response.ok) {
         message.success('Mock test created successfully');
         form.resetFields();
+        setTotalQuestions(null);
+        setDifficulty({ easy: 0, medium: 0, hard: 0 });
         fetchMockTests();
       } else {
         message.error(data.error || 'Failed to create mock test');
@@ -240,7 +265,13 @@ export default function MockTestsPage() {
                 name="totalQuestions"
                 rules={[{ required: true, message: "Please select number of questions" }]}
               >
-                <Select placeholder="Select number of questions">
+                <Select 
+                  placeholder="Select number of questions"
+                  onChange={(val: number) => {
+                    setTotalQuestions(val);
+                    setDifficulty(computeDefaults(val));
+                  }}
+                >
                   <Select.Option value={10}>10 Questions</Select.Option>
                   <Select.Option value={15}>15 Questions</Select.Option>
                   <Select.Option value={20}>20 Questions</Select.Option>
@@ -287,7 +318,60 @@ export default function MockTestsPage() {
                   allowClear
                 />
               </Form.Item>
+            </div>
 
+            {totalQuestions && (
+              <div className="mb-6">
+                <div className="mb-2 font-medium">Difficulty Distribution</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-green-600 font-medium">Easy</span>
+                      <span className="font-semibold">{difficulty.easy}</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={totalQuestions}
+                      value={difficulty.easy}
+                      onChange={(val: number) => setDifficulty(prev => ({ ...prev, easy: val }))}
+                      styles={{ track: { background: '#52c41a' } }}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-orange-500 font-medium">Medium</span>
+                      <span className="font-semibold">{difficulty.medium}</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={totalQuestions}
+                      value={difficulty.medium}
+                      onChange={(val: number) => setDifficulty(prev => ({ ...prev, medium: val }))}
+                      styles={{ track: { background: '#faad14' } }}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-red-500 font-medium">Hard</span>
+                      <span className="font-semibold">{difficulty.hard}</span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={totalQuestions}
+                      value={difficulty.hard}
+                      onChange={(val: number) => setDifficulty(prev => ({ ...prev, hard: val }))}
+                      styles={{ track: { background: '#ff4d4f' } }}
+                    />
+                  </div>
+                </div>
+                <div className={`text-sm mt-2 ${isDifficultyValid ? 'text-green-600' : 'text-red-500 font-semibold'}`}>
+                  Total: {difficultySum} / {totalQuestions}
+                  {!isDifficultyValid && ` — Must equal ${totalQuestions}`}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Form.Item
                 label="Test Title"
                 name="title"
@@ -370,6 +454,7 @@ export default function MockTestsPage() {
                 htmlType="submit"
                 icon={<PlusOutlined />}
                 loading={loading}
+                disabled={totalQuestions !== null && !isDifficultyValid}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Create Mock Test

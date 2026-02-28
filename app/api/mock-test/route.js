@@ -32,31 +32,64 @@ export async function POST(request) {
       );
     }
 
-    // Build question match filter
-    const questionMatch = {
+    // Validate difficulty distribution
+    const { difficultyDistribution } = body;
+    if (!difficultyDistribution || 
+        difficultyDistribution.easy === undefined || 
+        difficultyDistribution.medium === undefined || 
+        difficultyDistribution.hard === undefined) {
+      return NextResponse.json(
+        { error: "Difficulty distribution (easy, medium, hard) is required" },
+        { status: 400 }
+      );
+    }
+
+    const distSum = difficultyDistribution.easy + difficultyDistribution.medium + difficultyDistribution.hard;
+    if (distSum !== body.totalQuestions) {
+      return NextResponse.json(
+        { error: `Difficulty distribution sum (${distSum}) must equal total questions (${body.totalQuestions})` },
+        { status: 400 }
+      );
+    }
+
+    // Build base question match filter
+    const baseMatch = {
       subject: new mongoose.Types.ObjectId(body.subject),
       isActive: true,
       isDeleted: false,
     };
     if (body.topic) {
-      questionMatch.topic = new mongoose.Types.ObjectId(body.topic);
+      baseMatch.topic = new mongoose.Types.ObjectId(body.topic);
     }
 
-    // Fetch random questions from the selected subject (and optionally topic)
-    const questions = await Question.aggregate([
-      { $match: questionMatch },
-      { $sample: { size: body.totalQuestions } }
-    ]);
+    // Fetch random questions per difficulty level
+    const difficulties = ['easy', 'medium', 'hard'];
+    let allQuestions = [];
 
-    if (questions.length < body.totalQuestions) {
-      return NextResponse.json(
-        { 
-          error: `Not enough questions available. Found ${questions.length}, need ${body.totalQuestions}`,
-          availableQuestions: questions.length
-        },
-        { status: 400 }
-      );
+    for (const level of difficulties) {
+      const count = difficultyDistribution[level];
+      if (count === 0) continue;
+
+      const questions = await Question.aggregate([
+        { $match: { ...baseMatch, difficultyLevel: level } },
+        { $sample: { size: count } }
+      ]);
+
+      if (questions.length < count) {
+        return NextResponse.json(
+          { 
+            error: `Not enough ${level} questions available. Found ${questions.length}, need ${count}`,
+            availableQuestions: questions.length,
+            difficulty: level
+          },
+          { status: 400 }
+        );
+      }
+
+      allQuestions = allQuestions.concat(questions);
     }
+
+    const questions = allQuestions;
 
     // Create test with validated data
     const mockTestData = {
@@ -64,6 +97,11 @@ export async function POST(request) {
       durationInMinutes: body.durationInMinutes,
       subject: body.subject,
       topic: body.topic || null,
+      difficultyDistribution: {
+        easy: difficultyDistribution.easy,
+        medium: difficultyDistribution.medium,
+        hard: difficultyDistribution.hard,
+      },
       title: body.title || null,
       description: body.description || null,
       generationMode: body.generationMode || "STATIC",

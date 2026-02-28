@@ -58,32 +58,52 @@ export async function PUT(request, { params }) {
 
     // If subject or totalQuestions changed, regenerate question set
     let questionIds = body.questionIds;
-    if (body.subject && body.totalQuestions) {
-      const questionMatch = {
+    if (body.subject && body.totalQuestions && body.difficultyDistribution) {
+      const { difficultyDistribution } = body;
+      const distSum = difficultyDistribution.easy + difficultyDistribution.medium + difficultyDistribution.hard;
+      if (distSum !== body.totalQuestions) {
+        return NextResponse.json(
+          { error: `Difficulty distribution sum (${distSum}) must equal total questions (${body.totalQuestions})` },
+          { status: 400 }
+        );
+      }
+
+      const baseMatch = {
         subject: new mongoose.Types.ObjectId(body.subject),
         isActive: true,
         isDeleted: false,
       };
       if (body.topic) {
-        questionMatch.topic = new mongoose.Types.ObjectId(body.topic);
+        baseMatch.topic = new mongoose.Types.ObjectId(body.topic);
       }
 
-      const questions = await Question.aggregate([
-        { $match: questionMatch },
-        { $sample: { size: body.totalQuestions } }
-      ]);
+      const difficulties = ['easy', 'medium', 'hard'];
+      let allQuestions = [];
 
-      if (questions.length < body.totalQuestions) {
-        return NextResponse.json(
-          { 
-            error: `Not enough questions available. Found ${questions.length}, need ${body.totalQuestions}`,
-            availableQuestions: questions.length
-          },
-          { status: 400 }
-        );
+      for (const level of difficulties) {
+        const count = difficultyDistribution[level];
+        if (count === 0) continue;
+
+        const questions = await Question.aggregate([
+          { $match: { ...baseMatch, difficultyLevel: level } },
+          { $sample: { size: count } }
+        ]);
+
+        if (questions.length < count) {
+          return NextResponse.json(
+            { 
+              error: `Not enough ${level} questions available. Found ${questions.length}, need ${count}`,
+              availableQuestions: questions.length,
+              difficulty: level
+            },
+            { status: 400 }
+          );
+        }
+
+        allQuestions = allQuestions.concat(questions);
       }
 
-      questionIds = questions.map(q => q._id);
+      questionIds = allQuestions.map(q => q._id);
     }
 
     // Prepare update data
@@ -92,6 +112,7 @@ export async function PUT(request, { params }) {
       durationInMinutes: body.durationInMinutes,
       subject: body.subject,
       topic: body.topic || null,
+      difficultyDistribution: body.difficultyDistribution || undefined,
       title: body.title,
       description: body.description,
       generationMode: body.generationMode,

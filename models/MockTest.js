@@ -82,9 +82,10 @@ const MockTestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    difficultyLevel: {
-      type: String,
-      enum: ["easy", "medium", "hard"],
+    difficultyDistribution: {
+      easy: { type: Number, default: 0 },
+      medium: { type: Number, default: 0 },
+      hard: { type: Number, default: 0 },
     },
   },
   {

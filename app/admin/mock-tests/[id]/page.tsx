@@ -97,6 +97,15 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
             <Descriptions.Item label="Topic">
               {mockTest.topic ? <Tag color="purple">{mockTest.topic.name}</Tag> : 'Not set'}
             </Descriptions.Item>
+            <Descriptions.Item label="Difficulty Distribution" span={2}>
+              {mockTest.difficultyDistribution ? (
+                <Space>
+                  <Tag color="green">Easy: {mockTest.difficultyDistribution.easy}</Tag>
+                  <Tag color="orange">Medium: {mockTest.difficultyDistribution.medium}</Tag>
+                  <Tag color="red">Hard: {mockTest.difficultyDistribution.hard}</Tag>
+                </Space>
+              ) : 'Not set'}
+            </Descriptions.Item>
             <Descriptions.Item label="Marks Per Question">{mockTest.marksPerQuestion}</Descriptions.Item>
             <Descriptions.Item label="Negative Marking">{mockTest.negativeMarking}</Descriptions.Item>
             <Descriptions.Item label="Passing Score">{mockTest.passingScore || 'Not set'}</Descriptions.Item>
