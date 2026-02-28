@@ -11,63 +11,99 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate required fields
-    if (!body.title) {
+    if (!body.totalQuestions || ![10, 15, 20, 25, 30].includes(body.totalQuestions)) {
       return NextResponse.json(
-        { error: "Test title is required" },
+        { error: "Total questions must be one of: 10, 15, 20, 25, 30" },
         { status: 400 }
       );
     }
 
-    if (!body.totalQuestions || body.totalQuestions <= 0) {
+    if (!body.durationInMinutes || ![10, 15, 20, 25, 30].includes(body.durationInMinutes)) {
       return NextResponse.json(
-        { error: "Total questions must be greater than 0" },
+        { error: "Duration must be one of: 10, 15, 20, 25, 30" },
         { status: 400 }
       );
     }
 
-    if (!body.durationInMinutes || body.durationInMinutes <= 0) {
+    if (!body.subject) {
       return NextResponse.json(
-        { error: "Duration must be greater than 0" },
+        { error: "A subject is required" },
         { status: 400 }
       );
     }
 
-    if (!body.subjects || body.subjects.length === 0) {
+    // Validate difficulty distribution
+    const { difficultyDistribution } = body;
+    if (!difficultyDistribution || 
+        difficultyDistribution.easy === undefined || 
+        difficultyDistribution.medium === undefined || 
+        difficultyDistribution.hard === undefined) {
       return NextResponse.json(
-        { error: "At least one subject is required" },
+        { error: "Difficulty distribution (easy, medium, hard) is required" },
         { status: 400 }
       );
     }
 
-    // Fetch random questions from the selected subjects
-    const questions = await Question.aggregate([
-      { 
-        $match: { 
-          subject: { $in: body.subjects.map(id => new mongoose.Types.ObjectId(id)) },
-          isActive: true,
-          isDeleted: false
-        } 
-      },
-      { $sample: { size: body.totalQuestions } }
-    ]);
-
-    if (questions.length < body.totalQuestions) {
+    const distSum = difficultyDistribution.easy + difficultyDistribution.medium + difficultyDistribution.hard;
+    if (distSum !== body.totalQuestions) {
       return NextResponse.json(
-        { 
-          error: `Not enough questions available. Found ${questions.length}, need ${body.totalQuestions}`,
-          availableQuestions: questions.length
-        },
+        { error: `Difficulty distribution sum (${distSum}) must equal total questions (${body.totalQuestions})` },
         { status: 400 }
       );
     }
+
+    // Build base question match filter
+    const baseMatch = {
+      subject: new mongoose.Types.ObjectId(body.subject),
+      isActive: true,
+      isDeleted: false,
+    };
+    if (body.topic) {
+      baseMatch.topic = new mongoose.Types.ObjectId(body.topic);
+    }
+
+    // Fetch random questions per difficulty level
+    const difficulties = ['easy', 'medium', 'hard'];
+    let allQuestions = [];
+
+    for (const level of difficulties) {
+      const count = difficultyDistribution[level];
+      if (count === 0) continue;
+
+      const questions = await Question.aggregate([
+        { $match: { ...baseMatch, difficultyLevel: level } },
+        { $sample: { size: count } }
+      ]);
+
+      if (questions.length < count) {
+        return NextResponse.json(
+          { 
+            error: `Not enough ${level} questions available. Found ${questions.length}, need ${count}`,
+            availableQuestions: questions.length,
+            difficulty: level
+          },
+          { status: 400 }
+        );
+      }
+
+      allQuestions = allQuestions.concat(questions);
+    }
+
+    const questions = allQuestions;
 
     // Create test with validated data
     const mockTestData = {
-      title: body.title,
-      description: body.description || null,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
-      subjects: body.subjects,
+      subject: body.subject,
+      topic: body.topic || null,
+      difficultyDistribution: {
+        easy: difficultyDistribution.easy,
+        medium: difficultyDistribution.medium,
+        hard: difficultyDistribution.hard,
+      },
+      title: body.title || null,
+      description: body.description || null,
       generationMode: body.generationMode || "STATIC",
       questionIds: questions.map(q => q._id),
       marksPerQuestion: body.marksPerQuestion || 1,
@@ -87,7 +123,8 @@ export async function POST(request) {
 
     // Populate references for response
     await mockTest.populate([
-      { path: 'subjects', select: 'name' },
+      { path: 'subject', select: 'name' },
+      { path: 'topic', select: 'name' },
       { path: 'questionIds', select: 'questionText subject' }
     ]);
     

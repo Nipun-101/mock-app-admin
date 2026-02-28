@@ -11,7 +11,8 @@ export async function GET(request, { params }) {
     
     const { id } = params;
     const mockTest = await MockTest.findOne({ _id: id, isDeleted: false })
-      .populate('subjects', 'name')
+      .populate('subject', 'name')
+      .populate('topic', 'name')
       .populate('questionIds', 'questionText subject')
       .populate('createdBy', 'name email');
 
@@ -55,40 +56,65 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // If subjects or totalQuestions changed, regenerate question set
+    // If subject or totalQuestions changed, regenerate question set
     let questionIds = body.questionIds;
-    if (body.subjects && body.totalQuestions) {
-      const questions = await Question.aggregate([
-        { 
-          $match: { 
-            subject: { $in: body.subjects.map(id => new mongoose.Types.ObjectId(id)) },
-            isActive: true,
-            isDeleted: false
-          } 
-        },
-        { $sample: { size: body.totalQuestions } }
-      ]);
-
-      if (questions.length < body.totalQuestions) {
+    if (body.subject && body.totalQuestions && body.difficultyDistribution) {
+      const { difficultyDistribution } = body;
+      const distSum = difficultyDistribution.easy + difficultyDistribution.medium + difficultyDistribution.hard;
+      if (distSum !== body.totalQuestions) {
         return NextResponse.json(
-          { 
-            error: `Not enough questions available. Found ${questions.length}, need ${body.totalQuestions}`,
-            availableQuestions: questions.length
-          },
+          { error: `Difficulty distribution sum (${distSum}) must equal total questions (${body.totalQuestions})` },
           { status: 400 }
         );
       }
 
-      questionIds = questions.map(q => q._id);
+      const baseMatch = {
+        subject: new mongoose.Types.ObjectId(body.subject),
+        isActive: true,
+        isDeleted: false,
+      };
+      if (body.topic) {
+        baseMatch.topic = new mongoose.Types.ObjectId(body.topic);
+      }
+
+      const difficulties = ['easy', 'medium', 'hard'];
+      let allQuestions = [];
+
+      for (const level of difficulties) {
+        const count = difficultyDistribution[level];
+        if (count === 0) continue;
+
+        const questions = await Question.aggregate([
+          { $match: { ...baseMatch, difficultyLevel: level } },
+          { $sample: { size: count } }
+        ]);
+
+        if (questions.length < count) {
+          return NextResponse.json(
+            { 
+              error: `Not enough ${level} questions available. Found ${questions.length}, need ${count}`,
+              availableQuestions: questions.length,
+              difficulty: level
+            },
+            { status: 400 }
+          );
+        }
+
+        allQuestions = allQuestions.concat(questions);
+      }
+
+      questionIds = allQuestions.map(q => q._id);
     }
 
     // Prepare update data
     const mockTestData = {
-      title: body.title,
-      description: body.description,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
-      subjects: body.subjects,
+      subject: body.subject,
+      topic: body.topic || null,
+      difficultyDistribution: body.difficultyDistribution || undefined,
+      title: body.title,
+      description: body.description,
       generationMode: body.generationMode,
       marksPerQuestion: body.marksPerQuestion,
       negativeMarking: body.negativeMarking,
@@ -109,7 +135,8 @@ export async function PUT(request, { params }) {
         new: true,
         runValidators: true 
       }
-    ).populate('subjects', 'name')
+    ).populate('subject', 'name')
+     .populate('topic', 'name')
      .populate('questionIds', 'questionText subject')
      .populate('createdBy', 'name email');
 

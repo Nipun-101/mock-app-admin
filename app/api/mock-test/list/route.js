@@ -18,7 +18,8 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('subjects', 'name')
+      .populate('subject', 'name')
+      .populate('topic', 'name')
       .populate('createdBy', 'name email');
 
     return NextResponse.json({
