@@ -69,6 +69,7 @@ export async function POST(request) {
     if (body.subject) questionData.subject = body.subject;
     if (body.topic) questionData.topic = body.topic;
     if (body.exams?.length > 0) questionData.exams = body.exams;
+    if (body.tag) questionData.tag = body.tag;
     if (body.difficultyLevel) questionData.difficultyLevel = body.difficultyLevel;
 
     console.log("XXX >>>>>>", questionData);
