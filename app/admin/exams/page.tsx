@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, InputNumber, Select, Table, Typography } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switch, Table, Typography } from "antd";
+import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { showConfirmModal } from '@/components/ConfirmModal';
@@ -44,6 +44,12 @@ export default function ExamsPage() {
       responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
     },
     {
+      title: "Total Marks",
+      dataIndex: "totalMarks",
+      key: "totalMarks",
+      responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+    },
+    {
       title: "Category",
       dataIndex: "category",
       key: "category",
@@ -56,13 +62,21 @@ export default function ExamsPage() {
       title: "Subjects",
       dataIndex: "subjects",
       key: "subjects",
-      render: (subjectIds: any) => {
-        const subjectNames = subjectIds?.map((subjectId: any) => {
-          const subject : any = subjects.find((s: any) => s.value === subjectId);
+      render: (subjectsList: any[]) => {
+        if (!subjectsList || subjectsList.length === 0) return '-';
+        const subjectNames = subjectsList.map((s: any) => {
+          const subject: any = subjects.find((sub: any) => sub.value === (s.subject || s));
           return subject?.label || '';
-        });
+        }).filter(Boolean);
         return subjectNames.join(', ');
       }
+    },
+    {
+      title: "Mode",
+      key: "isSessionWise",
+      dataIndex: "isSessionWise",
+      responsive: ['md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+      render: (isSessionWise: boolean) => isSessionWise ? 'Session-wise' : 'Mixed',
     },
     {
       title: "Actions",
@@ -133,14 +147,19 @@ export default function ExamsPage() {
     try {
       const response = await fetch("/api/exam", {
         method: "POST",
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
       const data = await response.json();
-      console.log(data);
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to create exam');
+      }
+      message.success('Exam created successfully');
       form.resetFields();
       fetchExams();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      message.error(error.message || 'Failed to create exam');
     } finally {
       setLoading(false);
     }
@@ -180,7 +199,10 @@ export default function ExamsPage() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onFinishFailed={() => message.error('Please fill in all required fields')}
+          scrollToFirstError
           className="max-w-4xl"
+          initialValues={{ isSessionWise: false }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
@@ -194,7 +216,6 @@ export default function ExamsPage() {
             <Form.Item
               label="Description"
               name="description"
-              //rules={[{ required: true, message: "Please enter description" }]}
             >
               <Input.TextArea placeholder="Enter description" size="large" />
             </Form.Item>
@@ -214,34 +235,142 @@ export default function ExamsPage() {
             </Form.Item>
 
             <Form.Item
-              label="Subjects"
-              name="subjects"
-              // rules={[{ required: true, message: "Please select subjects" }]}
-            >
-                <Select
-                  placeholder="Select subjects"
-                  size="large"
-                  mode="multiple"
-                  options={subjects}
-                />
-            </Form.Item>
-
-            <Form.Item
               label="Duration (minutes)"
               name="duration"
-              // rules={[{ required: true, message: "Please enter duration" }]}
             >
               <InputNumber min={1} className="w-full" size="large" />
             </Form.Item>
 
             <Form.Item
-              label="Total Questions"
-              name="totalQuestions"
-              // rules={[{ required: true, message: "Please enter total questions" }]}
+              label="Exam Mode"
+              name="isSessionWise"
+              valuePropName="checked"
+              tooltip="Session-wise: each subject must be completed before moving to the next. Mixed: questions from all subjects are shuffled together."
             >
-              <InputNumber min={1} className="w-full" size="large" />
+              <Switch 
+                checkedChildren="Session-wise" 
+                unCheckedChildren="Mixed" 
+              />
             </Form.Item>
           </div>
+
+          <Divider orientation="left">Subjects Configuration</Divider>
+
+          <Form.List name="subjects">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Card 
+                    key={key} 
+                    size="small" 
+                    className="mb-4 bg-gray-50"
+                    extra={
+                      <MinusCircleOutlined
+                        className="text-red-500 text-lg cursor-pointer"
+                        onClick={() => remove(name)}
+                      />
+                    }
+                    title={`Subject ${name + 1}`}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Form.Item
+                        {...restField}
+                        label="Subject"
+                        name={[name, 'subject']}
+                        rules={[{ required: true, message: 'Please select a subject' }]}
+                      >
+                        <Select
+                          placeholder="Select subject"
+                          options={subjects}
+                          optionFilterProp="label"
+                          showSearch
+                        />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="No. of Questions"
+                        name={[name, 'numberOfQuestions']}
+                        rules={[{ required: true, message: 'Required' }]}
+                      >
+                        <InputNumber min={1} className="w-full" placeholder="e.g. 30" />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="Marks per Question"
+                        name={[name, 'marksPerQuestion']}
+                        rules={[{ required: true, message: 'Required' }]}
+                      >
+                        <InputNumber min={0} step={0.5} className="w-full" placeholder="e.g. 4" />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="Negative Marking?"
+                        name={[name, 'hasNegativeMarking']}
+                        valuePropName="checked"
+                      >
+                        <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prev, cur) =>
+                          prev?.subjects?.[name]?.hasNegativeMarking !== cur?.subjects?.[name]?.hasNegativeMarking
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const hasNeg = getFieldValue(['subjects', name, 'hasNegativeMarking']);
+                          return hasNeg ? (
+                            <Form.Item
+                              {...restField}
+                              label="Negative Marks"
+                              name={[name, 'negativeMarksPerQuestion']}
+                            >
+                              <InputNumber min={0} step={0.25} className="w-full" placeholder="e.g. 1" />
+                            </Form.Item>
+                          ) : null;
+                        }}
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prev, cur) =>
+                          prev?.isSessionWise !== cur?.isSessionWise
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const isSessionWise = getFieldValue('isSessionWise');
+                          return isSessionWise ? (
+                            <Form.Item
+                              {...restField}
+                              label="Session Time (mins)"
+                              name={[name, 'sessionTime']}
+                            >
+                              <InputNumber min={1} className="w-full" placeholder="e.g. 60" />
+                            </Form.Item>
+                          ) : null;
+                        }}
+                      </Form.Item>
+                    </div>
+                  </Card>
+                ))}
+
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ hasNegativeMarking: false })}
+                    block
+                    icon={<PlusOutlined />}
+                    size="large"
+                  >
+                    Add Subject
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
 
           <Form.Item className="mb-0">
             <Button 

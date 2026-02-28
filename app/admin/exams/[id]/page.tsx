@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, InputNumber, Select, Typography } from "antd";
+import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switch, Typography } from "antd";
+import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -66,15 +67,18 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
     try {
       const response = await fetch(`/api/exam/${params.id}`, {
         method: "PUT",
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
       const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to update exam');
       }
+      message.success('Exam updated successfully');
       router.push('/admin/exams');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      message.error(error.message || 'Failed to update exam');
     } finally {
       setLoading(false);
     }
@@ -94,6 +98,8 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onFinishFailed={() => message.error('Please fill in all required fields')}
+          scrollToFirstError
           className="max-w-4xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -127,18 +133,6 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
             </Form.Item>
 
             <Form.Item
-              label="Subjects"
-              name="subjects"
-            >
-              <Select
-                placeholder="Select subjects"
-                size="large"
-                mode="multiple"
-                options={subjects}
-              />
-            </Form.Item>
-
-            <Form.Item
               label="Duration (minutes)"
               name="duration"
             >
@@ -146,19 +140,135 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
             </Form.Item>
 
             <Form.Item
-              label="Total Questions"
-              name="totalQuestions"
+              label="Exam Mode"
+              name="isSessionWise"
+              valuePropName="checked"
+              tooltip="Session-wise: each subject must be completed before moving to the next. Mixed: questions from all subjects are shuffled together."
             >
-              <InputNumber min={1} className="w-full" size="large" />
-            </Form.Item>
-
-            <Form.Item
-              label="Passing Score (%)"
-              name="passingScore"
-            >
-              <InputNumber min={1} max={100} className="w-full" size="large" />
+              <Switch 
+                checkedChildren="Session-wise" 
+                unCheckedChildren="Mixed" 
+              />
             </Form.Item>
           </div>
+
+          <Divider orientation="left">Subjects Configuration</Divider>
+
+          <Form.List name="subjects">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Card 
+                    key={key} 
+                    size="small" 
+                    className="mb-4 bg-gray-50"
+                    extra={
+                      <MinusCircleOutlined
+                        className="text-red-500 text-lg cursor-pointer"
+                        onClick={() => remove(name)}
+                      />
+                    }
+                    title={`Subject ${name + 1}`}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Form.Item
+                        {...restField}
+                        label="Subject"
+                        name={[name, 'subject']}
+                        rules={[{ required: true, message: 'Please select a subject' }]}
+                      >
+                        <Select
+                          placeholder="Select subject"
+                          options={subjects}
+                          optionFilterProp="label"
+                          showSearch
+                        />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="No. of Questions"
+                        name={[name, 'numberOfQuestions']}
+                        rules={[{ required: true, message: 'Required' }]}
+                      >
+                        <InputNumber min={1} className="w-full" placeholder="e.g. 30" />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="Marks per Question"
+                        name={[name, 'marksPerQuestion']}
+                        rules={[{ required: true, message: 'Required' }]}
+                      >
+                        <InputNumber min={0} step={0.5} className="w-full" placeholder="e.g. 4" />
+                      </Form.Item>
+
+                      <Form.Item
+                        {...restField}
+                        label="Negative Marking?"
+                        name={[name, 'hasNegativeMarking']}
+                        valuePropName="checked"
+                      >
+                        <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prev, cur) =>
+                          prev?.subjects?.[name]?.hasNegativeMarking !== cur?.subjects?.[name]?.hasNegativeMarking
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const hasNeg = getFieldValue(['subjects', name, 'hasNegativeMarking']);
+                          return hasNeg ? (
+                            <Form.Item
+                              {...restField}
+                              label="Negative Marks"
+                              name={[name, 'negativeMarksPerQuestion']}
+                            >
+                              <InputNumber min={0} step={0.25} className="w-full" placeholder="e.g. 1" />
+                            </Form.Item>
+                          ) : null;
+                        }}
+                      </Form.Item>
+
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prev, cur) =>
+                          prev?.isSessionWise !== cur?.isSessionWise
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const isSessionWise = getFieldValue('isSessionWise');
+                          return isSessionWise ? (
+                            <Form.Item
+                              {...restField}
+                              label="Session Time (mins)"
+                              name={[name, 'sessionTime']}
+                            >
+                              <InputNumber min={1} className="w-full" placeholder="e.g. 60" />
+                            </Form.Item>
+                          ) : null;
+                        }}
+                      </Form.Item>
+                    </div>
+                  </Card>
+                ))}
+
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ hasNegativeMarking: false })}
+                    block
+                    icon={<PlusOutlined />}
+                    size="large"
+                  >
+                    Add Subject
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
 
           <Form.Item className="mb-0">
             <Button 
