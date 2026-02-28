@@ -11,6 +11,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [subjects, setSubjects] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,8 +43,22 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
     })));
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/category/list?limit=100');
+      const data = await response.json();
+      setCategories(data.categories?.map((cat: any) => ({
+        value: cat._id,
+        label: `${cat.name} (${cat.shortName})`,
+      })));
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSubjects();
+    fetchCategories();
   }, []);
 
   const handleSubmit = async (values: any) => {
@@ -95,6 +110,20 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
               name="description"
             >
               <Input.TextArea placeholder="Enter description" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Category"
+              name="category"
+              rules={[{ required: true, message: "Please select a category" }]}
+            >
+              <Select
+                placeholder="Select category"
+                size="large"
+                options={categories}
+                optionFilterProp="label"
+                showSearch
+              />
             </Form.Item>
 
             <Form.Item

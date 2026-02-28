@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Category from "./Category";
 
 const ExamSchema = new mongoose.Schema({
   name: {
@@ -7,6 +8,11 @@ const ExamSchema = new mongoose.Schema({
   },
   description: {
     type: String,
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: [true, "Category is required"],
   },
   duration: {
     type: Number,

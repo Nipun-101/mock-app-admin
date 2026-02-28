@@ -10,6 +10,7 @@ import {
   MenuUnfoldOutlined,
   QuestionCircleOutlined,
   ExperimentOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -52,6 +53,11 @@ export default function AdminLayout({
       key: "/admin/mock-tests",
       icon: <ExperimentOutlined />,
       label: <Link href="/admin/mock-tests">Mock Tests</Link>,
+    },
+    {
+      key: "/admin/categories",
+      icon: <AppstoreOutlined />,
+      label: <Link href="/admin/categories">Categories</Link>,
     },
     {
       key: "/admin/exams",

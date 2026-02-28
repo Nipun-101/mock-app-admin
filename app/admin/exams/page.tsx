@@ -20,6 +20,7 @@ export default function ExamsPage() {
     total: 0
   });
   const [subjects, setSubjects] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const router = useRouter();
 
   const columns = [
@@ -41,6 +42,15 @@ export default function ExamsPage() {
       dataIndex: "totalQuestions",
       key: "totalQuestions",
       responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+      render: (categoryId: string) => {
+        const cat: any = categories.find((c: any) => c.value === categoryId);
+        return cat?.label || '-';
+      },
     },
     {
       title: "Subjects",
@@ -99,9 +109,23 @@ export default function ExamsPage() {
     })));
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/category/list?limit=100');
+      const data = await response.json();
+      setCategories(data.categories?.map((cat: any) => ({
+        value: cat._id,
+        label: `${cat.name} (${cat.shortName})`,
+      })));
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   useEffect(() => {
     fetchExams();
     fetchSubjects();
+    fetchCategories();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
