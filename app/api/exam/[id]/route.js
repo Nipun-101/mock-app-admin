@@ -33,6 +33,16 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const body = await request.json();
 
+    // Auto-compute totalQuestions and totalMarks from subjects
+    if (body.subjects && body.subjects.length > 0) {
+      body.totalQuestions = body.subjects.reduce(
+        (sum, s) => sum + (s.numberOfQuestions || 0), 0
+      );
+      body.totalMarks = body.subjects.reduce(
+        (sum, s) => sum + (s.numberOfQuestions || 0) * (s.marksPerQuestion || 0), 0
+      );
+    }
+
     const exam = await Exam.findOneAndUpdate(
       { _id: id, isDeleted: false },
       { $set: body },
