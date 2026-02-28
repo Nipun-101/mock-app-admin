@@ -11,7 +11,8 @@ export async function GET(request, { params }) {
     
     const { id } = params;
     const mockTest = await MockTest.findOne({ _id: id, isDeleted: false })
-      .populate('subjects', 'name')
+      .populate('subject', 'name')
+      .populate('topic', 'name')
       .populate('questionIds', 'questionText subject')
       .populate('createdBy', 'name email');
 
@@ -55,17 +56,20 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // If subjects or totalQuestions changed, regenerate question set
+    // If subject or totalQuestions changed, regenerate question set
     let questionIds = body.questionIds;
-    if (body.subjects && body.totalQuestions) {
+    if (body.subject && body.totalQuestions) {
+      const questionMatch = {
+        subject: new mongoose.Types.ObjectId(body.subject),
+        isActive: true,
+        isDeleted: false,
+      };
+      if (body.topic) {
+        questionMatch.topic = new mongoose.Types.ObjectId(body.topic);
+      }
+
       const questions = await Question.aggregate([
-        { 
-          $match: { 
-            subject: { $in: body.subjects.map(id => new mongoose.Types.ObjectId(id)) },
-            isActive: true,
-            isDeleted: false
-          } 
-        },
+        { $match: questionMatch },
         { $sample: { size: body.totalQuestions } }
       ]);
 
@@ -84,11 +88,12 @@ export async function PUT(request, { params }) {
 
     // Prepare update data
     const mockTestData = {
-      title: body.title,
-      description: body.description,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
-      subjects: body.subjects,
+      subject: body.subject,
+      topic: body.topic || null,
+      title: body.title,
+      description: body.description,
       generationMode: body.generationMode,
       marksPerQuestion: body.marksPerQuestion,
       negativeMarking: body.negativeMarking,
@@ -109,7 +114,8 @@ export async function PUT(request, { params }) {
         new: true,
         runValidators: true 
       }
-    ).populate('subjects', 'name')
+    ).populate('subject', 'name')
+     .populate('topic', 'name')
      .populate('questionIds', 'questionText subject')
      .populate('createdBy', 'name email');
 

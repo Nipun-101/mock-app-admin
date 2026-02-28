@@ -78,19 +78,25 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
           >
             Back to Mock Tests
           </Button>
-          <h1 className="text-2xl font-bold">{mockTest.title}</h1>
+          <h1 className="text-2xl font-bold">{mockTest.title || 'Mock Test Details'}</h1>
         </div>
 
         <Card title="Mock Test Details">
           <Descriptions bordered column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}>
-            <Descriptions.Item label="Title">{mockTest.title}</Descriptions.Item>
+            <Descriptions.Item label="Title">{mockTest.title || 'N/A'}</Descriptions.Item>
             <Descriptions.Item label="Status">
               <Tag color={mockTest.isActive ? 'green' : 'red'}>
                 {mockTest.isActive ? 'Active' : 'Inactive'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Duration">{mockTest.durationInMinutes} minutes</Descriptions.Item>
             <Descriptions.Item label="Total Questions">{mockTest.totalQuestions}</Descriptions.Item>
+            <Descriptions.Item label="Duration">{mockTest.durationInMinutes} minutes</Descriptions.Item>
+            <Descriptions.Item label="Subject">
+              <Tag color="blue">{mockTest.subject?.name || 'N/A'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Topic">
+              {mockTest.topic ? <Tag color="purple">{mockTest.topic.name}</Tag> : 'Not set'}
+            </Descriptions.Item>
             <Descriptions.Item label="Marks Per Question">{mockTest.marksPerQuestion}</Descriptions.Item>
             <Descriptions.Item label="Negative Marking">{mockTest.negativeMarking}</Descriptions.Item>
             <Descriptions.Item label="Passing Score">{mockTest.passingScore || 'Not set'}</Descriptions.Item>
@@ -111,11 +117,6 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
               <Tag color={mockTest.showResultsImmediately ? 'green' : 'red'}>
                 {mockTest.showResultsImmediately ? 'Yes' : 'No'}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Subjects">
-              {mockTest.subjects?.map((subject: any) => (
-                <Tag key={subject._id} color="blue">{subject.name}</Tag>
-              ))}
             </Descriptions.Item>
             <Descriptions.Item label="Description" span={2}>
               {mockTest.description || 'No description'}

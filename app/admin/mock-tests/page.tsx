@@ -21,6 +21,8 @@ export default function MockTestsPage() {
     total: 0
   });
   const [subjects, setSubjects] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
   const router = useRouter();
 
   const columns = [
@@ -28,6 +30,7 @@ export default function MockTestsPage() {
       title: "Test Title",
       dataIndex: "title",
       key: "title",
+      render: (title: string) => title || '-',
     },
     {
       title: "Duration",
@@ -42,15 +45,19 @@ export default function MockTestsPage() {
       key: "totalQuestions",
     },
     {
-      title: "Subjects",
-      dataIndex: "subjects",
-      key: "subjects",
-      render: (subjectsList: any[]) => (
-        <>
-          {subjectsList?.map((subject: any) => (
-            <Tag key={subject._id} color="blue">{subject.name}</Tag>
-          ))}
-        </>
+      title: "Subject",
+      dataIndex: "subject",
+      key: "subject",
+      render: (subject: any) => (
+        <Tag color="blue">{subject?.name || 'N/A'}</Tag>
+      ),
+    },
+    {
+      title: "Topic",
+      dataIndex: "topic",
+      key: "topic",
+      render: (topic: any) => (
+        topic ? <Tag color="purple">{topic.name}</Tag> : '-'
       ),
     },
     {
@@ -118,6 +125,31 @@ export default function MockTestsPage() {
     } catch (error) {
       console.error(error);
       message.error('Failed to fetch subjects');
+    }
+  };
+
+  const fetchTopicsBySubject = async (subjectId: string) => {
+    setTopicsLoading(true);
+    try {
+      const response = await fetch(`/api/topic/subject/${subjectId}`);
+      const data = await response.json();
+      setTopics(data.topics?.map((topic: any) => ({
+        value: topic._id,
+        label: topic.name
+      })) || []);
+    } catch (error) {
+      console.error(error);
+      message.error('Failed to fetch topics');
+    } finally {
+      setTopicsLoading(false);
+    }
+  };
+
+  const handleSubjectChange = (subjectId: string) => {
+    form.setFieldValue('topic', undefined);
+    setTopics([]);
+    if (subjectId) {
+      fetchTopicsBySubject(subjectId);
     }
   };
 
@@ -204,46 +236,63 @@ export default function MockTestsPage() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Form.Item
-                label="Test Title"
-                name="title"
-                rules={[{ required: true, message: "Please enter test title" }]}
-              >
-                <Input placeholder="Enter test title" />
-              </Form.Item>
-
-              <Form.Item
-                label="Duration (Minutes)"
-                name="durationInMinutes"
-                rules={[{ required: true, message: "Please enter duration" }]}
-              >
-                <InputNumber 
-                  min={1} 
-                  placeholder="e.g., 60" 
-                  className="w-full"
-                />
-              </Form.Item>
-
-              <Form.Item
-                label="Subjects"
-                name="subjects"
-                rules={[{ required: true, message: "Please select at least one subject" }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Select subjects"
-                  options={subjects}
-                />
-              </Form.Item>
-
-              <Form.Item
                 label="Total Questions"
                 name="totalQuestions"
                 rules={[{ required: true, message: "Please select number of questions" }]}
               >
                 <Select placeholder="Select number of questions">
+                  <Select.Option value={10}>10 Questions</Select.Option>
+                  <Select.Option value={15}>15 Questions</Select.Option>
                   <Select.Option value={20}>20 Questions</Select.Option>
+                  <Select.Option value={25}>25 Questions</Select.Option>
                   <Select.Option value={30}>30 Questions</Select.Option>
                 </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Duration (Minutes)"
+                name="durationInMinutes"
+                rules={[{ required: true, message: "Please select duration" }]}
+              >
+                <Select placeholder="Select duration">
+                  <Select.Option value={10}>10 Minutes</Select.Option>
+                  <Select.Option value={15}>15 Minutes</Select.Option>
+                  <Select.Option value={20}>20 Minutes</Select.Option>
+                  <Select.Option value={25}>25 Minutes</Select.Option>
+                  <Select.Option value={30}>30 Minutes</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Subject"
+                name="subject"
+                rules={[{ required: true, message: "Please select a subject" }]}
+              >
+                <Select
+                  placeholder="Select subject"
+                  options={subjects}
+                  onChange={handleSubjectChange}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Topic"
+                name="topic"
+              >
+                <Select
+                  placeholder={topics.length > 0 ? "Select topic" : "Select a subject first"}
+                  options={topics}
+                  disabled={topics.length === 0}
+                  loading={topicsLoading}
+                  allowClear
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Test Title"
+                name="title"
+              >
+                <Input placeholder="Enter test title (optional)" />
               </Form.Item>
 
               <Form.Item

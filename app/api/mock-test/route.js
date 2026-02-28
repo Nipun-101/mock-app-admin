@@ -11,43 +11,40 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate required fields
-    if (!body.title) {
+    if (!body.totalQuestions || ![10, 15, 20, 25, 30].includes(body.totalQuestions)) {
       return NextResponse.json(
-        { error: "Test title is required" },
+        { error: "Total questions must be one of: 10, 15, 20, 25, 30" },
         { status: 400 }
       );
     }
 
-    if (!body.totalQuestions || body.totalQuestions <= 0) {
+    if (!body.durationInMinutes || ![10, 15, 20, 25, 30].includes(body.durationInMinutes)) {
       return NextResponse.json(
-        { error: "Total questions must be greater than 0" },
+        { error: "Duration must be one of: 10, 15, 20, 25, 30" },
         { status: 400 }
       );
     }
 
-    if (!body.durationInMinutes || body.durationInMinutes <= 0) {
+    if (!body.subject) {
       return NextResponse.json(
-        { error: "Duration must be greater than 0" },
+        { error: "A subject is required" },
         { status: 400 }
       );
     }
 
-    if (!body.subjects || body.subjects.length === 0) {
-      return NextResponse.json(
-        { error: "At least one subject is required" },
-        { status: 400 }
-      );
+    // Build question match filter
+    const questionMatch = {
+      subject: new mongoose.Types.ObjectId(body.subject),
+      isActive: true,
+      isDeleted: false,
+    };
+    if (body.topic) {
+      questionMatch.topic = new mongoose.Types.ObjectId(body.topic);
     }
 
-    // Fetch random questions from the selected subjects
+    // Fetch random questions from the selected subject (and optionally topic)
     const questions = await Question.aggregate([
-      { 
-        $match: { 
-          subject: { $in: body.subjects.map(id => new mongoose.Types.ObjectId(id)) },
-          isActive: true,
-          isDeleted: false
-        } 
-      },
+      { $match: questionMatch },
       { $sample: { size: body.totalQuestions } }
     ]);
 
@@ -63,11 +60,12 @@ export async function POST(request) {
 
     // Create test with validated data
     const mockTestData = {
-      title: body.title,
-      description: body.description || null,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
-      subjects: body.subjects,
+      subject: body.subject,
+      topic: body.topic || null,
+      title: body.title || null,
+      description: body.description || null,
       generationMode: body.generationMode || "STATIC",
       questionIds: questions.map(q => q._id),
       marksPerQuestion: body.marksPerQuestion || 1,
@@ -87,7 +85,8 @@ export async function POST(request) {
 
     // Populate references for response
     await mockTest.populate([
-      { path: 'subjects', select: 'name' },
+      { path: 'subject', select: 'name' },
+      { path: 'topic', select: 'name' },
       { path: 'questionIds', select: 'questionText subject' }
     ]);
     

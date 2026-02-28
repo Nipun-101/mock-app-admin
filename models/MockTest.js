@@ -2,32 +2,36 @@ import mongoose from "mongoose";
 
 const MockTestSchema = new mongoose.Schema(
   {
+    // Core Configuration
+    totalQuestions: {
+      type: Number,
+      required: true,
+      enum: [10, 15, 20, 25, 30],
+    },
+    durationInMinutes: {
+      type: Number,
+      required: true,
+      enum: [10, 15, 20, 25, 30],
+    },
+    // Single subject mock test
+    subject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+    },
+    // Topic within the subject (optional)
+    topic: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Topic",
+    },
     title: {
       type: String,
-      required: true,
       trim: true,
     },
     description: {
       type: String,
       trim: true,
     },
-    // Core Configuration
-    totalQuestions: {
-      type: Number,
-      required: true,
-    },
-    durationInMinutes: {
-      type: Number,
-      required: true,
-    },
-    // For now: Single subject/multiple subject mock test
-    subjects: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subject",
-        required: true,
-      },
-    ],
     // STATIC mode for now
     generationMode: {
       type: String,
