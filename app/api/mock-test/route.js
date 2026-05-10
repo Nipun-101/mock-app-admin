@@ -32,6 +32,13 @@ export async function POST(request) {
       );
     }
 
+    if (!body.exam) {
+      return NextResponse.json(
+        { error: "An exam is required" },
+        { status: 400 }
+      );
+    }
+
     // Validate difficulty distribution
     const { difficultyDistribution } = body;
     if (!difficultyDistribution || 
@@ -95,6 +102,7 @@ export async function POST(request) {
     const mockTestData = {
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
+      exam: body.exam,
       subject: body.subject,
       topic: body.topic || null,
       difficultyDistribution: {
@@ -123,6 +131,7 @@ export async function POST(request) {
 
     // Populate references for response
     await mockTest.populate([
+      { path: 'exam', select: 'name' },
       { path: 'subject', select: 'name' },
       { path: 'topic', select: 'name' },
       { path: 'questionIds', select: 'questionText subject' }

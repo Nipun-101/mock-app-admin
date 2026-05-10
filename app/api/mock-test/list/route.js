@@ -18,6 +18,7 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate('exam', 'name')
       .populate('subject', 'name')
       .populate('topic', 'name')
       .populate('createdBy', 'name email');
