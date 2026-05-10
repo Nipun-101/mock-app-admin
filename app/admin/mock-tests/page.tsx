@@ -23,6 +23,7 @@ export default function MockTestsPage() {
   const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [exams, setExams] = useState([]);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState({ easy: 0, medium: 0, hard: 0 });
   const router = useRouter();
@@ -58,6 +59,14 @@ export default function MockTestsPage() {
       title: "Questions",
       dataIndex: "totalQuestions",
       key: "totalQuestions",
+    },
+    {
+      title: "Exam",
+      dataIndex: "exam",
+      key: "exam",
+      render: (exam: any) => (
+        <Tag color="cyan">{exam?.name || 'N/A'}</Tag>
+      ),
     },
     {
       title: "Subject",
@@ -143,6 +152,20 @@ export default function MockTestsPage() {
     }
   };
 
+  const fetchExams = async () => {
+    try {
+      const response = await fetch('/api/exam/list?limit=100');
+      const data = await response.json();
+      setExams(data.exams?.map((exam: any) => ({
+        value: exam._id,
+        label: exam.name
+      })) || []);
+    } catch (error) {
+      console.error(error);
+      message.error('Failed to fetch exams');
+    }
+  };
+
   const fetchTopicsBySubject = async (subjectId: string) => {
     setTopicsLoading(true);
     try {
@@ -175,6 +198,7 @@ export default function MockTestsPage() {
 
   useEffect(() => {
     fetchSubjects();
+    fetchExams();
   }, []);
 
   const handleSubmit = async (values: any) => {
@@ -292,6 +316,21 @@ export default function MockTestsPage() {
                   <Select.Option value={25}>25 Minutes</Select.Option>
                   <Select.Option value={30}>30 Minutes</Select.Option>
                 </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Exam"
+                name="exam"
+                rules={[{ required: true, message: "Please select an exam" }]}
+              >
+                <Select
+                  placeholder="Select exam"
+                  options={exams}
+                  showSearch
+                  filterOption={(input, option: any) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                />
               </Form.Item>
 
               <Form.Item

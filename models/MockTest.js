@@ -13,6 +13,12 @@ const MockTestSchema = new mongoose.Schema(
       required: true,
       enum: [10, 15, 20, 25, 30],
     },
+    // Exam reference
+    exam: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Exam",
+      required: true,
+    },
     // Single subject mock test
     subject: {
       type: mongoose.Schema.Types.ObjectId,
@@ -93,5 +99,10 @@ const MockTestSchema = new mongoose.Schema(
   }
 );
 
-const MockTest = mongoose.models.MockTest || mongoose.model("MockTest", MockTestSchema);
+// Delete cached model to ensure schema updates take effect on hot-reload
+if (mongoose.models.MockTest) {
+  delete mongoose.models.MockTest;
+}
+
+const MockTest = mongoose.model("MockTest", MockTestSchema);
 export default MockTest;

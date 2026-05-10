@@ -11,6 +11,7 @@ export async function GET(request, { params }) {
     
     const { id } = params;
     const mockTest = await MockTest.findOne({ _id: id, isDeleted: false })
+      .populate('exam', 'name')
       .populate('subject', 'name')
       .populate('topic', 'name')
       .populate('questionIds', 'questionText subject')
@@ -110,6 +111,7 @@ export async function PUT(request, { params }) {
     const mockTestData = {
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
+      exam: body.exam,
       subject: body.subject,
       topic: body.topic || null,
       difficultyDistribution: body.difficultyDistribution || undefined,
@@ -135,7 +137,8 @@ export async function PUT(request, { params }) {
         new: true,
         runValidators: true 
       }
-    ).populate('subject', 'name')
+    ).populate('exam', 'name')
+     .populate('subject', 'name')
      .populate('topic', 'name')
      .populate('questionIds', 'questionText subject')
      .populate('createdBy', 'name email');

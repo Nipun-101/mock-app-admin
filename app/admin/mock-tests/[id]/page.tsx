@@ -91,6 +91,9 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
             </Descriptions.Item>
             <Descriptions.Item label="Total Questions">{mockTest.totalQuestions}</Descriptions.Item>
             <Descriptions.Item label="Duration">{mockTest.durationInMinutes} minutes</Descriptions.Item>
+            <Descriptions.Item label="Exam">
+              <Tag color="cyan">{mockTest.exam?.name || 'N/A'}</Tag>
+            </Descriptions.Item>
             <Descriptions.Item label="Subject">
               <Tag color="blue">{mockTest.subject?.name || 'N/A'}</Tag>
             </Descriptions.Item>
