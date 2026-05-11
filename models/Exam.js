@@ -46,6 +46,11 @@ const ExamSchema = new mongoose.Schema({
     ref: "Category",
     required: [true, "Category is required"],
   },
+  examGroup: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ExamGroup",
+    required: [true, "Exam group is required"],
+  },
   duration: {
     type: Number,
   },

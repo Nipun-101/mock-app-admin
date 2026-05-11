@@ -8,7 +8,8 @@ export async function GET(request, { params }) {
     await connectToDatabase();
     const { id } = params;
 
-    const exam = await Exam.findOne({ _id: id, isDeleted: false });
+    const exam = await Exam.findOne({ _id: id, isDeleted: false })
+      .populate('examGroup', 'name shortName');
     
     if (!exam) {
       return NextResponse.json(

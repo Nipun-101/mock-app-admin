@@ -20,6 +20,7 @@ export async function GET(request) {
     
     // Get paginated results
     const exams = await Exam.find(query)
+      .populate('examGroup', 'name shortName')
       .sort({ createdAt: -1 }) // Sort by newest first
       .skip(skip)
       .limit(limit);
