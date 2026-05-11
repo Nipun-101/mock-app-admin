@@ -183,6 +183,18 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
                 unCheckedChildren="Mixed" 
               />
             </Form.Item>
+
+            <Form.Item
+              label="Multi-Lingual Support"
+              name="hasMultiLingualSupport"
+              valuePropName="checked"
+              tooltip="Enable if this exam can be taken in different languages"
+            >
+              <Switch 
+                checkedChildren="Yes" 
+                unCheckedChildren="No" 
+              />
+            </Form.Item>
           </div>
 
           <Divider orientation="left">Subjects Configuration</Divider>

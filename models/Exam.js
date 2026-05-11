@@ -68,6 +68,11 @@ const ExamSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  hasMultiLingualSupport: {
+    type: Boolean,
+    required: [true, "Multi-lingual support flag is required"],
+    default: false,
+  },
   isActive: {
     type: Boolean,
     default: true
