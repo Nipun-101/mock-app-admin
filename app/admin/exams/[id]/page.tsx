@@ -13,6 +13,7 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [subjects, setSubjects] = useState([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [examGroups, setExamGroups] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,7 +25,11 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
         if (data.error) {
           throw new Error(data.error);
         }
-        form.setFieldsValue(data);
+        // Set form values with examGroup properly extracted
+        form.setFieldsValue({
+          ...data,
+          examGroup: data.examGroup?._id || data.examGroup,
+        });
       } catch (error) {
         console.error(error);
       } finally {
@@ -57,9 +62,23 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const fetchExamGroups = async () => {
+    try {
+      const response = await fetch('/api/exam-group/list?limit=100');
+      const data = await response.json();
+      setExamGroups(data.examGroups?.map((group: any) => ({
+        value: group._id,
+        label: group.name,
+      })));
+    } catch (error) {
+      console.error('Failed to fetch exam groups:', error);
+    }
+  };
+
   useEffect(() => {
     fetchSubjects();
     fetchCategories();
+    fetchExamGroups();
   }, []);
 
   const handleSubmit = async (values: any) => {
@@ -133,6 +152,20 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
             </Form.Item>
 
             <Form.Item
+              label="Exam Group"
+              name="examGroup"
+              rules={[{ required: true, message: "Please select an exam group" }]}
+            >
+              <Select
+                placeholder="Select exam group"
+                size="large"
+                options={examGroups}
+                optionFilterProp="label"
+                showSearch
+              />
+            </Form.Item>
+
+            <Form.Item
               label="Duration (minutes)"
               name="duration"
             >
@@ -148,6 +181,18 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
               <Switch 
                 checkedChildren="Session-wise" 
                 unCheckedChildren="Mixed" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Multi-Lingual Support"
+              name="hasMultiLingualSupport"
+              valuePropName="checked"
+              tooltip="Enable if this exam can be taken in different languages"
+            >
+              <Switch 
+                checkedChildren="Yes" 
+                unCheckedChildren="No" 
               />
             </Form.Item>
           </div>

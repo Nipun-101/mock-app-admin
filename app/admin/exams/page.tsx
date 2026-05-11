@@ -21,6 +21,8 @@ export default function ExamsPage() {
   });
   const [subjects, setSubjects] = useState([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [examGroups, setExamGroups] = useState<any[]>([]);
+  const [isExamSameAsGroup, setIsExamSameAsGroup] = useState(false);
   const router = useRouter();
 
   const columns = [
@@ -56,6 +58,19 @@ export default function ExamsPage() {
       render: (categoryId: string) => {
         const cat: any = categories.find((c: any) => c.value === categoryId);
         return cat?.label || '-';
+      },
+    },
+    {
+      title: "Exam Group",
+      dataIndex: "examGroup",
+      key: "examGroup",
+      responsive: ['lg', 'xl', 'xxl'] as Breakpoint[],
+      render: (examGroup: any) => {
+        if (typeof examGroup === 'object' && examGroup?.name) {
+          return examGroup.name;
+        }
+        const group: any = examGroups.find((g: any) => g.value === examGroup);
+        return group?.label || '-';
       },
     },
     {
@@ -136,10 +151,24 @@ export default function ExamsPage() {
     }
   };
 
+  const fetchExamGroups = async () => {
+    try {
+      const response = await fetch('/api/exam-group/list?limit=100');
+      const data = await response.json();
+      setExamGroups(data.examGroups?.map((group: any) => ({
+        value: group._id,
+        label: group.name,
+      })));
+    } catch (error) {
+      console.error('Failed to fetch exam groups:', error);
+    }
+  };
+
   useEffect(() => {
     fetchExams();
     fetchSubjects();
     fetchCategories();
+    fetchExamGroups();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
@@ -188,7 +217,6 @@ export default function ExamsPage() {
     });
   };
   
-
   return (
     <div className="space-y-6">
       <Card
@@ -202,7 +230,7 @@ export default function ExamsPage() {
           onFinishFailed={() => message.error('Please fill in all required fields')}
           scrollToFirstError
           className="max-w-4xl"
-          initialValues={{ isSessionWise: false }}
+          initialValues={{ isSessionWise: false, isExamSameAsGroup: false, hasMultiLingualSupport: false }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
@@ -235,6 +263,57 @@ export default function ExamsPage() {
             </Form.Item>
 
             <Form.Item
+              label="Exam is also the Exam Group"
+              name="isExamSameAsGroup"
+              valuePropName="checked"
+              tooltip="Enable this if the exam doesn't have tiers (e.g., PSC Overseer Grade I). When enabled, an exam group will be created automatically with the same details."
+            >
+              <Switch 
+                checkedChildren="Yes" 
+                unCheckedChildren="No"
+                onChange={(checked) => {
+                  setIsExamSameAsGroup(checked);
+                  if (checked) {
+                    form.setFieldsValue({ examGroup: undefined });
+                  } else {
+                    form.setFieldsValue({ shortName: undefined });
+                  }
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, cur) => prev?.isExamSameAsGroup !== cur?.isExamSameAsGroup}
+            >
+              {({ getFieldValue }) => {
+                const isSameAsGroup = getFieldValue('isExamSameAsGroup');
+                return !isSameAsGroup ? (
+                  <Form.Item
+                    label="Exam Group"
+                    name="examGroup"
+                    rules={[{ required: true, message: "Please select an exam group" }]}
+                  >
+                    <Select
+                      placeholder="Select exam group"
+                      size="large"
+                      options={examGroups}
+                      optionFilterProp="label"
+                      showSearch
+                    />
+                  </Form.Item>
+                ) : (
+                  <Form.Item
+                    label="Short Name (for Exam Group)"
+                    name="shortName"
+                  >
+                    <Input placeholder="e.g. CGL" size="large" />
+                  </Form.Item>
+                );
+              }}
+            </Form.Item>
+
+            <Form.Item
               label="Duration (minutes)"
               name="duration"
             >
@@ -250,6 +329,18 @@ export default function ExamsPage() {
               <Switch 
                 checkedChildren="Session-wise" 
                 unCheckedChildren="Mixed" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Multi-Lingual Support"
+              name="hasMultiLingualSupport"
+              valuePropName="checked"
+              tooltip="Enable if this exam can be taken in different languages"
+            >
+              <Switch 
+                checkedChildren="Yes" 
+                unCheckedChildren="No" 
               />
             </Form.Item>
           </div>

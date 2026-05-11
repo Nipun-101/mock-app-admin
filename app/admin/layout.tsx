@@ -12,6 +12,7 @@ import {
   QuestionCircleOutlined,
   ExperimentOutlined,
   AppstoreOutlined,
+  GroupOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -59,6 +60,11 @@ export default function AdminLayout({
       key: "/admin/categories",
       icon: <AppstoreOutlined />,
       label: <Link href="/admin/categories">Categories</Link>,
+    },
+    {
+      key: "/admin/exam-groups",
+      icon: <GroupOutlined />,
+      label: <Link href="/admin/exam-groups">Exam Groups</Link>,
     },
     {
       key: "/admin/exams",
