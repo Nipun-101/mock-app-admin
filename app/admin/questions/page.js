@@ -197,10 +197,10 @@ export default function QuestionsPage() {
             allowClear
             style={{ width: 200 }}
             onChange={(value) => setSelectedExam(value)}
-            options={exams.map((exam) => ({
+            options={exams?.length > 0 ? exams.map((exam) => ({
               value: exam._id,
               label: exam.name,
-            }))}
+            })) : []}
           />
           <Select
             placeholder="Filter by subject"
