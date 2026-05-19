@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Category from "./Category";
+import "./ExamGroup";
 
 const ExamSubjectSchema = new mongoose.Schema({
   subject: {
