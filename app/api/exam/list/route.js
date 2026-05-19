@@ -13,7 +13,7 @@ export async function GET(request) {
     const skip = (page - 1) * limit;
 
     // Query for active, non-deleted exams
-    const query = { isActive: true, isDeleted: false, isActive: true };
+    const query = { isActive: true, isDeleted: false };
 
     // Get total count for pagination
     const totalExams = await Exam.countDocuments(query);
