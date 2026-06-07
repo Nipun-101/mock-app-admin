@@ -119,7 +119,7 @@ export default function ExamsPage() {
   ];
   
   const fetchExams = async () => {
-    const response = await fetch(`/api/exam/list?page=${pagination.current}&limit=${pagination.pageSize}`);
+    const response = await fetch(`/api/exam/list?limit=${Number.MAX_SAFE_INTEGER}`);
     const data = await response.json();
     console.log(data);
     setExams(data.exams);
@@ -130,12 +130,16 @@ export default function ExamsPage() {
   };
 
   const fetchSubjects = async () => {
-    const response = await fetch(`/api/subject/simple?page=${pagination.current}&limit=${pagination.pageSize}`);
-    const data = await response.json();
-    setSubjects(data.subjects?.map((subject: any) => ({
-      value: subject._id,
-      label: subject.name
-    })));
+    try {
+      const response = await fetch('/api/subject/list?limit=100');
+      const data = await response.json();
+      setSubjects(data.subjects?.map((subject: any) => ({
+        value: subject._id,
+        label: subject.name
+      })) || []);
+    } catch (error) {
+      console.error('Failed to fetch subjects:', error);
+    }
   };
 
   const fetchCategories = async () => {
@@ -165,10 +169,13 @@ export default function ExamsPage() {
   };
 
   useEffect(() => {
-    fetchExams();
     fetchSubjects();
     fetchCategories();
     fetchExamGroups();
+  }, []);
+
+  useEffect(() => {
+    fetchExams();
   }, [pagination.current, pagination.pageSize]);
 
   const handleSubmit = async (values: any) => {
