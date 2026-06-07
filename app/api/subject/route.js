@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import Subject from "@/models/Subject";
+import { connectToDatabase } from "@/lib/mongodb";
 
 export async function POST(request) {
   try {
+    await connectToDatabase();
     const body = await request.json();
     console.log(body);
     
