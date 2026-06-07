@@ -1,4 +1,9 @@
 import mongoose from "mongoose";
+import "./Exam";
+import "./Subject";
+import "./Topic";
+import "./Question";
+import "./User";
 
 const MockTestSchema = new mongoose.Schema(
   {

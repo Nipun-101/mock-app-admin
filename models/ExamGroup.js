@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import "./Category";
 
 const ExamGroupSchema = new mongoose.Schema({
   name: {
