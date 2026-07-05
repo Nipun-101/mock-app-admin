@@ -54,14 +54,17 @@ async function proxyToEzPrep(request: NextRequest, pathSegments: string[]) {
   const body = await readRequestBody(request);
 
   try {
-    const data = await ezPrepApiServerClient.request(path, {
-      method: request.method,
-      body,
-      searchParams,
-      headers: buildForwardHeaders(request, body),
-    });
+    const { data, status } = await ezPrepApiServerClient.requestWithStatus(
+      path,
+      {
+        method: request.method,
+        body,
+        searchParams,
+        headers: buildForwardHeaders(request, body),
+      }
+    );
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status });
   } catch (error) {
     if (error instanceof EzPrepApiError) {
       return NextResponse.json(

@@ -19,3 +19,8 @@ export class EzPrepApiError extends Error {
     this.data = data;
   }
 }
+
+export interface EzPrepApiResponse<T> {
+  data: T;
+  status: number;
+}

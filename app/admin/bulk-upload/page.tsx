@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
-import { FileSearchOutlined, ImportOutlined, RobotOutlined } from "@ant-design/icons";
+import { FileSearchOutlined, ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
@@ -12,7 +12,7 @@ import {
   BulkUploadProcessingAction,
   BulkUploadStatus,
   ENRICH_CONFIG,
-  EnrichResponse,
+  EnrichAcceptedResponse,
   ImportQuestionsResponse,
   LookupItem,
   PARSE_PDF_CONFIG,
@@ -28,12 +28,6 @@ const PROCESSING_MODAL_CONTENT: Record<
     description:
       "Extracting content from your PDF. This can take a few minutes — please don't close this page.",
     loadingMessage: "Parsing PDF, please wait...",
-  },
-  enrich: {
-    title: "AI Enrichment",
-    description:
-      "AI is analyzing and enriching questions from your PDF. This can take several minutes — please don't close this page.",
-    loadingMessage: "Enriching questions with AI, please wait...",
   },
   import: {
     title: "Importing Questions",
@@ -191,6 +185,17 @@ export default function BulkUploadPage() {
     fetchUploads(1);
   }, [fetchLookups, fetchUploads]);
 
+  useEffect(() => {
+    const hasProcessing = uploads.some((upload) => upload.status === "processing");
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      void fetchUploads(pagination.current);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [uploads, fetchUploads, pagination.current]);
+
   const handleParse = async (upload: BulkUpload) => {
     setActionLoadingId(upload.id);
     setProcessingUpload({
@@ -234,48 +239,27 @@ export default function BulkUploadPage() {
 
   const handleEnrich = async (upload: BulkUpload) => {
     setActionLoadingId(upload.id);
-    setProcessingUpload({
-      id: upload.id,
-      filename: upload.filename,
-      action: "enrich",
-    });
-    setUploads((prev) =>
-      prev.map((item) =>
-        item.id === upload.id ? { ...item, status: "processing" as const } : item
-      )
-    );
-
-    const loadingToast = message.loading(
-      PROCESSING_MODAL_CONTENT.enrich.loadingMessage,
-      0
-    );
 
     try {
-      const response = await ezPrepApiClient.post<EnrichResponse>(
+      const response = await ezPrepApiClient.post<EnrichAcceptedResponse>(
         `/v1/imports/enrich/${upload.id}`,
         ENRICH_CONFIG
       );
 
-      loadingToast();
-
-      const summary =
-        response.data?.summary ||
+      message.success(
         response.message ||
-        "Questions enriched successfully";
-
-      message.success(summary);
+          "AI enrichment started. The status will update when processing completes."
+      );
       await fetchUploads(pagination.current);
     } catch (error) {
-      loadingToast();
       const errorMessage =
         error instanceof EzPrepApiError
           ? error.message
-          : "Failed to enrich questions";
+          : "Failed to start AI enrichment";
       message.error(errorMessage);
       await fetchUploads(pagination.current);
     } finally {
       setActionLoadingId(null);
-      setProcessingUpload(null);
     }
   };
 
@@ -372,7 +356,7 @@ export default function BulkUploadPage() {
               loading={isLoading}
               onClick={() => handleImport(record)}
             >
-              Import
+              Add to Question Bank
             </Button>
           </Tooltip>
         );
@@ -396,14 +380,17 @@ export default function BulkUploadPage() {
     {
       title: "File Name",
       key: "filename",
+      width: "24%",
       ellipsis: true,
       render: (_: unknown, record: BulkUpload) => (
-        <div>
-          <div className="font-medium">{record.filename}</div>
+        <div className="min-w-0">
+          <div className="font-medium truncate">{record.filename}</div>
           {record.title &&
             record.title !== record.filename &&
             !isUuidLike(record.title) && (
-              <div className="text-gray-500 text-sm mt-1">{record.title}</div>
+              <div className="text-gray-500 text-sm mt-1 truncate">
+                {record.title}
+              </div>
             )}
           <div className="text-gray-400 text-xs mt-1">
             {formatFileSize(record.fileSize ?? 0)}
@@ -414,6 +401,7 @@ export default function BulkUploadPage() {
     {
       title: "Subject",
       key: "subject",
+      width: "15%",
       ellipsis: true,
       render: (_: unknown, record: BulkUpload) =>
         subjectMap.get(record.subjectId) ?? record.subjectId ?? "-",
@@ -421,7 +409,8 @@ export default function BulkUploadPage() {
     {
       title: "Topic",
       key: "topic",
-      width: 160,
+      width: "13%",
+      ellipsis: true,
       render: (_: unknown, record: BulkUpload) =>
         record.topicId ? (
           <Tag>{topicMap.get(record.topicId) ?? record.topicId}</Tag>
@@ -432,14 +421,14 @@ export default function BulkUploadPage() {
     {
       title: "Exams",
       key: "exams",
-      width: 280,
+      width: "21%",
       render: (_: unknown, record: BulkUpload) =>
         renderExamTags(record.examIds, examMap),
     },
     {
       title: "Status",
       key: "status",
-      width: 130,
+      width: "12%",
       render: (_: unknown, record: BulkUpload) => (
         <div>
           <Tag color={STATUS_COLORS[record.status] ?? "default"}>
@@ -458,8 +447,7 @@ export default function BulkUploadPage() {
     {
       title: "Actions",
       key: "actions",
-      width: 150,
-      fixed: "right" as const,
+      width: "15%",
       render: (_: unknown, record: BulkUpload) => (
         <Space>{renderActionButton(record)}</Space>
       ),
@@ -483,7 +471,9 @@ export default function BulkUploadPage() {
         rowKey="id"
         loading={loading}
         pagination={false}
+        tableLayout="fixed"
         style={{ width: "100%" }}
+        scroll={{ x: 960 }}
       />
 
       <div className="mt-4 flex justify-end">
@@ -510,9 +500,7 @@ export default function BulkUploadPage() {
           <Spin size="large" />
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-lg font-medium">
-              {processingUpload?.action === "enrich" ? (
-                <RobotOutlined className="text-blue-600" />
-              ) : processingUpload?.action === "import" ? (
+              {processingUpload?.action === "import" ? (
                 <ImportOutlined className="text-blue-600" />
               ) : (
                 <FileSearchOutlined className="text-blue-600" />

@@ -1,5 +1,9 @@
 import { buildEzPrepApiUrl } from "./config";
-import { EzPrepApiError, EzPrepApiRequestOptions } from "./types";
+import {
+  EzPrepApiError,
+  EzPrepApiRequestOptions,
+  EzPrepApiResponse,
+} from "./types";
 
 function buildUrlWithSearchParams(
   path: string,
@@ -83,12 +87,50 @@ async function ezPrepApiRequest<T>(
   return data as T;
 }
 
+async function ezPrepApiRequestWithStatus<T>(
+  path: string,
+  options: EzPrepApiRequestOptions = {}
+): Promise<EzPrepApiResponse<T>> {
+  const { body, searchParams, headers: initHeaders, ...fetchOptions } = options;
+
+  const url = buildUrlWithSearchParams(path, searchParams);
+  const headers = buildHeaders(initHeaders, body);
+
+  const response = await fetch(url, {
+    ...fetchOptions,
+    headers,
+    body:
+      body === undefined
+        ? undefined
+        : body instanceof FormData
+          ? body
+          : JSON.stringify(body),
+  });
+
+  const data = await parseResponseBody(response);
+
+  if (!response.ok) {
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "message" in data &&
+      typeof (data as { message: unknown }).message === "string"
+        ? (data as { message: string }).message
+        : `EzPrep API request failed with status ${response.status}`;
+
+    throw new EzPrepApiError(message, response.status, path, data);
+  }
+
+  return { data: data as T, status: response.status };
+}
+
 /**
  * Server-side client. Calls the EzPrep NestJS backend directly.
  * Use from API routes, server components, and server actions.
  */
 export const ezPrepApiServerClient = {
   request: ezPrepApiRequest,
+  requestWithStatus: ezPrepApiRequestWithStatus,
 
   get<T>(path: string, options?: EzPrepApiRequestOptions): Promise<T> {
     return ezPrepApiRequest<T>(path, { ...options, method: "GET" });

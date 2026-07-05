@@ -126,6 +126,17 @@ export interface EnrichResponse {
   data: EnrichData;
 }
 
+/** Immediate 202 response when enrichment is queued asynchronously */
+export interface EnrichAcceptedData {
+  uploadId: string;
+  status: BulkUploadStatus;
+}
+
+export interface EnrichAcceptedResponse {
+  message: string;
+  data: EnrichAcceptedData;
+}
+
 export const ENRICH_CONFIG = {
   adaptiveChunking: true,
   maxRetries: 3,
@@ -156,7 +167,7 @@ export interface ImportQuestionsResponse {
   data: ImportQuestionsData;
 }
 
-export type BulkUploadProcessingAction = "parse" | "enrich" | "import";
+export type BulkUploadProcessingAction = "parse" | "import";
 
 export interface LookupItem {
   _id: string;
