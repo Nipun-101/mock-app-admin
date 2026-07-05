@@ -13,6 +13,7 @@ import {
   ExperimentOutlined,
   AppstoreOutlined,
   GroupOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,6 +51,11 @@ export default function AdminLayout({
       key: "/admin/questions",
       icon: <QuestionCircleOutlined />,
       label: <Link href="/admin/questions">Questions</Link>,
+    },
+    {
+      key: "/admin/bulk-upload",
+      icon: <UploadOutlined />,
+      label: <Link href="/admin/bulk-upload">Bulk Upload</Link>,
     },
     {
       key: "/admin/mock-tests",
@@ -122,7 +128,11 @@ export default function AdminLayout({
         <div className="h-16" /> {/* Spacer for header */}
         <Menu
           mode="inline"
-          selectedKeys={[pathname]}
+          selectedKeys={[
+            pathname.startsWith("/admin/bulk-upload")
+              ? "/admin/bulk-upload"
+              : pathname,
+          ]}
           items={menuItems}
           className="border-r-0 pt-4"
         />
