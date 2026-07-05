@@ -14,6 +14,7 @@ import {
   AppstoreOutlined,
   GroupOutlined,
   UploadOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -56,6 +57,11 @@ export default function AdminLayout({
       key: "/admin/bulk-upload",
       icon: <UploadOutlined />,
       label: <Link href="/admin/bulk-upload">Bulk Upload</Link>,
+    },
+    {
+      key: "/admin/failed-questions",
+      icon: <CloseCircleOutlined />,
+      label: <Link href="/admin/failed-questions">Failed Questions</Link>,
     },
     {
       key: "/admin/mock-tests",
@@ -131,7 +137,9 @@ export default function AdminLayout({
           selectedKeys={[
             pathname.startsWith("/admin/bulk-upload")
               ? "/admin/bulk-upload"
-              : pathname,
+              : pathname.startsWith("/admin/failed-questions")
+                ? "/admin/failed-questions"
+                : pathname,
           ]}
           items={menuItems}
           className="border-r-0 pt-4"
