@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
-import { FileSearchOutlined, ImportOutlined } from "@ant-design/icons";
+import { ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
@@ -11,24 +11,19 @@ import {
   BulkUploadListResponse,
   BulkUploadProcessingAction,
   BulkUploadStatus,
+  BULK_UPLOAD_POLLING_INTERVAL_MS,
   ENRICH_CONFIG,
   EnrichAcceptedResponse,
   ImportQuestionsResponse,
   LookupItem,
   PARSE_PDF_CONFIG,
-  ParsePdfResponse,
+  ParsePdfAcceptedResponse,
 } from "./types";
 
 const PROCESSING_MODAL_CONTENT: Record<
   BulkUploadProcessingAction,
   { title: string; description: string; loadingMessage: string }
 > = {
-  parse: {
-    title: "Parsing PDF",
-    description:
-      "Extracting content from your PDF. This can take a few minutes — please don't close this page.",
-    loadingMessage: "Parsing PDF, please wait...",
-  },
   import: {
     title: "Importing Questions",
     description:
@@ -186,54 +181,41 @@ export default function BulkUploadPage() {
   }, [fetchLookups, fetchUploads]);
 
   useEffect(() => {
-    const hasProcessing = uploads.some((upload) => upload.status === "processing");
-    if (!hasProcessing) return;
+    const hasInProgress = uploads.some(
+      (upload) => upload.status === "parsing" || upload.status === "processing"
+    );
+    if (!hasInProgress) return;
 
     const interval = setInterval(() => {
       void fetchUploads(pagination.current);
-    }, 30000);
+    }, BULK_UPLOAD_POLLING_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [uploads, fetchUploads, pagination.current]);
 
   const handleParse = async (upload: BulkUpload) => {
     setActionLoadingId(upload.id);
-    setProcessingUpload({
-      id: upload.id,
-      filename: upload.filename,
-      action: "parse",
-    });
-    setUploads((prev) =>
-      prev.map((item) =>
-        item.id === upload.id ? { ...item, status: "parsing" as const } : item
-      )
-    );
-
-    const loadingToast = message.loading(
-      PROCESSING_MODAL_CONTENT.parse.loadingMessage,
-      0
-    );
 
     try {
-      const response = await ezPrepApiClient.post<ParsePdfResponse>(
+      const response = await ezPrepApiClient.post<ParsePdfAcceptedResponse>(
         `/v1/imports/parse-pdf/${upload.id}`,
         PARSE_PDF_CONFIG
       );
 
-      loadingToast();
-      message.success(response.message || "PDF parsed successfully");
+      message.success(
+        response.message ||
+          "PDF parsing started. The status will update when processing completes."
+      );
       await fetchUploads(pagination.current);
     } catch (error) {
-      loadingToast();
       const errorMessage =
         error instanceof EzPrepApiError
           ? error.message
-          : "Failed to parse PDF";
+          : "Failed to start PDF parsing";
       message.error(errorMessage);
       await fetchUploads(pagination.current);
     } finally {
       setActionLoadingId(null);
-      setProcessingUpload(null);
     }
   };
 
@@ -500,11 +482,7 @@ export default function BulkUploadPage() {
           <Spin size="large" />
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 text-lg font-medium">
-              {processingUpload?.action === "import" ? (
-                <ImportOutlined className="text-blue-600" />
-              ) : (
-                <FileSearchOutlined className="text-blue-600" />
-              )}
+              <ImportOutlined className="text-blue-600" />
               {processingUpload
                 ? PROCESSING_MODAL_CONTENT[processingUpload.action].title
                 : ""}
