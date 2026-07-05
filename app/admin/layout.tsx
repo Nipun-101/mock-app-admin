@@ -140,7 +140,7 @@ export default function AdminLayout({
 
       <Layout>
         <Content className="mt-16 p-4 md:p-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="w-full">
             {children}
           </div>
         </Content>
