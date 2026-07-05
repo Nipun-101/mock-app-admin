@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Modal, Pagination, Space, Spin, Table, Tag, message } from "antd";
+import { Button, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
 import { FileSearchOutlined, ImportOutlined, RobotOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
@@ -61,6 +61,44 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value
+  );
+}
+
+const primaryButtonClass = "bg-blue-600 hover:bg-blue-700";
+const MAX_VISIBLE_EXAMS = 2;
+
+function renderExamTags(
+  examIds: string[],
+  examMap: Map<string, string>
+) {
+  if (!examIds?.length) return "-";
+
+  const labels = examIds.map((id) => ({
+    id,
+    name: examMap.get(id) ?? id,
+  }));
+  const visible = labels.slice(0, MAX_VISIBLE_EXAMS);
+  const hidden = labels.slice(MAX_VISIBLE_EXAMS);
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {visible.map(({ id, name }) => (
+        <Tag key={id} color="blue">
+          {name}
+        </Tag>
+      ))}
+      {hidden.length > 0 && (
+        <Tooltip title={hidden.map(({ name }) => name).join(", ")}>
+          <Tag className="cursor-default">+{hidden.length}</Tag>
+        </Tooltip>
+      )}
+    </div>
+  );
 }
 
 export default function BulkUploadPage() {
@@ -290,7 +328,7 @@ export default function BulkUploadPage() {
         return (
           <Button
             type="primary"
-            className="bg-blue-600 hover:bg-blue-700"
+            className={primaryButtonClass}
             loading={isLoading}
             onClick={() => handleParse(record)}
           >
@@ -301,7 +339,7 @@ export default function BulkUploadPage() {
         return (
           <Button
             type="primary"
-            className="bg-blue-600"
+            className={primaryButtonClass}
             loading={isLoading}
             disabled
           >
@@ -312,7 +350,7 @@ export default function BulkUploadPage() {
         return (
           <Button
             type="primary"
-            className="bg-blue-600 hover:bg-blue-700"
+            className={primaryButtonClass}
             loading={isLoading}
             onClick={() => handleEnrich(record)}
           >
@@ -321,25 +359,22 @@ export default function BulkUploadPage() {
         );
       case "processing":
         return (
-          <Button
-            type="primary"
-            className="bg-blue-600"
-            loading={isLoading}
-            disabled
-          >
+          <Button type="primary" className={primaryButtonClass} disabled>
             Processing...
           </Button>
         );
       case "enriched":
         return (
-          <Button
-            type="primary"
-            className="bg-blue-600 hover:bg-blue-700"
-            loading={isLoading}
-            onClick={() => handleImport(record)}
-          >
-            Import Questions
-          </Button>
+          <Tooltip title="Import enriched questions to database">
+            <Button
+              type="primary"
+              className={primaryButtonClass}
+              loading={isLoading}
+              onClick={() => handleImport(record)}
+            >
+              Import
+            </Button>
+          </Tooltip>
         );
       case "failed":
         return (
@@ -361,13 +396,16 @@ export default function BulkUploadPage() {
     {
       title: "File Name",
       key: "filename",
+      ellipsis: true,
       render: (_: unknown, record: BulkUpload) => (
         <div>
           <div className="font-medium">{record.filename}</div>
-          {record.title && record.title !== record.filename && (
-            <div className="text-gray-500 text-sm mt-0.5">{record.title}</div>
-          )}
-          <div className="text-gray-400 text-xs mt-0.5">
+          {record.title &&
+            record.title !== record.filename &&
+            !isUuidLike(record.title) && (
+              <div className="text-gray-500 text-sm mt-1">{record.title}</div>
+            )}
+          <div className="text-gray-400 text-xs mt-1">
             {formatFileSize(record.fileSize ?? 0)}
           </div>
         </div>
@@ -376,12 +414,14 @@ export default function BulkUploadPage() {
     {
       title: "Subject",
       key: "subject",
+      ellipsis: true,
       render: (_: unknown, record: BulkUpload) =>
         subjectMap.get(record.subjectId) ?? record.subjectId ?? "-",
     },
     {
       title: "Topic",
       key: "topic",
+      width: 160,
       render: (_: unknown, record: BulkUpload) =>
         record.topicId ? (
           <Tag>{topicMap.get(record.topicId) ?? record.topicId}</Tag>
@@ -392,32 +432,25 @@ export default function BulkUploadPage() {
     {
       title: "Exams",
       key: "exams",
-      render: (_: unknown, record: BulkUpload) => (
-        <Space wrap size={[4, 4]}>
-          {record.examIds?.length > 0 ? (
-            record.examIds.map((examId) => (
-              <Tag key={examId} color="blue">
-                {examMap.get(examId) ?? examId}
-              </Tag>
-            ))
-          ) : (
-            "-"
-          )}
-        </Space>
-      ),
+      width: 280,
+      render: (_: unknown, record: BulkUpload) =>
+        renderExamTags(record.examIds, examMap),
     },
     {
       title: "Status",
       key: "status",
+      width: 130,
       render: (_: unknown, record: BulkUpload) => (
         <div>
           <Tag color={STATUS_COLORS[record.status] ?? "default"}>
             {formatStatus(record.status)}
           </Tag>
           {record.status === "failed" && record.errorMessage && (
-            <div className="text-red-500 text-xs mt-1 max-w-xs truncate">
-              {record.errorMessage}
-            </div>
+            <Tooltip title={record.errorMessage}>
+              <div className="text-red-500 text-xs mt-1 line-clamp-2">
+                {record.errorMessage}
+              </div>
+            </Tooltip>
           )}
         </div>
       ),
@@ -425,7 +458,11 @@ export default function BulkUploadPage() {
     {
       title: "Actions",
       key: "actions",
-      render: (_: unknown, record: BulkUpload) => renderActionButton(record),
+      width: 150,
+      fixed: "right" as const,
+      render: (_: unknown, record: BulkUpload) => (
+        <Space>{renderActionButton(record)}</Space>
+      ),
     },
   ];
 
@@ -434,7 +471,7 @@ export default function BulkUploadPage() {
       <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-bold">Bulk Upload</h1>
         <Link href="/admin/bulk-upload/upload">
-          <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
+          <Button type="primary" className={primaryButtonClass}>
             Upload
           </Button>
         </Link>
@@ -446,6 +483,7 @@ export default function BulkUploadPage() {
         rowKey="id"
         loading={loading}
         pagination={false}
+        style={{ width: "100%" }}
       />
 
       <div className="mt-4 flex justify-end">
