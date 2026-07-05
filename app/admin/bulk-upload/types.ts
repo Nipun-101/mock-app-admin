@@ -70,10 +70,24 @@ export interface ParsePdfResponse {
   data: ParsePdfData;
 }
 
+/** Immediate 202 response when PDF parsing is queued asynchronously */
+export interface ParsePdfAcceptedData {
+  uploadId: string;
+  status: BulkUploadStatus;
+}
+
+export interface ParsePdfAcceptedResponse {
+  message: string;
+  data: ParsePdfAcceptedData;
+}
+
 export const PARSE_PDF_CONFIG = {
   maxPollingAttempts: 60,
   pollingIntervalMs: 5000,
 } as const;
+
+/** Client-side poll interval while any upload is `parsing` or `processing` */
+export const BULK_UPLOAD_POLLING_INTERVAL_MS = 30_000;
 
 export interface EnrichStats {
   total: number;
@@ -167,7 +181,7 @@ export interface ImportQuestionsResponse {
   data: ImportQuestionsData;
 }
 
-export type BulkUploadProcessingAction = "parse" | "import";
+export type BulkUploadProcessingAction = "import";
 
 export interface LookupItem {
   _id: string;
