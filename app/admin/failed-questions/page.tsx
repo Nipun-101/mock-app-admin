@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Pagination, Select, Space, Table, Tag, Tooltip, message } from "antd";
 import Link from "next/link";
+import { showConfirmModal } from "@/components/ConfirmModal";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import {
+  DeleteFailedQuestionResponse,
   FailedQuestion,
   FailedQuestionListResponse,
   LookupItem,
@@ -76,6 +78,7 @@ export default function FailedQuestionsPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const subjectMap = useMemo(
     () => new Map(subjects.map((s) => [s._id, s.name])),
@@ -176,6 +179,39 @@ export default function FailedQuestionsPage() {
     fetchFailedQuestions(1);
   }, [fetchFailedQuestions]);
 
+  const handleDelete = (record: FailedQuestion) => {
+    showConfirmModal({
+      title: "Delete Failed Question",
+      content: `Are you sure you want to delete question #${record.questionNumber}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setDeletingId(record.id);
+        try {
+          const response =
+            await ezPrepApiClient.delete<DeleteFailedQuestionResponse>(
+              `/v1/imports/failed-questions/${record.id}`
+            );
+          message.success(
+            response.message || "Failed question deleted successfully"
+          );
+
+          const isLastItemOnPage = items.length === 1;
+          const currentPage = pagination.current;
+          const nextPage =
+            isLastItemOnPage && currentPage > 1 ? currentPage - 1 : currentPage;
+          await fetchFailedQuestions(nextPage);
+        } catch (error) {
+          const errorMessage =
+            error instanceof EzPrepApiError
+              ? error.message
+              : "Failed to delete failed question";
+          message.error(errorMessage);
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
+  };
+
   const columns = [
     {
       title: "#",
@@ -263,6 +299,14 @@ export default function FailedQuestionsPage() {
               Fix
             </Button>
           </Link>
+          <Button
+            danger
+            loading={deletingId === record.id}
+            disabled={deletingId !== null && deletingId !== record.id}
+            onClick={() => handleDelete(record)}
+          >
+            Delete
+          </Button>
         </Space>
       ),
     },

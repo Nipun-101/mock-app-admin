@@ -80,6 +80,15 @@ export interface ImportFailedQuestionResponse {
   data?: unknown;
 }
 
+export interface DeleteFailedQuestionResponse {
+  message: string;
+  data: {
+    failedQuestionId: string;
+    uploadId: string;
+    questionNumber: number;
+  };
+}
+
 export interface LookupItem {
   _id: string;
   name: string;
