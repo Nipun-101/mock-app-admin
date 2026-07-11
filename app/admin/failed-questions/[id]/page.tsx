@@ -8,6 +8,7 @@ import {
   Input,
   Radio,
   Select,
+  Space,
   Tooltip,
   message,
 } from "antd";
@@ -15,9 +16,11 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
+import { showConfirmModal } from "@/components/ConfirmModal";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import {
+  DeleteFailedQuestionResponse,
   FailedQuestionDetailResponse,
   ImportFailedQuestionResponse,
   ImportQuestion,
@@ -36,6 +39,7 @@ export default function FixFailedQuestionPage({
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [failedQuestion, setFailedQuestion] = useState<
     FailedQuestionDetailResponse["data"] | null
@@ -218,6 +222,38 @@ export default function FixFailedQuestionPage({
     } else {
       setTags([]);
     }
+  };
+
+  const handleDelete = () => {
+    const questionNumber = failedQuestion?.questionNumber;
+
+    showConfirmModal({
+      title: "Delete Failed Question",
+      content: questionNumber
+        ? `Are you sure you want to delete question #${questionNumber}? This action cannot be undone.`
+        : "Are you sure you want to delete this failed question? This action cannot be undone.",
+      onConfirm: async () => {
+        setDeleting(true);
+        try {
+          const response =
+            await ezPrepApiClient.delete<DeleteFailedQuestionResponse>(
+              `/v1/imports/failed-questions/${params.id}`
+            );
+          message.success(
+            response.message || "Failed question deleted successfully"
+          );
+          router.push("/admin/failed-questions");
+        } catch (error) {
+          const errorMessage =
+            error instanceof EzPrepApiError
+              ? error.message
+              : "Failed to delete failed question";
+          message.error(errorMessage);
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   const handleSubmit = async (values: Record<string, unknown>) => {
@@ -539,14 +575,20 @@ export default function FixFailedQuestionPage({
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Fix
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  disabled={deleting}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Fix
+                </Button>
+                <Button danger loading={deleting} disabled={loading} onClick={handleDelete}>
+                  Delete
+                </Button>
+              </Space>
             </Form.Item>
           </Form>
         </Card>
