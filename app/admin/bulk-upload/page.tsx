@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
+import { Button, Input, Modal, Pagination, Select, Space, Spin, Table, Tag, Tooltip, message } from "antd";
 import { ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
@@ -11,6 +11,7 @@ import {
   BulkUploadListResponse,
   BulkUploadProcessingAction,
   BulkUploadStatus,
+  BULK_UPLOAD_STATUSES,
   BULK_UPLOAD_POLLING_INTERVAL_MS,
   ENRICH_CONFIG,
   EnrichAcceptedResponse,
@@ -106,7 +107,15 @@ export default function BulkUploadPage() {
   });
   const [subjects, setSubjects] = useState<LookupItem[]>([]);
   const [topics, setTopics] = useState<LookupItem[]>([]);
+  const [filteredTopics, setFilteredTopics] = useState<LookupItem[]>([]);
   const [exams, setExams] = useState<LookupItem[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<BulkUploadStatus | null>(
+    null
+  );
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const subjectMap = useMemo(
     () => new Map(subjects.map((s) => [s._id, s.name])),
@@ -147,9 +156,15 @@ export default function BulkUploadPage() {
     async (page = 1, limit = pagination.pageSize) => {
       setLoading(true);
       try {
+        const searchParams: Record<string, string | number> = { page, limit };
+        if (selectedSubject) searchParams.subjectId = selectedSubject;
+        if (selectedTopic) searchParams.topicId = selectedTopic;
+        if (selectedStatus) searchParams.status = selectedStatus;
+        if (searchQuery.trim()) searchParams.search = searchQuery.trim();
+
         const response = await ezPrepApiClient.get<BulkUploadListResponse>(
           "/v1/imports/uploads",
-          { searchParams: { page, limit } }
+          { searchParams }
         );
 
         const uploads = response.data?.uploads ?? [];
@@ -172,13 +187,41 @@ export default function BulkUploadPage() {
         setLoading(false);
       }
     },
-    [pagination.pageSize]
+    [
+      pagination.pageSize,
+      selectedSubject,
+      selectedTopic,
+      selectedStatus,
+      searchQuery,
+    ]
   );
 
   useEffect(() => {
     fetchLookups();
+  }, [fetchLookups]);
+
+  useEffect(() => {
+    const loadTopicsForSubject = async () => {
+      if (!selectedSubject) {
+        setFilteredTopics([]);
+        setSelectedTopic(null);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/topic/subject/${selectedSubject}`);
+        const data = await res.json();
+        setFilteredTopics(data.topics ?? []);
+      } catch {
+        message.error("Failed to fetch topics");
+        setFilteredTopics([]);
+      }
+    };
+    loadTopicsForSubject();
+  }, [selectedSubject]);
+
+  useEffect(() => {
     fetchUploads(1);
-  }, [fetchLookups, fetchUploads]);
+  }, [fetchUploads]);
 
   useEffect(() => {
     const hasInProgress = uploads.some(
@@ -438,8 +481,59 @@ export default function BulkUploadPage() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Bulk Upload</h1>
+      <div className="flex justify-between mb-4 gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap">
+          <h1 className="text-2xl font-bold">Bulk Upload</h1>
+          <Input.Search
+            placeholder="Search by file name"
+            allowClear
+            style={{ width: 220 }}
+            value={searchInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchInput(value);
+              if (!value) setSearchQuery("");
+            }}
+            onSearch={(value) => setSearchQuery(value.trim())}
+          />
+          <Select
+            placeholder="Filter by status"
+            allowClear
+            style={{ width: 180 }}
+            value={selectedStatus}
+            onChange={(value) => setSelectedStatus(value ?? null)}
+            options={BULK_UPLOAD_STATUSES.map((status) => ({
+              value: status,
+              label: formatStatus(status),
+            }))}
+          />
+          <Select
+            placeholder="Filter by subject"
+            allowClear
+            style={{ width: 200 }}
+            value={selectedSubject}
+            onChange={(value) => {
+              setSelectedSubject(value ?? null);
+              setSelectedTopic(null);
+            }}
+            options={subjects.map((subject) => ({
+              value: subject._id,
+              label: subject.name,
+            }))}
+          />
+          <Select
+            placeholder="Filter by topic"
+            allowClear
+            disabled={!selectedSubject}
+            style={{ width: 200 }}
+            value={selectedTopic}
+            onChange={(value) => setSelectedTopic(value ?? null)}
+            options={filteredTopics.map((topic) => ({
+              value: topic._id,
+              label: topic.name,
+            }))}
+          />
+        </div>
         <Link href="/admin/bulk-upload/upload">
           <Button type="primary" className={primaryButtonClass}>
             Upload
