@@ -7,6 +7,16 @@ export type BulkUploadStatus =
   | "completed"
   | "failed";
 
+export const BULK_UPLOAD_STATUSES: BulkUploadStatus[] = [
+  "uploaded",
+  "parsing",
+  "parsed",
+  "processing",
+  "enriched",
+  "completed",
+  "failed",
+];
+
 export interface BulkUpload {
   id: string;
   title: string;
