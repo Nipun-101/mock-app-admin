@@ -45,9 +45,14 @@ export async function POST(request) {
         }
       },
       explanation: {
-        en: body.explanation.en || null,
-        ml: body.explanation.ml || null,
-        image: body.explanation.image || null
+        en: body.explanation?.en || null,
+        ml: body.explanation?.ml || null,
+        image: body.explanation?.image || null,
+        images: Array.isArray(body.explanation?.images)
+          ? body.explanation.images.filter(
+              (img) => img && typeof img === "object" && img.key
+            )
+          : undefined,
       },
       optionType: body.optionType || 'text',
       options: body.options.map(option => ({
