@@ -36,7 +36,9 @@ const QuestionSchema = new mongoose.Schema({
   explanation: {
     en: { type: String },
     ml: { type: String },
-    image: ImageMetadataSchema
+    image: ImageMetadataSchema,
+    // Extra explanation images (primary remains `image` for backward compatibility)
+    images: { type: [ImageMetadataSchema], default: undefined },
   },
   correctAnswer: { type: String },
   subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },

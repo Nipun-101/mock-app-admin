@@ -1,14 +1,22 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Upload, Radio, message, Tooltip } from "antd";
+import { Button, Card, Form, Input, Select, Radio, message, Tooltip } from "antd";
 import { useState, useEffect } from "react";
-import { InfoCircleOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { ImageUpload } from "@/app/components/ImageUpload";
 
 interface Option {
   id: string;
   label: string;
+}
+
+function normalizeExplanationImages(images: unknown) {
+  if (!Array.isArray(images)) return [];
+  return images.filter(
+    (img): img is Record<string, unknown> =>
+      !!img && typeof img === "object" && "key" in img
+  );
 }
 
 export default function EditQuestionPage({ params }: { params: { id: string } }) {
@@ -101,9 +109,16 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
       const response = await fetch(`/api/question/${params.id}`);
       const question = await response.json();
 
+      if (!question || question.error) {
+        message.error(question?.error || "Failed to fetch question");
+        return;
+      }
+
+      const options = Array.isArray(question.options) ? question.options : [];
+
       // Set OPTIONS based on existing question options
-      setOPTIONS(question.options.map((opt: any, index: number) => ({
-        id: opt.id,
+      setOPTIONS(options.map((opt: any, index: number) => ({
+        id: opt?.id ?? String.fromCharCode(65 + index),
         label: String.fromCharCode(65 + index) // A, B, C, D
       })));
 
@@ -121,32 +136,35 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         await fetchTagsBySubjectAndTopic(question.subject, question.topic);
       }
 
+      const questionText = question.questionText ?? {};
+      const explanation = question.explanation ?? {};
 
       // Set form values
       form.setFieldsValue({
         questionText: {
           en: {
-            text: question.questionText.en.text,
-            image: question.questionText.en.image
+            text: questionText.en?.text ?? undefined,
+            image: questionText.en?.image ?? undefined,
           },
           ml: {
-            text: question.questionText.ml.text,
-            image: question.questionText.ml.image
-          }
+            text: questionText.ml?.text ?? undefined,
+            image: questionText.ml?.image ?? undefined,
+          },
         },
         optionType: question.optionType || 'text',
-        options: question.options.map((opt: any) => ({
-          id: opt.id,
-          type: opt.type,
-          en: opt.en,
-          ml: opt.ml,
-          image: opt.image
+        options: options.map((opt: any) => ({
+          id: opt?.id,
+          type: opt?.type,
+          en: opt?.en,
+          ml: opt?.ml,
+          image: opt?.image,
         })),
         correctAnswer: question.correctAnswer,
         explanation: {
-          en: question.explanation?.en,
-          ml: question.explanation?.ml,
-          image: question.explanation?.image
+          en: explanation.en ?? undefined,
+          ml: explanation.ml ?? undefined,
+          image: explanation.image ?? undefined,
+          images: normalizeExplanationImages(explanation.images),
         },
         subject: question.subject,
         topic: question.topic,
@@ -221,7 +239,8 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         explanation: {
           en: values.explanation?.en || null,
           ml: values.explanation?.ml || null,
-          image: values.explanation?.image || null
+          image: values.explanation?.image || null,
+          images: normalizeExplanationImages(values.explanation?.images),
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
@@ -387,11 +406,49 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               </Form.Item>
             </Form.Item>
             
-            {/* Explanation Image */}
+            {/* Explanation Image (primary) */}
             <Form.Item label="Explanation Image">
               <Form.Item name={["explanation", "image"]}>
                 <ImageUpload name={["explanation", "image"]} />
               </Form.Item>
+            </Form.Item>
+
+            {/* Extra explanation images */}
+            <Form.Item label="Additional Explanation Images">
+              <Form.List name={["explanation", "images"]}>
+                {(fields, { add, remove }) => (
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.key}
+                        className="flex items-start gap-3 border p-3 rounded"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <ImageUpload
+                            name={["explanation", "images", field.name]}
+                            label={`Image ${index + 1}`}
+                          />
+                        </div>
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => remove(field.name)}
+                          aria-label={`Remove additional image ${index + 1}`}
+                        />
+                      </div>
+                    ))}
+                    <Button
+                      type="dashed"
+                      icon={<PlusOutlined />}
+                      onClick={() => add()}
+                      block
+                    >
+                      Add Image
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
             </Form.Item>
 
             {/* Subject */}
