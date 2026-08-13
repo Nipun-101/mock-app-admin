@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ezPrepApiServerClient } from "@/app/services/ezprep-api/server";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
+import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
 
 async function readRequestBody(request: NextRequest): Promise<unknown> {
   if (request.method === "GET" || request.method === "HEAD") {
@@ -25,12 +26,21 @@ async function readRequestBody(request: NextRequest): Promise<unknown> {
   return text.length > 0 ? text : undefined;
 }
 
+function resolveAdminAuthorization(request: NextRequest): string | undefined {
+  const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  if (!session) {
+    return undefined;
+  }
+
+  return `Bearer ${session}`;
+}
+
 function buildForwardHeaders(
   request: NextRequest,
   body: unknown
 ): HeadersInit {
   const headers: Record<string, string> = {};
-  const authorization = request.headers.get("authorization");
+  const authorization = resolveAdminAuthorization(request);
 
   if (authorization) {
     headers.Authorization = authorization;
