@@ -5,8 +5,73 @@ import "./Topic";
 import "./Question";
 import "./User";
 
+export const PAPER_TYPE = {
+  TOPIC_WISE: "TOPIC_WISE",
+  FULL_EXAM: "FULL_EXAM",
+};
+
+/** Same firewall as ez-prep-api: treat missing paperType as topic-wise. */
+export const TOPIC_WISE_FILTER = {
+  paperType: { $ne: PAPER_TYPE.FULL_EXAM },
+};
+
+const MockTestSubjectConfigSchema = new mongoose.Schema(
+  {
+    subject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+    },
+    name: {
+      type: String,
+      trim: true,
+    },
+    numberOfQuestions: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    marksPerQuestion: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    hasNegativeMarking: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+    negativeMarksPerQuestion: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    sessionTime: {
+      type: Number,
+      min: 0,
+    },
+    questionStartIndex: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    questionEndIndex: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
 const MockTestSchema = new mongoose.Schema(
   {
+    paperType: {
+      type: String,
+      enum: Object.values(PAPER_TYPE),
+      default: PAPER_TYPE.TOPIC_WISE,
+      index: true,
+    },
     // Core Configuration
     totalQuestions: {
       type: Number,
@@ -24,11 +89,10 @@ const MockTestSchema = new mongoose.Schema(
       ref: "Exam",
       required: true,
     },
-    // Single subject mock test
+    // Single subject mock test (required for TOPIC_WISE; omitted on FULL_EXAM papers)
     subject: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subject",
-      required: true,
     },
     // Topic within the subject (optional)
     topic: {
@@ -64,6 +128,18 @@ const MockTestSchema = new mongoose.Schema(
     negativeMarking: {
       type: Number, // e.g. 0.25
       default: 0,
+    },
+    totalMarks: {
+      type: Number,
+      min: 0,
+    },
+    isSessionWise: {
+      type: Boolean,
+      default: false,
+    },
+    subjectConfig: {
+      type: [MockTestSubjectConfigSchema],
+      default: undefined,
     },
     passingScore: {
       type: Number, // absolute score

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import MockTest from "@/models/MockTest";
+import MockTest, { PAPER_TYPE, TOPIC_WISE_FILTER } from "@/models/MockTest";
 import Question from "@/models/Question";
 import { connectToDatabase } from "@/lib/mongodb";
 import mongoose from "mongoose";
@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
     await connectToDatabase();
     
     const { id } = params;
-    const mockTest = await MockTest.findOne({ _id: id, isDeleted: false })
+    const mockTest = await MockTest.findOne({ _id: id, isDeleted: false, ...TOPIC_WISE_FILTER })
       .populate('exam', 'name')
       .populate('subject', 'name')
       .populate('topic', 'name')
@@ -109,6 +109,7 @@ export async function PUT(request, { params }) {
 
     // Prepare update data
     const mockTestData = {
+      paperType: PAPER_TYPE.TOPIC_WISE,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
       exam: body.exam,
@@ -131,7 +132,7 @@ export async function PUT(request, { params }) {
     }
 
     const mockTest = await MockTest.findOneAndUpdate(
-      { _id: id, isDeleted: false },
+      { _id: id, isDeleted: false, ...TOPIC_WISE_FILTER },
       { $set: mockTestData },
       { 
         new: true,
@@ -170,7 +171,7 @@ export async function DELETE(request, { params }) {
     
     const { id } = params;
     const mockTest = await MockTest.findOneAndUpdate(
-      { _id: id, isDeleted: false },
+      { _id: id, isDeleted: false, ...TOPIC_WISE_FILTER },
       { 
         $set: { 
           isDeleted: true,
