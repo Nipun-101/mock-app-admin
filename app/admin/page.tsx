@@ -5,13 +5,15 @@ import { useState, useEffect } from "react";
 import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageUpload } from '@/app/components/ImageUpload';
+import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionPayload } from "@/app/services/ezprep-api";
 
 export default function AdminPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [subjects, setSubjects] = useState([]);
-  const [topics, setTopics] = useState([]);
-  const [exams, setExams] = useState([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -24,40 +26,47 @@ export default function AdminPage() {
     { id: uuidv4(), label: 'D', type: 'text' }
   ]);
 
-  // Separate function to fetch topics by subject
   const fetchTopicsBySubject = async (subjectId: string) => {
-      const subject : any = subjects.find((subject: any) => subject.value === subjectId);
-      setTopics(subject?.topics?.map((topic: any) => ({
-        value: topic._id,
-        label: topic.name
-      })) || []);
-    
+    setTopicsLoading(true);
+    try {
+      const { data } = await catalogApi.getSubject(subjectId);
+      setTopics(
+        (data.topics || [])
+          .map((topic) => ({
+            value: refId(topic) || "",
+            label: topic.name,
+          }))
+          .filter((topic) => topic.value)
+      );
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch topics"));
+      setTopics([]);
+    } finally {
+      setTopicsLoading(false);
+    }
   };
 
   // Initial data fetch (now only subjects and exams)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subjectsRes, examsRes] = await Promise.all([
-          fetch('/api/subject/list?limit=100'),
-          fetch('/api/exam/list?limit=100')
+        const [subjectsData, examsData] = await Promise.all([
+          catalogApi.listSubjects(),
+          catalogApi.listAllExams(),
         ]);
-        
-        const subjectsData = await subjectsRes.json();
-        const examsData = await examsRes.json();
 
-        setSubjects(subjectsData.subjects?.map((subject: any) => ({
-          value: subject._id,
+        setSubjects((subjectsData.data || []).map((subject) => ({
+          value: subject.id,
           label: subject.name,
-          topics: subject.topics
         })) || []);
 
-        setExams(examsData.exams?.map((exam: any) => ({
-          value: exam._id,
+        setExams(examsData.map((exam) => ({
+          value: exam.id,
           label: exam.name
         })) || []);
       } catch (error) {
         console.error('Error fetching data:', error);
+        message.error(formatEzPrepError(error, "Failed to fetch form options"));
       }
     };
 
@@ -67,13 +76,15 @@ export default function AdminPage() {
   // Fetch tags by subject and topic
   const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
     try {
-      const response = await fetch(`/api/tag/list?limit=100&subject=${subjectId}&topic=${topicId}`);
-      const data = await response.json();
+      const tags = await catalogApi.listAllTags({
+        subjectId,
+        topicId,
+      });
       setTags(
-        data.tags?.map((tag: any) => ({
-          value: tag._id,
+        tags.map((tag) => ({
+          value: tag.id,
           label: tag.name,
-        })) || []
+        }))
       );
     } catch (error) {
       console.error('Failed to fetch tags:', error);
@@ -103,7 +114,6 @@ export default function AdminPage() {
   };
 
   const handleSubmit = async (values: any) => {
-    console.log("XXX", values);
     setLoading(true);
 
     //if question type is image, then if any option is not image, then show error
@@ -124,7 +134,7 @@ export default function AdminPage() {
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image || values.questionText?.en?.image || null
+            image: values.questionText?.ml?.image || null
           }
         },
         optionType: values.optionType,
@@ -154,24 +164,12 @@ export default function AdminPage() {
         difficultyLevel: values.difficultyLevel
       };
 
-      const response = await fetch("/api/question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(transformedValues),
-      });
-
-      if (response.ok) {
-        message.success('Question created successfully');
-        form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation', 'difficultyLevel']);
-      } else {
-        console.log("error", response);
-        message.error('Failed to create question');
-        throw new Error('Failed to create question');
-        
-      }
+      await questionsApi.create(transformedValues as QuestionPayload);
+      message.success('Question created successfully');
+      form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation', 'difficultyLevel']);
     } catch (error) {
       console.error('Error creating question:', error);
-      message.error('Failed to create question');
+      message.error(formatEzPrepError(error, 'Failed to create question'));
     } finally {
       setLoading(false);
     }
@@ -302,11 +300,7 @@ export default function AdminPage() {
 
             {/* Explanation Image */}
             <Form.Item label="Explanation Image">
-              <Form.Item
-                name={["explanation", "image"]}
-              >
-                <ImageUpload name={["explanation", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["explanation", "image"]} />
             </Form.Item>
 
             {/* Explanation in English */}
@@ -358,6 +352,7 @@ export default function AdminPage() {
                 placeholder={selectedSubject ? "Select topic" : "Please select a subject first"}
                 options={topics}
                 disabled={!selectedSubject}
+                loading={topicsLoading}
                 onChange={handleTopicChange}
                 allowClear
               />

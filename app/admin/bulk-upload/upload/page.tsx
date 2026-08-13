@@ -5,7 +5,7 @@ import { InboxOutlined } from "@ant-design/icons";
 import type { UploadFile } from "antd/es/upload/interface";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ezPrepApiClient } from "@/app/services/ezprep-api";
+import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import { BulkUploadPdfResponse, LookupItem } from "../types";
 
@@ -25,14 +25,21 @@ export default function BulkUploadFormPage() {
   useEffect(() => {
     const fetchLookups = async () => {
       try {
-        const [subjectRes, examRes] = await Promise.all([
-          fetch("/api/subject/list?limit=100"),
-          fetch("/api/exam/list?limit=100"),
+        const [subjectData, examData] = await Promise.all([
+          catalogApi.listSubjects(),
+          catalogApi.listAllExams(),
         ]);
-        const subjectData = await subjectRes.json();
-        const examData = await examRes.json();
-        setSubjects(subjectData.subjects ?? []);
-        setExams(examData.exams ?? []);
+        setSubjects(
+          (subjectData.data || []).map((subject) => ({
+            _id: subject.id,
+            name: subject.name,
+            topics: (subject.topics || []).map((topic) => ({
+              _id: topic.id,
+              name: topic.name,
+            })),
+          }))
+        );
+        setExams(examData.map((exam) => ({ _id: exam.id, name: exam.name })));
       } catch {
         message.error("Failed to load form options");
       }
@@ -62,11 +69,16 @@ export default function BulkUploadFormPage() {
 
     const fetchTags = async () => {
       try {
-        const res = await fetch(
-          `/api/tag/list?limit=100&subject=${selectedSubject}&topic=${selectedTopic}`
+        const tags = await catalogApi.listAllTags({
+          subjectId: selectedSubject,
+          topicId: selectedTopic,
+        });
+        setTags(
+          tags.map((tag) => ({
+            _id: tag.id,
+            name: tag.name,
+          }))
         );
-        const data = await res.json();
-        setTags(data.tags ?? []);
       } catch {
         message.error("Failed to fetch tags");
       }

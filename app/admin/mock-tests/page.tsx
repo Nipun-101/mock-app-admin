@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { useRouter } from "next/navigation";
+import { catalogApi, formatEzPrepError, mockTestsApi } from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -14,16 +15,16 @@ export default function MockTestsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [mockTests, setMockTests] = useState([]);
+  const [mockTests, setMockTests] = useState<any[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0
   });
-  const [subjects, setSubjects] = useState([]);
-  const [topics, setTopics] = useState([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
-  const [exams, setExams] = useState([]);
+  const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState({ easy: 0, medium: 0, hard: 0 });
   const router = useRouter();
@@ -103,7 +104,7 @@ export default function MockTestsPage() {
           <Button 
             type="link" 
             size="small"
-            onClick={() => router.push(`/admin/mock-tests/${record._id}`)}
+            onClick={() => router.push(`/admin/mock-tests/${record.id}`)}
           >
             View
           </Button>
@@ -111,7 +112,7 @@ export default function MockTestsPage() {
             type="link" 
             size="small" 
             danger 
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -123,16 +124,17 @@ export default function MockTestsPage() {
   const fetchMockTests = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/mock-test/list?page=${pagination.current}&limit=${pagination.pageSize}`);
-      const data = await response.json();
-      setMockTests(data.mockTests);
+      const data = await mockTestsApi.list({
+        page: pagination.current,
+        limit: pagination.pageSize,
+      });
+      setMockTests(data.data || []);
       setPagination(prev => ({
         ...prev,
-        total: data?.pagination?.total
+        total: data.pagination?.total ?? 0
       }));
     } catch (error) {
-      console.error(error);
-      message.error('Failed to fetch mock tests');
+      message.error(formatEzPrepError(error, 'Failed to fetch mock tests'));
     } finally {
       setTableLoading(false);
     }
@@ -140,44 +142,44 @@ export default function MockTestsPage() {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch('/api/subject/list?limit=100');
-      const data = await response.json();
-      setSubjects(data.subjects?.map((subject: any) => ({
-        value: subject._id,
-        label: subject.name
-      })) || []);
+      const data = await catalogApi.listSubjects();
+      setSubjects(
+        (data.data || []).map((subject) => ({
+          value: subject.id,
+          label: subject.name,
+        }))
+      );
     } catch (error) {
-      console.error(error);
-      message.error('Failed to fetch subjects');
+      message.error(formatEzPrepError(error, 'Failed to fetch subjects'));
     }
   };
 
   const fetchExams = async () => {
     try {
-      const response = await fetch('/api/exam/list?limit=100');
-      const data = await response.json();
-      setExams(data.exams?.map((exam: any) => ({
-        value: exam._id,
-        label: exam.name
-      })) || []);
+      const examsList = await catalogApi.listAllExams();
+      setExams(
+        examsList.map((exam) => ({
+          value: exam.id,
+          label: exam.name,
+        }))
+      );
     } catch (error) {
-      console.error(error);
-      message.error('Failed to fetch exams');
+      message.error(formatEzPrepError(error, 'Failed to fetch exams'));
     }
   };
 
   const fetchTopicsBySubject = async (subjectId: string) => {
     setTopicsLoading(true);
     try {
-      const response = await fetch(`/api/topic/subject/${subjectId}`);
-      const data = await response.json();
-      setTopics(data.topics?.map((topic: any) => ({
-        value: topic._id,
-        label: topic.name
-      })) || []);
+      const { data } = await catalogApi.getSubject(subjectId);
+      setTopics(
+        (data.topics || []).map((topic) => ({
+          value: topic.id,
+          label: topic.name,
+        }))
+      );
     } catch (error) {
-      console.error(error);
-      message.error('Failed to fetch topics');
+      message.error(formatEzPrepError(error, 'Failed to fetch topics'));
     } finally {
       setTopicsLoading(false);
     }
@@ -212,26 +214,14 @@ export default function MockTestsPage() {
         ...values,
         difficultyDistribution: difficulty,
       };
-      const response = await fetch('/api/mock-test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        message.success('Mock test created successfully');
-        form.resetFields();
-        setTotalQuestions(null);
-        setDifficulty({ easy: 0, medium: 0, hard: 0 });
-        fetchMockTests();
-      } else {
-        message.error(data.error || 'Failed to create mock test');
-      }
+      await mockTestsApi.create(payload);
+      message.success('Mock test created successfully');
+      form.resetFields();
+      setTotalQuestions(null);
+      setDifficulty({ easy: 0, medium: 0, hard: 0 });
+      fetchMockTests();
     } catch (error) {
-      console.error(error);
-      message.error('Failed to create mock test');
+      message.error(formatEzPrepError(error, 'Failed to create mock test'));
     } finally {
       setLoading(false);
     }
@@ -244,19 +234,11 @@ export default function MockTestsPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          const response = await fetch(`/api/mock-test/${id}`, {
-            method: 'DELETE'
-          });
-
-          if (response.ok) {
-            message.success('Mock test deleted successfully');
-            fetchMockTests();
-          } else {
-            message.error('Failed to delete mock test');
-          }
+          await mockTestsApi.delete(id);
+          message.success('Mock test deleted successfully');
+          fetchMockTests();
         } catch (error) {
-          console.error(error);
-          message.error('Failed to delete mock test');
+          message.error(formatEzPrepError(error, 'Failed to delete mock test'));
         } finally {
           setTableLoading(false);
         }
@@ -506,7 +488,7 @@ export default function MockTestsPage() {
           <Table 
             columns={columns} 
             dataSource={mockTests}
-            rowKey="_id"
+            rowKey="id"
             loading={tableLoading}
             pagination={{
               current: pagination.current,

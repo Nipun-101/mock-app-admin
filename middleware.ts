@@ -42,6 +42,7 @@ function clearSessionCookie(response: NextResponse): NextResponse {
   response.cookies.set(ADMIN_SESSION_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 0,
   });

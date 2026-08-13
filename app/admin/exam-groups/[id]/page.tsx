@@ -1,34 +1,41 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Typography } from "antd";
+import { Button, Card, Form, Input, Select, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refId,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
-export default function EditExamGroupPage({ params }: { params: { id: string } }) {
+export default function EditExamGroupPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>(
+    []
+  );
   const router = useRouter();
 
   useEffect(() => {
     const fetchExamGroup = async () => {
       try {
-        const response = await fetch(`/api/exam-group/${params.id}`);
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        const { data } = await catalogApi.getExamGroup(params.id);
         form.setFieldsValue({
           name: data.name,
           shortName: data.shortName,
-          category: data.category?._id || data.category,
+          category: refId(data.category),
           description: data.description,
         });
       } catch (error) {
-        console.error(error);
+        message.error(formatEzPrepError(error, "Failed to fetch exam group"));
       } finally {
         setInitialLoading(false);
       }
@@ -39,14 +46,15 @@ export default function EditExamGroupPage({ params }: { params: { id: string } }
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/category/list?limit=100');
-      const data = await response.json();
-      setCategories(data.categories?.map((cat: any) => ({
-        value: cat._id,
-        label: `${cat.name} (${cat.shortName})`,
-      })));
+      const data = await catalogApi.listActiveCategories();
+      setCategories(
+        (data.data || []).map((cat) => ({
+          value: cat.id,
+          label: `${cat.name} (${cat.shortName})`,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch categories"));
     }
   };
 
@@ -54,20 +62,19 @@ export default function EditExamGroupPage({ params }: { params: { id: string } }
     fetchCategories();
   }, []);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    shortName?: string;
+    category: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/exam-group/${params.id}`, {
-        method: "PUT",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      await catalogApi.updateExamGroup(params.id, values);
+      message.success("Exam group updated successfully");
       router.push("/admin/exam-groups");
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to update exam group"));
     } finally {
       setLoading(false);
     }
@@ -104,10 +111,7 @@ export default function EditExamGroupPage({ params }: { params: { id: string } }
               <Input placeholder="e.g. Combined Graduate Level" size="large" />
             </Form.Item>
 
-            <Form.Item
-              label="Short Name"
-              name="shortName"
-            >
+            <Form.Item label="Short Name" name="shortName">
               <Input placeholder="e.g. CGL" size="large" />
             </Form.Item>
 

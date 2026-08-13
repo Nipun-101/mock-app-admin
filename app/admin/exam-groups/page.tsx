@@ -1,11 +1,17 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Table, Typography } from "antd";
+import { Button, Card, Form, Input, Select, Table, Typography, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refName,
+  type ExamGroup,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -13,8 +19,8 @@ export default function ExamGroupsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [examGroups, setExamGroups] = useState([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -38,24 +44,28 @@ export default function ExamGroupsPage() {
       title: "Category",
       dataIndex: "category",
       key: "category",
-      render: (category: any) => category ? `${category.name} (${category.shortName})` : '-',
+      render: (category: ExamGroup["category"]) =>
+        refName(category) ||
+        (typeof category === "object" && category
+          ? `${category.name}${category.shortName ? ` (${category.shortName})` : ""}`
+          : "-"),
     },
     {
       title: "Description",
       dataIndex: "description",
       key: "description",
       responsive: ["md", "lg", "xl", "xxl"] as Breakpoint[],
-      render: (text: string) => text || '-',
+      render: (text: string) => text || "-",
     },
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
+      render: (record: ExamGroup) => (
         <>
           <Button
             type="link"
             size="small"
-            onClick={() => router.push(`/admin/exam-groups/${record._id}`)}
+            onClick={() => router.push(`/admin/exam-groups/${record.id}`)}
           >
             Edit
           </Button>
@@ -63,7 +73,7 @@ export default function ExamGroupsPage() {
             type="link"
             size="small"
             danger
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -75,17 +85,17 @@ export default function ExamGroupsPage() {
   const fetchExamGroups = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(
-        `/api/exam-group/list?page=${pagination.current}&limit=${pagination.pageSize}`
-      );
-      const data = await response.json();
-      setExamGroups(data.examGroups);
+      const data = await catalogApi.listExamGroups({
+        page: pagination.current,
+        limit: pagination.pageSize,
+      });
+      setExamGroups(data.data || []);
       setPagination((prev) => ({
         ...prev,
-        total: data?.pagination?.total,
+        total: data.pagination?.total ?? 0,
       }));
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to fetch exam groups"));
     } finally {
       setTableLoading(false);
     }
@@ -93,35 +103,40 @@ export default function ExamGroupsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/category/list?limit=100');
-      const data = await response.json();
-      setCategories(data.categories?.map((cat: any) => ({
-        value: cat._id,
-        label: `${cat.name} (${cat.shortName})`,
-      })));
+      const data = await catalogApi.listActiveCategories();
+      setCategories(
+        (data.data || []).map((cat) => ({
+          value: cat.id,
+          label: `${cat.name} (${cat.shortName})`,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch categories"));
     }
   };
 
   useEffect(() => {
     fetchExamGroups();
-    fetchCategories();
   }, [pagination.current, pagination.pageSize]);
 
-  const handleSubmit = async (values: any) => {
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (values: {
+    name: string;
+    shortName?: string;
+    category: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/exam-group", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      console.log(data);
+      await catalogApi.createExamGroup(values);
+      message.success("Exam group created successfully");
       form.resetFields();
       fetchExamGroups();
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to create exam group"));
     } finally {
       setLoading(false);
     }
@@ -135,12 +150,11 @@ export default function ExamGroupsPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          await fetch(`/api/exam-group/${id}`, {
-            method: "DELETE",
-          });
+          await catalogApi.deleteExamGroup(id);
+          message.success("Exam group deleted successfully");
           fetchExamGroups();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, "Failed to delete exam group"));
         } finally {
           setTableLoading(false);
         }
@@ -175,10 +189,7 @@ export default function ExamGroupsPage() {
               <Input placeholder="e.g. Combined Graduate Level" size="large" />
             </Form.Item>
 
-            <Form.Item
-              label="Short Name"
-              name="shortName"
-            >
+            <Form.Item label="Short Name" name="shortName">
               <Input placeholder="e.g. CGL" size="large" />
             </Form.Item>
 
@@ -231,7 +242,7 @@ export default function ExamGroupsPage() {
         <Table
           columns={columns}
           dataSource={examGroups}
-          rowKey="_id"
+          rowKey="id"
           loading={tableLoading}
           pagination={{
             current: pagination.current,

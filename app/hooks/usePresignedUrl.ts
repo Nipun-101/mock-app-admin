@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { S3ObjectMetadata } from "@/app/services/storage/s3";
+import { filesApi } from "@/app/services/ezprep-api";
+
+interface S3ObjectMetadata {
+  key: string;
+  bucket: string;
+  region?: string;
+  contentType?: string;
+  size?: number;
+  lastModified?: string | Date;
+}
 
 export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
   const [url, setUrl] = useState<string | null>(null);
@@ -10,33 +19,17 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
     let refreshTimeout: NodeJS.Timeout;
 
     const refreshUrl = async () => {
-      if (!metadata) return;
-
-      // Add validation for required metadata fields
-      if (!metadata.key || !metadata.bucket) {
-        console.error("Invalid metadata: missing required fields", {
-          hasKey: !!metadata.key,
-          hasBucket: !!metadata.bucket,
-          metadata
-        });
+      if (!metadata?.key || !metadata.bucket) {
+        if (mounted) {
+          setUrl(null);
+        }
         return;
       }
 
       try {
         setLoading(true);
-        const response = await fetch("/api/refresh-signed-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(metadata),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to refresh URL: ${errorData.error}`);
-        }
-
-        const data = await response.json();
-        const { url: newUrl } = data;
+        const { data } = await filesApi.signedUrl(metadata.key, metadata.bucket);
+        const newUrl = data.url;
 
         if (mounted) {
           setUrl(newUrl);
@@ -60,7 +53,7 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
         clearTimeout(refreshTimeout);
       }
     };
-  }, [metadata]);
+  }, [metadata?.key, metadata?.bucket]);
 
   return { url, loading };
 }

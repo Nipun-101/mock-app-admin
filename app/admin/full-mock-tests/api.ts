@@ -1,9 +1,10 @@
 import { ezPrepApiClient } from "@/app/services/ezprep-api";
-import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import type {
   ApiItemResponse,
   ApiListResponse,
   ApiMessageResponse,
+} from "@/app/services/ezprep-api";
+import type {
   DraftResponse,
   FullMockExamListItem,
   FullMockTestListItem,
@@ -12,72 +13,9 @@ import type {
   SearchQuestionItem,
 } from "./types";
 
+export { formatEzPrepError } from "@/app/services/ezprep-api";
+
 const BASE = "/v1/full-mock-tests";
-
-export function formatEzPrepError(error: unknown, fallback: string): string {
-  if (!(error instanceof EzPrepApiError)) {
-    return fallback;
-  }
-
-  if (error.status === 401 || error.status === 403) {
-    return "Session expired or you are not signed in. Please sign in again.";
-  }
-
-  const data =
-    error.data && typeof error.data === "object"
-      ? (error.data as Record<string, unknown>)
-      : null;
-
-  const rawMessage = data?.message;
-  const message =
-    typeof rawMessage === "string"
-      ? rawMessage
-      : Array.isArray(rawMessage)
-        ? rawMessage.join(", ")
-        : error.message;
-
-  const code = data?.error ?? data?.code;
-  const parts = [message];
-  if (typeof code === "string") {
-    parts.push(`(${code})`);
-  }
-
-  const details = data?.details;
-  if (Array.isArray(details)) {
-    const extra = details
-      .map((item) => {
-        if (!item || typeof item !== "object") return JSON.stringify(item);
-        const row = item as Record<string, unknown>;
-        if (Array.isArray(row.displayPositions)) {
-          return `positions ${row.displayPositions.join(", ")}`;
-        }
-        if (typeof row.rule === "string") {
-          if (row.expected != null) {
-            return `${row.rule}: expected ${row.expected}, got ${row.actual}`;
-          }
-          return row.rule;
-        }
-        return JSON.stringify(item);
-      })
-      .join("; ");
-    if (extra) parts.push(extra);
-  } else if (details && typeof details === "object") {
-    const row = details as Record<string, unknown>;
-    if (row.subjectName) {
-      parts.push(
-        `${row.subjectName}: need ${row.needed}, available ${row.available}`
-      );
-    }
-    if (typeof row.existingPosition === "number") {
-      parts.push(`already used at position ${row.existingPosition + 1}`);
-    }
-    if (typeof row.expected === "number" && typeof row.actual === "number") {
-      parts.push(`expected ${row.expected}, got ${row.actual}`);
-    }
-  }
-
-  return parts.join(" — ");
-}
 
 export const fullMockApi = {
   listExams(searchParams: {

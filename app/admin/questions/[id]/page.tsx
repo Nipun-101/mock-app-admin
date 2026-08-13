@@ -5,17 +5,18 @@ import { useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { ImageUpload } from "@/app/components/ImageUpload";
+import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 
 interface Option {
   id: string;
   label: string;
 }
 
-function normalizeExplanationImages(images: unknown) {
+function normalizeExplanationImages(images: unknown): QuestionImage[] {
   if (!Array.isArray(images)) return [];
   return images.filter(
-    (img): img is Record<string, unknown> =>
-      !!img && typeof img === "object" && "key" in img
+    (img): img is QuestionImage =>
+      !!img && typeof img === "object" && "key" in img && "bucket" in img
   );
 }
 
@@ -23,37 +24,43 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [subjects, setSubjects] = useState([]);
-  const [topics, setTopics] = useState([]);
-  const [exams, setExams] = useState([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
+  const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
 
-  // Fetch topics by subject
   const fetchTopicsBySubject = async (subjectId: string) => {
-
-    const subject: any = subjects?.find((subject: any) => subject.value === subjectId);
-
-    const topicsData = subject?.topics?.map((topic: any) => ({
-      value: topic._id,
-      label: topic.name
-    })) || [];
-    
-    setTopics(topicsData);
+    try {
+      const { data } = await catalogApi.getSubject(subjectId);
+      setTopics(
+        (data.topics || [])
+          .map((topic) => ({
+            value: refId(topic) || "",
+            label: topic.name,
+          }))
+          .filter((topic) => topic.value)
+      );
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch topics"));
+      setTopics([]);
+    }
   };
 
   // Fetch tags by subject and topic
   const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
     try {
-      const response = await fetch(`/api/tag/list?limit=100&subject=${subjectId}&topic=${topicId}`);
-      const data = await response.json();
+      const tags = await catalogApi.listAllTags({
+        subjectId,
+        topicId,
+      });
       setTags(
-        data.tags?.map((tag: any) => ({
-          value: tag._id,
+        tags.map((tag) => ({
+          value: tag.id,
           label: tag.name,
-        })) || []
+        }))
       );
     } catch (error) {
       console.error('Failed to fetch tags:', error);
@@ -71,22 +78,18 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subjectsRes, examsRes] = await Promise.all([
-          fetch('/api/subject/list?limit=100'),
-          fetch('/api/exam/list?limit=100')
+        const [subjectsData, examsData] = await Promise.all([
+          catalogApi.listSubjects(),
+          catalogApi.listAllExams(),
         ]);
-        
-        const subjectsData = await subjectsRes.json();
-        const examsData = await examsRes.json();
 
-        setSubjects(subjectsData?.subjects?.map((subject: any) => ({
-          value: subject._id,
+        setSubjects((subjectsData.data || []).map((subject) => ({
+          value: subject.id,
           label: subject.name,
-          topics: subject.topics
         })) );
 
-        setExams(examsData?.exams?.map((exam: any) => ({
-          value: exam._id,
+        setExams(examsData.map((exam) => ({
+          value: exam.id,
           label: exam.name
         })) );
 
@@ -106,13 +109,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
 
   const fetchQuestion = async () => {
     try {
-      const response = await fetch(`/api/question/${params.id}`);
-      const question = await response.json();
-
-      if (!question || question.error) {
-        message.error(question?.error || "Failed to fetch question");
-        return;
-      }
+      const { data: question } = await questionsApi.get(params.id);
 
       const options = Array.isArray(question.options) ? question.options : [];
 
@@ -123,17 +120,19 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
       })));
 
       // Set selected subject and fetch related topics
-      if (question.subject) {
-        setSelectedSubject(question.subject);
+      const subjectId = refId(question.subject);
+      const topicId = refId(question.topic);
+
+      if (subjectId) {
+        setSelectedSubject(subjectId);
       }
 
-      if (question.topic) {
-        setSelectedTopic(question.topic);
+      if (topicId) {
+        setSelectedTopic(topicId);
       }
 
-      // Fetch tags if both subject and topic exist
-      if (question.subject && question.topic) {
-        await fetchTagsBySubjectAndTopic(question.subject, question.topic);
+      if (subjectId && topicId) {
+        await fetchTagsBySubjectAndTopic(subjectId, topicId);
       }
 
       const questionText = question.questionText ?? {};
@@ -166,15 +165,15 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
           image: explanation.image ?? undefined,
           images: normalizeExplanationImages(explanation.images),
         },
-        subject: question.subject,
-        topic: question.topic,
-        exams: question.exams,
+        subject: subjectId,
+        topic: topicId,
+        exams: (question.exams || []).map((exam) => refId(exam)).filter(Boolean),
         tag: question.tag || null,
         difficultyLevel: question.difficultyLevel
       });
     } catch (error) {
       console.error('Error fetching question:', error);
-      message.error('Failed to fetch question');
+      message.error(formatEzPrepError(error, 'Failed to fetch question'));
     }
   };
 
@@ -200,6 +199,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
   };
 
   const handleSubmit = async (values: any) => {
+    setLoading(true);
 
     //if question type is image, then if any option is not image, then show error
     if (values.optionType === 'image') {
@@ -219,7 +219,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
           },
           ml: {
             text: values.questionText?.ml?.text || null,
-            image: values.questionText?.ml?.image || values.questionText?.en?.image || null
+            image: values.questionText?.ml?.image || null
           }
         },
         optionType: values.optionType,
@@ -250,21 +250,12 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
         difficultyLevel: values.difficultyLevel
       };
 
-      const response = await fetch(`/api/question/${params.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(transformedValues),
-      });
-
-      if (response.ok) {
-        message.success('Question updated successfully');
-        router.push('/admin/questions');
-      } else {
-        throw new Error('Failed to update question');
-      }
+      await questionsApi.update(params.id, transformedValues as QuestionPayload);
+      message.success('Question updated successfully');
+      router.push('/admin/questions');
     } catch (error) {
       console.error('Error updating question:', error);
-      message.error('Failed to update question');
+      message.error(formatEzPrepError(error, 'Failed to update question'));
     } finally {
       setLoading(false);
     }
@@ -284,7 +275,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               <Form.Item name={["questionText", "en", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
-              <Form.Item name={["questionText", "en", "image"]} label="Question Image">
+              <Form.Item label="Question Image">
                 <ImageUpload name={["questionText", "en", "image"]} />
               </Form.Item>
             </Form.Item>
@@ -294,7 +285,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
               <Form.Item name={["questionText", "ml", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
               </Form.Item>
-              <Form.Item name={["questionText", "ml", "image"]} label="Question Image">
+              <Form.Item label="Question Image">
                 <ImageUpload name={["questionText", "ml", "image"]} />
               </Form.Item>
             </Form.Item>
@@ -408,9 +399,7 @@ export default function EditQuestionPage({ params }: { params: { id: string } })
             
             {/* Explanation Image (primary) */}
             <Form.Item label="Explanation Image">
-              <Form.Item name={["explanation", "image"]}>
-                <ImageUpload name={["explanation", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["explanation", "image"]} />
             </Form.Item>
 
             {/* Extra explanation images */}

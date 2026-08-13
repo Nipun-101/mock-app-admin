@@ -47,8 +47,8 @@ export interface FailedQuestion {
   failureStage: string;
   failureMessage: string;
   matchedQuestion?: MatchedQuestion;
-  questionDraft: ImportQuestion;
-  question?: ImportQuestion;
+  questionDraft?: Partial<ImportQuestion> | null;
+  question?: Partial<ImportQuestion> | null;
   createdAt: string;
   updatedAt: string;
 }

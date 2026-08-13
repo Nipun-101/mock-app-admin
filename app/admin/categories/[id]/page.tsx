@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Card, Form, Input, Typography } from "antd";
+import { Button, Card, Form, Input, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -15,11 +16,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const response = await fetch(`/api/category/${params.id}`);
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        const { data } = await catalogApi.getCategory(params.id);
         form.setFieldsValue({
           name: data.name,
           shortName: data.shortName,
@@ -27,7 +24,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
           description: data.description,
         });
       } catch (error) {
-        console.error(error);
+        message.error(formatEzPrepError(error, "Failed to fetch category"));
       } finally {
         setInitialLoading(false);
       }
@@ -36,20 +33,19 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     fetchCategory();
   }, [params.id, form]);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    shortName: string;
+    imageUrl?: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/category/${params.id}`, {
-        method: "PUT",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      await catalogApi.updateCategory(params.id, values);
+      message.success("Category updated successfully");
       router.push("/admin/categories");
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to update category"));
     } finally {
       setLoading(false);
     }

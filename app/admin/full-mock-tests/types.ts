@@ -1,3 +1,10 @@
+export type {
+  ApiItemResponse,
+  ApiListResponse,
+  ApiMessageResponse,
+  PaginationMeta,
+} from "@/app/services/ezprep-api";
+
 export type DraftStatus =
   | "GENERATING"
   | "REVIEW"
@@ -6,30 +13,6 @@ export type DraftStatus =
   | "DISCARDED";
 export type ExamMode = "Mixed" | "Session-wise";
 export type DifficultyLevel = "easy" | "medium" | "hard";
-
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
-export interface ApiListResponse<T> {
-  message: string;
-  data: T[];
-  pagination: PaginationMeta;
-}
-
-export interface ApiItemResponse<T> {
-  message: string;
-  data: T;
-}
-
-export interface ApiMessageResponse {
-  message: string;
-}
 
 export interface FullMockExamListItem {
   id: string;
