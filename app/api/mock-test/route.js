@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import MockTest from "@/models/MockTest";
+import MockTest, { PAPER_TYPE } from "@/models/MockTest";
 import Question from "@/models/Question";
 import mongoose from "mongoose";
 
@@ -100,6 +100,7 @@ export async function POST(request) {
 
     // Create test with validated data
     const mockTestData = {
+      paperType: PAPER_TYPE.TOPIC_WISE,
       totalQuestions: body.totalQuestions,
       durationInMinutes: body.durationInMinutes,
       exam: body.exam,

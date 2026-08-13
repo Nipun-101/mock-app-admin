@@ -15,10 +15,12 @@ import {
   GroupOutlined,
   UploadOutlined,
   CloseCircleOutlined,
+  FileProtectOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { fetchAdminSession } from "@/lib/fetch-admin-session";
 
 const { Sider, Content } = Layout;
 
@@ -28,6 +30,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname() || '/';
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -41,6 +44,34 @@ export default function AdminLayout({
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const verifySession = async () => {
+      const response = await fetchAdminSession();
+      if (cancelled) return;
+      if (response.status === 401 || response.status === 403) {
+        router.replace("/login");
+      }
+    };
+    void verifySession();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        return;
+      }
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      // Keep the current page if sign-out cannot be confirmed.
+    }
+  };
 
   const menuItems = [
     {
@@ -67,6 +98,11 @@ export default function AdminLayout({
       key: "/admin/mock-tests",
       icon: <ExperimentOutlined />,
       label: <Link href="/admin/mock-tests">Mock Tests</Link>,
+    },
+    {
+      key: "/admin/full-mock-tests",
+      icon: <FileProtectOutlined />,
+      label: <Link href="/admin/full-mock-tests">Full Mock Tests</Link>,
     },
     {
       key: "/admin/categories",
@@ -109,7 +145,8 @@ export default function AdminLayout({
           onClick={() => setCollapsed(!collapsed)}
           className="text-lg"
         />
-        <h1 className="text-xl font-bold ml-4">Mock Test Admin</h1>
+        <h1 className="text-xl font-bold ml-4 flex-1">Mock Test Admin</h1>
+        <Button onClick={handleLogout}>Sign out</Button>
       </div>
 
       {/* Overlay for mobile */}
@@ -139,7 +176,9 @@ export default function AdminLayout({
               ? "/admin/bulk-upload"
               : pathname.startsWith("/admin/failed-questions")
                 ? "/admin/failed-questions"
-                : pathname,
+                : pathname.startsWith("/admin/full-mock-tests")
+                  ? "/admin/full-mock-tests"
+                  : pathname,
           ]}
           items={menuItems}
           className="border-r-0 pt-4"

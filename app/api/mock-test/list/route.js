@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import MockTest from "@/models/MockTest";
+import MockTest, { TOPIC_WISE_FILTER } from "@/models/MockTest";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export async function GET(request) {
@@ -11,7 +11,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const query = { isDeleted: false };
+    const query = { isDeleted: false, ...TOPIC_WISE_FILTER };
 
     const totalMockTests = await MockTest.countDocuments(query);
     const mockTests = await MockTest.find(query)

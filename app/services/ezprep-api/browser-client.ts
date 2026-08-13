@@ -50,6 +50,8 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   return text.length > 0 ? text : null;
 }
 
+const inFlightGets = new Map<string, Promise<unknown>>();
+
 async function ezPrepBrowserRequest<T>(
   path: string,
   options: EzPrepApiRequestOptions = {}
@@ -57,34 +59,56 @@ async function ezPrepBrowserRequest<T>(
   const { body, searchParams, headers: initHeaders, ...fetchOptions } = options;
 
   const url = buildProxyUrl(path, searchParams);
-  const headers = buildHeaders(initHeaders, body);
+  const method = (fetchOptions.method || "GET").toUpperCase();
+  const canReuseInFlight = method === "GET" && body === undefined;
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    headers,
-    body:
-      body === undefined
-        ? undefined
-        : body instanceof FormData
-          ? body
-          : JSON.stringify(body),
-  });
-
-  const data = await parseResponseBody(response);
-
-  if (!response.ok) {
-    const message =
-      typeof data === "object" &&
-      data !== null &&
-      "message" in data &&
-      typeof (data as { message: unknown }).message === "string"
-        ? (data as { message: string }).message
-        : `EzPrep API request failed with status ${response.status}`;
-
-    throw new EzPrepApiError(message, response.status, path, data);
+  if (canReuseInFlight) {
+    const existing = inFlightGets.get(url);
+    if (existing) {
+      return existing as Promise<T>;
+    }
   }
 
-  return data as T;
+  const headers = buildHeaders(initHeaders, body);
+  const request = (async () => {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      body:
+        body === undefined
+          ? undefined
+          : body instanceof FormData
+            ? body
+            : JSON.stringify(body),
+    });
+
+    const data = await parseResponseBody(response);
+
+    if (!response.ok) {
+      const message =
+        typeof data === "object" &&
+        data !== null &&
+        "message" in data &&
+        typeof (data as { message: unknown }).message === "string"
+          ? (data as { message: string }).message
+          : `EzPrep API request failed with status ${response.status}`;
+
+      throw new EzPrepApiError(message, response.status, path, data);
+    }
+
+    return data as T;
+  })();
+
+  if (canReuseInFlight) {
+    inFlightGets.set(url, request);
+    void request.finally(() => {
+      if (inFlightGets.get(url) === request) {
+        inFlightGets.delete(url);
+      }
+    });
+  }
+
+  return request;
 }
 
 /**

@@ -47,7 +47,15 @@ const QuestionSchema = new mongoose.Schema({
   tag: { type: mongoose.Schema.Types.ObjectId, ref: 'Tag' },
   difficultyLevel: { type: String, enum: ['easy', 'medium', 'hard'] },
   isActive: { type: Boolean, default: true },
-  isDeleted: { type: Boolean, default: false }
+  isDeleted: { type: Boolean, default: false },
+  source: {
+    type: String,
+    enum: ['PDF_UPLOAD', 'AI_GENERATED', 'MANUAL_INPUT'],
+    default: 'MANUAL_INPUT',
+  },
+  uploadId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionUpload' },
+  fullMockUsageCount: { type: Number, default: 0, min: 0 },
+  lastUsedInFullMockAt: { type: Date },
 }, {
   timestamps: true
 });
