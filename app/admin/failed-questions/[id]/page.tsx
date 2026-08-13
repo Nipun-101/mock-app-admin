@@ -13,30 +13,36 @@ import {
   message,
 } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
 import { showConfirmModal } from "@/components/ConfirmModal";
-import { ezPrepApiClient } from "@/app/services/ezprep-api";
-import { EzPrepApiError } from "@/app/services/ezprep-api/types";
+import {
+  catalogApi,
+  ezPrepApiClient,
+  formatEzPrepError,
+  refId,
+} from "@/app/services/ezprep-api";
 import {
   DeleteFailedQuestionResponse,
   FailedQuestionDetailResponse,
   ImportFailedQuestionResponse,
   ImportQuestion,
 } from "../types";
-
-interface Option {
-  id: string;
-  label: string;
-}
+import {
+  FixFormValues,
+  FixOptionSlot,
+  isFixFormValid,
+  normalizeFailedQuestionForm,
+  toImageMetadata,
+} from "../form";
 
 export default function FixFailedQuestionPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<FixFormValues>();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -44,27 +50,44 @@ export default function FixFailedQuestionPage({
   const [failedQuestion, setFailedQuestion] = useState<
     FailedQuestionDetailResponse["data"] | null
   >(null);
-  const [subjects, setSubjects] = useState<
-    { value: string; label: string; topics?: { _id: string; name: string }[] }[]
-  >([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>(
+    []
+  );
   const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<{ value: string; label: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
+  const [OPTIONS, setOPTIONS] = useState<FixOptionSlot[]>([]);
   const [originalDraft, setOriginalDraft] = useState<ImportQuestion | null>(
     null
   );
 
-  const fetchTopicsBySubject = (subjectId: string) => {
-    const subject = subjects.find((s) => s.value === subjectId);
-    const topicsData =
-      subject?.topics?.map((topic) => ({
-        value: topic._id,
-        label: topic.name,
-      })) ?? [];
-    setTopics(topicsData);
+  const watchedValues = Form.useWatch([], form);
+  const canFix = useMemo(
+    () => isFixFormValid(watchedValues, OPTIONS),
+    [watchedValues, OPTIONS]
+  );
+
+  const fetchTopicsBySubject = async (subjectId: string) => {
+    setTopicsLoading(true);
+    try {
+      const { data } = await catalogApi.getSubject(subjectId);
+      setTopics(
+        (data.topics || [])
+          .map((topic) => ({
+            value: refId(topic) || "",
+            label: topic.name,
+          }))
+          .filter((topic) => topic.value)
+      );
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch topics"));
+      setTopics([]);
+    } finally {
+      setTopicsLoading(false);
+    }
   };
 
   const fetchTagsBySubjectAndTopic = async (
@@ -72,137 +95,84 @@ export default function FixFailedQuestionPage({
     topicId: string
   ) => {
     try {
-      const response = await fetch(
-        `/api/tag/list?limit=100&subject=${subjectId}&topic=${topicId}`
-      );
-      const data = await response.json();
+      const tags = await catalogApi.listAllTags({
+        subjectId,
+        topicId,
+      });
       setTags(
-        data.tags?.map((tag: { _id: string; name: string }) => ({
-          value: tag._id,
+        tags.map((tag) => ({
+          value: tag.id,
           label: tag.name,
-        })) ?? []
+        }))
       );
     } catch {
       setTags([]);
     }
   };
 
-  const populateFormFromDraft = async (
-    draft: ImportQuestion,
-    subjectsList: typeof subjects
-  ) => {
-    setOriginalDraft(draft);
+  const populateForm = async (draft?: Partial<ImportQuestion> | null) => {
+    const { options, values } = normalizeFailedQuestionForm(draft);
+    setOPTIONS(options);
+    setOriginalDraft((draft as ImportQuestion) ?? null);
 
-    const options = draft.options ?? [];
-    setOPTIONS(
-      options.map((opt, index) => ({
-        id: opt.id,
-        label: String.fromCharCode(65 + index),
-      }))
-    );
-
-    if (draft.subject) {
-      setSelectedSubject(draft.subject);
-      const subject = subjectsList.find((s) => s.value === draft.subject);
-      const topicsData =
-        subject?.topics?.map((topic) => ({
-          value: topic._id,
-          label: topic.name,
-        })) ?? [];
-      setTopics(topicsData);
+    if (values.subject) {
+      setSelectedSubject(values.subject);
+      await fetchTopicsBySubject(values.subject);
+    } else {
+      setSelectedSubject(null);
+      setTopics([]);
     }
 
-    if (draft.topic) {
-      setSelectedTopic(draft.topic);
-      if (draft.subject && draft.topic) {
-        await fetchTagsBySubjectAndTopic(draft.subject, draft.topic);
-      }
+    if (values.subject && values.topic) {
+      setSelectedTopic(values.topic);
+      await fetchTagsBySubjectAndTopic(values.subject, values.topic);
+    } else {
+      setSelectedTopic(null);
+      setTags([]);
     }
 
-    form.setFieldsValue({
-      questionText: {
-        en: {
-          text: draft.questionText?.en?.text ?? "",
-          image: draft.questionText?.en?.image ?? null,
-        },
-        ml: {
-          text: draft.questionText?.ml?.text ?? "",
-          image: draft.questionText?.ml?.image ?? null,
-        },
-      },
-      optionType: draft.optionType || "text",
-      options: options.map((opt) => ({
-        id: opt.id,
-        type: opt.type,
-        en: opt.en ?? "",
-        ml: opt.ml ?? "",
-        image: opt.image ?? null,
-      })),
-      correctAnswer: draft.correctAnswer ?? undefined,
-      explanation: {
-        en: draft.explanation?.en ?? "",
-        ml: draft.explanation?.ml ?? "",
-        image: draft.explanation?.image ?? null,
-      },
-      subject: draft.subject ?? undefined,
-      topic: draft.topic ?? undefined,
-      exams: draft.exams ?? [],
-      tag: draft.tag ?? undefined,
-      difficultyLevel: draft.difficultyLevel ?? undefined,
-    });
+    form.setFieldsValue(values as never);
   };
 
   useEffect(() => {
     const fetchData = async () => {
       setPageLoading(true);
       try {
-        const [subjectsRes, examsRes, questionRes] = await Promise.all([
-          fetch("/api/subject/list?limit=100"),
-          fetch("/api/exam/list?limit=100"),
+        const [subjectsData, examsData, questionRes] = await Promise.all([
+          catalogApi.listSubjects(),
+          catalogApi.listAllExams(),
           ezPrepApiClient.get<FailedQuestionDetailResponse>(
             `/v1/imports/failed-questions/${params.id}`
           ),
         ]);
 
-        const subjectsData = await subjectsRes.json();
-        const examsData = await examsRes.json();
-
-        const subjectsList =
-          subjectsData?.subjects?.map(
-            (subject: {
-              _id: string;
-              name: string;
-              topics?: { _id: string; name: string }[];
-            }) => ({
-              value: subject._id,
-              label: subject.name,
-              topics: subject.topics,
-            })
-          ) ?? [];
-
-        setSubjects(subjectsList);
+        setSubjects(
+          (subjectsData.data || []).map((subject) => ({
+            value: subject.id,
+            label: subject.name,
+          }))
+        );
         setExams(
-          examsData?.exams?.map((exam: { _id: string; name: string }) => ({
-            value: exam._id,
+          examsData.map((exam) => ({
+            value: exam.id,
             label: exam.name,
-          })) ?? []
+          }))
         );
 
         const item = questionRes.data;
         setFailedQuestion(item);
-        await populateFormFromDraft(item.questionDraft, subjectsList);
+        await populateForm(item.question || item.questionDraft);
       } catch (error) {
-        const errorMessage =
-          error instanceof EzPrepApiError
-            ? error.message
-            : "Failed to fetch failed question";
-        message.error(errorMessage);
+        message.error(
+          formatEzPrepError(error, "Failed to fetch failed question")
+        );
       } finally {
         setPageLoading(false);
       }
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   const handleSubjectChange = (value: string) => {
@@ -244,11 +214,9 @@ export default function FixFailedQuestionPage({
           );
           router.push("/admin/failed-questions");
         } catch (error) {
-          const errorMessage =
-            error instanceof EzPrepApiError
-              ? error.message
-              : "Failed to delete failed question";
-          message.error(errorMessage);
+          message.error(
+            formatEzPrepError(error, "Failed to delete failed question")
+          );
         } finally {
           setDeleting(false);
         }
@@ -256,68 +224,52 @@ export default function FixFailedQuestionPage({
     });
   };
 
-  const handleSubmit = async (values: Record<string, unknown>) => {
-    setLoading(true);
-
-    if (values.optionType === "image") {
-      const options = values.options as { image?: { key?: string } }[];
-      if (!options?.every((option) => option?.image?.key)) {
-        message.error("Please upload images for all options");
-        setLoading(false);
-        return;
-      }
+  const handleSubmit = async (values: FixFormValues) => {
+    if (!isFixFormValid(values, OPTIONS)) {
+      message.error("Please complete all required fields before importing");
+      return;
     }
 
+    setLoading(true);
     try {
       const questionPayload: ImportQuestion = {
         questionText: {
           en: {
-            text: (values.questionText as ImportQuestion["questionText"])?.en
-              ?.text || null,
-            image:
-              (values.questionText as ImportQuestion["questionText"])?.en
-                ?.image || null,
+            text: values.questionText?.en?.text || null,
+            image: toImageMetadata(values.questionText?.en?.image),
           },
           ml: {
-            text: (values.questionText as ImportQuestion["questionText"])?.ml
-              ?.text || null,
-            image:
-              (values.questionText as ImportQuestion["questionText"])?.ml
-                ?.image ||
-              (values.questionText as ImportQuestion["questionText"])?.en
-                ?.image ||
-              null,
+            text: null,
+            image: null,
           },
         },
-        optionType: values.optionType as string,
+        optionType: values.optionType,
         options: OPTIONS.map((option, index) => {
-          const type = (values.optionType as string) || "text";
-          const formOptions = values.options as Record<string, unknown>[];
+          const type = values.optionType || "text";
+          const formOption = values.options?.[index];
           return {
             id: option.id,
             type,
             ...(type === "text"
               ? {
-                  en: (formOptions?.[index]?.en as string) || null,
-                  ml: (formOptions?.[index]?.ml as string) || null,
+                  en: formOption?.en || null,
+                  ml: null,
                 }
               : {
-                  image: formOptions?.[index]?.image || null,
+                  image: toImageMetadata(formOption?.image),
                 }),
           };
         }),
         explanation: {
-          en: (values.explanation as ImportQuestion["explanation"])?.en || null,
-          ml: (values.explanation as ImportQuestion["explanation"])?.ml || null,
-          image:
-            (values.explanation as ImportQuestion["explanation"])?.image ||
-            null,
+          en: values.explanation?.en || null,
+          ml: null,
+          image: toImageMetadata(values.explanation?.image),
         },
         correctAnswer: values.correctAnswer as string,
         subject: values.subject as string,
-        topic: (values.topic as string) || "",
-        exams: (values.exams as string[]) || [],
-        tag: (values.tag as string) || null,
+        topic: values.topic as string,
+        exams: values.exams || [],
+        tag: values.tag || null,
         difficultyLevel: values.difficultyLevel as string,
         isActive: originalDraft?.isActive ?? true,
         isDeleted: originalDraft?.isDeleted ?? false,
@@ -332,11 +284,7 @@ export default function FixFailedQuestionPage({
       message.success(response.message || "Question imported successfully");
       router.push("/admin/failed-questions");
     } catch (error) {
-      const errorMessage =
-        error instanceof EzPrepApiError
-          ? error.message
-          : "Failed to import question";
-      message.error(errorMessage);
+      message.error(formatEzPrepError(error, "Failed to import question"));
     } finally {
       setLoading(false);
     }
@@ -375,20 +323,38 @@ export default function FixFailedQuestionPage({
         )}
 
         <Card title="Fix Question">
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={normalizeFailedQuestionForm(null).values}
+          >
             <Form.Item label="Question (English)">
-              <Form.Item name={["questionText", "en", "text"]}>
+              <Form.Item
+                name={["questionText", "en", "text"]}
+                rules={[
+                  {
+                    validator: async (_, value) => {
+                      const image = form.getFieldValue([
+                        "questionText",
+                        "en",
+                        "image",
+                      ]);
+                      if (!value?.trim() && !image?.key) {
+                        throw new Error(
+                          "Please enter the question in English or upload an image"
+                        );
+                      }
+                    },
+                  },
+                ]}
+              >
                 <Input.TextArea
                   rows={4}
                   placeholder="Enter question text in English"
                 />
               </Form.Item>
-              <Form.Item
-                name={["questionText", "en", "image"]}
-                label="Question Image"
-              >
-                <ImageUpload name={["questionText", "en", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["questionText", "en", "image"]} />
             </Form.Item>
 
             <Form.Item label="Question (Malayalam)">
@@ -398,12 +364,7 @@ export default function FixFailedQuestionPage({
                   placeholder="Enter question text in Malayalam"
                 />
               </Form.Item>
-              <Form.Item
-                name={["questionText", "ml", "image"]}
-                label="Question Image"
-              >
-                <ImageUpload name={["questionText", "ml", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["questionText", "ml", "image"]} />
             </Form.Item>
 
             <Form.Item
@@ -419,7 +380,7 @@ export default function FixFailedQuestionPage({
                 </>
               }
               name="optionType"
-              initialValue="text"
+              rules={[{ required: true, message: "Please select options type" }]}
             >
               <Radio.Group
                 onChange={(e) => {
@@ -470,7 +431,15 @@ export default function FixFailedQuestionPage({
 
                         return (
                           <>
-                            <Form.Item name={["options", index, "en"]}>
+                            <Form.Item
+                              name={["options", index, "en"]}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: `Please enter option ${option.label} in English`,
+                                },
+                              ]}
+                            >
                               <Input
                                 placeholder={`Option ${option.label} in English`}
                               />
@@ -489,8 +458,14 @@ export default function FixFailedQuestionPage({
               ))}
             </Form.Item>
 
-            <Form.Item label="Correct Answer" name="correctAnswer">
-              <Select placeholder="Select correct answer" allowClear>
+            <Form.Item
+              label="Correct Answer"
+              name="correctAnswer"
+              rules={[
+                { required: true, message: "Please select the correct answer" },
+              ]}
+            >
+              <Select placeholder="Select correct answer">
                 {OPTIONS.map((option) => (
                   <Select.Option key={option.id} value={option.id}>
                     Option {option.label}
@@ -499,8 +474,20 @@ export default function FixFailedQuestionPage({
               </Select>
             </Form.Item>
 
+            <Form.Item label="Explanation Image">
+              <ImageUpload name={["explanation", "image"]} />
+            </Form.Item>
+
             <Form.Item label="Explanation (English)">
-              <Form.Item name={["explanation", "en"]}>
+              <Form.Item
+                name={["explanation", "en"]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please enter explanation in English",
+                  },
+                ]}
+              >
                 <Input.TextArea
                   rows={4}
                   placeholder="Enter explanation in English"
@@ -517,13 +504,11 @@ export default function FixFailedQuestionPage({
               </Form.Item>
             </Form.Item>
 
-            <Form.Item label="Explanation Image">
-              <Form.Item name={["explanation", "image"]}>
-                <ImageUpload name={["explanation", "image"]} />
-              </Form.Item>
-            </Form.Item>
-
-            <Form.Item label="Subject" name="subject">
+            <Form.Item
+              label="Subject"
+              name="subject"
+              rules={[{ required: true, message: "Please select a subject" }]}
+            >
               <Select
                 placeholder="Select subject"
                 options={subjects}
@@ -531,7 +516,12 @@ export default function FixFailedQuestionPage({
               />
             </Form.Item>
 
-            <Form.Item label="Topic" name="topic" dependencies={["subject"]}>
+            <Form.Item
+              label="Topic"
+              name="topic"
+              dependencies={["subject"]}
+              rules={[{ required: true, message: "Please select a topic" }]}
+            >
               <Select
                 placeholder={
                   selectedSubject
@@ -540,6 +530,7 @@ export default function FixFailedQuestionPage({
                 }
                 options={topics}
                 disabled={!selectedSubject}
+                loading={topicsLoading}
                 onChange={handleTopicChange}
                 allowClear
               />
@@ -558,7 +549,18 @@ export default function FixFailedQuestionPage({
               />
             </Form.Item>
 
-            <Form.Item label="Associated Exams" name="exams">
+            <Form.Item
+              label="Associated Exams"
+              name="exams"
+              rules={[
+                {
+                  required: true,
+                  type: "array",
+                  min: 1,
+                  message: "Please select at least one exam",
+                },
+              ]}
+            >
               <Select
                 mode="multiple"
                 placeholder="Select exams"
@@ -566,7 +568,16 @@ export default function FixFailedQuestionPage({
               />
             </Form.Item>
 
-            <Form.Item label="Difficulty Level" name="difficultyLevel">
+            <Form.Item
+              label="Difficulty Level"
+              name="difficultyLevel"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select difficulty level",
+                },
+              ]}
+            >
               <Select placeholder="Select difficulty level">
                 <Select.Option value="easy">Easy</Select.Option>
                 <Select.Option value="medium">Medium</Select.Option>
@@ -580,12 +591,17 @@ export default function FixFailedQuestionPage({
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  disabled={deleting}
+                  disabled={deleting || !canFix}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   Fix
                 </Button>
-                <Button danger loading={deleting} disabled={loading} onClick={handleDelete}>
+                <Button
+                  danger
+                  loading={deleting}
+                  disabled={loading}
+                  onClick={handleDelete}
+                >
                   Delete
                 </Button>
               </Space>

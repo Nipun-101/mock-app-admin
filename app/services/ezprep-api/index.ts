@@ -1,4 +1,9 @@
 export * from "./config";
 export * from "./types";
+export * from "./envelope";
+export * from "./catalog";
+export * from "./questions";
+export * from "./mock-tests";
+export * from "./files";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";

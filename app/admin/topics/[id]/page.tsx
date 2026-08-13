@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Card, Form, Input, Typography } from "antd";
+import { Button, Card, Form, Input, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -15,14 +16,13 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchTopic = async () => {
       try {
-        const response = await fetch(`/api/topic/${params.id}`);
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        form.setFieldsValue(data);
+        const { data } = await catalogApi.getTopic(params.id);
+        form.setFieldsValue({
+          name: data.name,
+          description: data.description,
+        });
       } catch (error) {
-        console.error(error);
+        message.error(formatEzPrepError(error, "Failed to fetch topic"));
       } finally {
         setInitialLoading(false);
       }
@@ -31,20 +31,17 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
     fetchTopic();
   }, [params.id, form]);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/topic/${params.id}`, {
-        method: "PUT",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      router.push('/admin/topics');
+      await catalogApi.updateTopic(params.id, values);
+      message.success("Topic updated successfully");
+      router.push("/admin/topics");
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to update topic"));
     } finally {
       setLoading(false);
     }
@@ -75,13 +72,9 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
               <Input placeholder="Enter topic name" size="large" />
             </Form.Item>
 
-            <Form.Item
-              label="Description"
-              name="description"
-              //rules={[{ required: true, message: "Please enter description" }]}
-            >
-              <Input.TextArea 
-                placeholder="Enter topic description" 
+            <Form.Item label="Description" name="description">
+              <Input.TextArea
+                placeholder="Enter topic description"
                 size="large"
                 autoSize={{ minRows: 2, maxRows: 6 }}
               />
@@ -89,19 +82,19 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
           </div>
 
           <Form.Item className="mb-0">
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              size="large" 
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
               className="bg-blue-600 hover:bg-blue-700"
               loading={loading}
             >
               Update Topic
             </Button>
-            <Button 
-              className="ml-2" 
+            <Button
+              className="ml-2"
               size="large"
-              onClick={() => router.push('/admin/topics')}
+              onClick={() => router.push("/admin/topics")}
             >
               Cancel
             </Button>
@@ -110,4 +103,4 @@ export default function EditTopicPage({ params }: { params: { id: string } }) {
       </Card>
     </div>
   );
-} 
+}

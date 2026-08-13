@@ -1,11 +1,16 @@
 "use client";
 
-import { Button, Card, Form, Input, Table, Typography } from "antd";
+import { Button, Card, Form, Input, Table, Typography, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  type Category,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -13,7 +18,7 @@ export default function CategoriesPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -56,12 +61,12 @@ export default function CategoriesPage() {
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
+      render: (record: Category) => (
         <>
           <Button
             type="link"
             size="small"
-            onClick={() => router.push(`/admin/categories/${record._id}`)}
+            onClick={() => router.push(`/admin/categories/${record.id}`)}
           >
             Edit
           </Button>
@@ -69,7 +74,7 @@ export default function CategoriesPage() {
             type="link"
             size="small"
             danger
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -81,17 +86,17 @@ export default function CategoriesPage() {
   const fetchCategories = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(
-        `/api/category/list?page=${pagination.current}&limit=${pagination.pageSize}`
-      );
-      const data = await response.json();
-      setCategories(data.categories);
+      const data = await catalogApi.listCategories({
+        page: pagination.current,
+        limit: pagination.pageSize,
+      });
+      setCategories(data.data || []);
       setPagination((prev) => ({
         ...prev,
-        total: data?.pagination?.total,
+        total: data.pagination?.total ?? 0,
       }));
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to fetch categories"));
     } finally {
       setTableLoading(false);
     }
@@ -101,19 +106,20 @@ export default function CategoriesPage() {
     fetchCategories();
   }, [pagination.current, pagination.pageSize]);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    shortName: string;
+    imageUrl?: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/category", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      console.log(data);
+      await catalogApi.createCategory(values);
+      message.success("Category created successfully");
       form.resetFields();
       fetchCategories();
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to create category"));
     } finally {
       setLoading(false);
     }
@@ -127,12 +133,11 @@ export default function CategoriesPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          await fetch(`/api/category/${id}`, {
-            method: "DELETE",
-          });
+          await catalogApi.deleteCategory(id);
+          message.success("Category deleted successfully");
           fetchCategories();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, "Failed to delete category"));
         } finally {
           setTableLoading(false);
         }
@@ -206,29 +211,29 @@ export default function CategoriesPage() {
       <Card
         title={
           <Title level={4} className="mb-0">
-            Categories List
+            Categories
           </Title>
         }
-        className="shadow-sm"
+        className="w-full shadow-sm"
       >
         <Table
           columns={columns}
           dataSource={categories}
+          rowKey="id"
           loading={tableLoading}
-          scroll={{ x: true }}
-          rowKey="_id"
           pagination={{
-            ...pagination,
-            position: ["bottomCenter"],
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} categories`,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             onChange: (page, pageSize) => {
               setPagination((prev) => ({
                 ...prev,
                 current: page,
-                pageSize: pageSize || 10,
+                pageSize: pageSize,
               }));
             },
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} categories`,
           }}
         />
       </Card>

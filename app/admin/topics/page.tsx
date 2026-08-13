@@ -1,11 +1,16 @@
 "use client";
 
-import { Button, Card, Form, Input, Table, Typography } from "antd";
+import { Button, Card, Form, Input, Table, Typography, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import { Breakpoint } from 'antd/es/_util/responsiveObserver';
-import { showConfirmModal } from '@/components/ConfirmModal';
+import { useEffect, useMemo, useState } from "react";
+import { Breakpoint } from "antd/es/_util/responsiveObserver";
+import { showConfirmModal } from "@/components/ConfirmModal";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  type Topic,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -13,13 +18,17 @@ export default function TopicsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [topics, setTopics] = useState([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0
   });
   const router = useRouter();
+
+  const pagedTopics = useMemo(() => {
+    const start = (pagination.current - 1) * pagination.pageSize;
+    return topics.slice(start, start + pagination.pageSize);
+  }, [topics, pagination.current, pagination.pageSize]);
 
   const columns = [
     {
@@ -31,25 +40,25 @@ export default function TopicsPage() {
       title: "Description",
       dataIndex: "description",
       key: "description",
-      responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+      responsive: ["sm", "md", "lg", "xl", "xxl"] as Breakpoint[],
     },
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
+      render: (record: Topic) => (
         <>
-          <Button 
-            type="link" 
+          <Button
+            type="link"
             size="small"
-            onClick={() => router.push(`/admin/topics/${record._id}`)}
+            onClick={() => router.push(`/admin/topics/${record.id}`)}
           >
             Edit
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            danger 
-            onClick={() => handleDelete(record._id)}
+          <Button
+            type="link"
+            size="small"
+            danger
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -61,15 +70,10 @@ export default function TopicsPage() {
   const fetchTopics = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/topic/list?page=${pagination.current}&limit=${pagination.pageSize}`);
-      const data = await response.json();
-      setTopics(data.topics);
-      setPagination(prev => ({
-        ...prev,
-        total: data?.pagination?.total
-      }));
+      const data = await catalogApi.listTopics();
+      setTopics(data.data || []);
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to fetch topics"));
     } finally {
       setTableLoading(false);
     }
@@ -77,20 +81,20 @@ export default function TopicsPage() {
 
   useEffect(() => {
     fetchTopics();
-  }, [pagination.current, pagination.pageSize]);
+  }, []);
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    description?: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/topic", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
+      await catalogApi.createTopic(values);
+      message.success("Topic created successfully");
       form.resetFields();
       fetchTopics();
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to create topic"));
     } finally {
       setLoading(false);
     }
@@ -98,22 +102,21 @@ export default function TopicsPage() {
 
   const handleDelete = async (id: string) => {
     showConfirmModal({
-      title: 'Delete Topic',
-      content: 'Are you sure you want to delete this topic? This action cannot be undone.',
+      title: "Delete Topic",
+      content:
+        "Are you sure you want to delete this topic? This action cannot be undone.",
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          const response = await fetch(`/api/topic/${id}`, {
-            method: "DELETE"
-          });
-          const data = await response.json();
+          await catalogApi.deleteTopic(id);
+          message.success("Topic deleted successfully");
           fetchTopics();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, "Failed to delete topic"));
         } finally {
           setTableLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -138,13 +141,9 @@ export default function TopicsPage() {
               <Input placeholder="Enter topic name" size="large" />
             </Form.Item>
 
-            <Form.Item
-              label="Description"
-              name="description"
-              //rules={[{ required: true, message: "Please enter description" }]}
-            >
-              <Input.TextArea 
-                placeholder="Enter topic description" 
+            <Form.Item label="Description" name="description">
+              <Input.TextArea
+                placeholder="Enter topic description"
                 size="large"
                 autoSize={{ minRows: 2, maxRows: 6 }}
               />
@@ -153,9 +152,9 @@ export default function TopicsPage() {
 
           <Form.Item className="mb-0">
             <Button
-              type="primary" 
-              htmlType="submit" 
-              size="large" 
+              type="primary"
+              htmlType="submit"
+              size="large"
               icon={<PlusOutlined />}
               className="bg-blue-600 hover:bg-blue-700"
               loading={loading}
@@ -166,27 +165,29 @@ export default function TopicsPage() {
         </Form>
       </Card>
 
-      <Card 
+      <Card
         title={<Title level={4} className="mb-0">Topics List</Title>}
         className="shadow-sm"
       >
-        <Table 
-          columns={columns} 
-          dataSource={topics} 
+        <Table
+          columns={columns}
+          dataSource={pagedTopics}
+          rowKey="id"
           loading={tableLoading}
           scroll={{ x: true }}
           pagination={{
-            ...pagination,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: topics.length,
             position: ["bottomCenter"],
             showSizeChanger: true,
             showTotal: (total) => `Total ${total} topics`,
             onChange: (page, pageSize) => {
-              setPagination(prev => ({
-                ...prev,
+              setPagination({
                 current: page,
-                pageSize: pageSize || 10
-              }));
-            }
+                pageSize: pageSize || 10,
+              });
+            },
           }}
         />
       </Card>

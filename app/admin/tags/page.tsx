@@ -1,28 +1,56 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Table, Typography } from "antd";
+import { Button, Card, Form, Input, Select, Table, Typography, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refId,
+  type NamedRef,
+  type Subject,
+  type Tag,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
+
+interface SubjectOption {
+  value: string;
+  label: string;
+  topics: NamedRef[];
+}
 
 export default function TagsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const router = useRouter();
+
+  const subjectName = (value: Tag["subject"]) => {
+    const id = refId(value);
+    return subjects.find((subject) => subject.value === id)?.label || id || "-";
+  };
+
+  const topicName = (value: Tag["topic"]) => {
+    const id = refId(value);
+    for (const subject of subjects) {
+      const topic = subject.topics?.find((item) => item.id === id);
+      if (topic) return topic.name;
+    }
+    return id || "-";
+  };
 
   const columns = [
     {
@@ -41,23 +69,23 @@ export default function TagsPage() {
       title: "Subject",
       dataIndex: "subject",
       key: "subject",
-      render: (subject: any) => subject?.name || "-",
+      render: (subject: Tag["subject"]) => subjectName(subject),
     },
     {
       title: "Topic",
       dataIndex: "topic",
       key: "topic",
-      render: (topic: any) => topic?.name || "-",
+      render: (topic: Tag["topic"]) => topicName(topic),
     },
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
+      render: (record: Tag) => (
         <>
           <Button
             type="link"
             size="small"
-            onClick={() => router.push(`/admin/tags/${record._id}`)}
+            onClick={() => router.push(`/admin/tags/${record.id}`)}
           >
             Edit
           </Button>
@@ -65,7 +93,7 @@ export default function TagsPage() {
             type="link"
             size="small"
             danger
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -77,17 +105,17 @@ export default function TagsPage() {
   const fetchTags = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(
-        `/api/tag/list?page=${pagination.current}&limit=${pagination.pageSize}`
-      );
-      const data = await response.json();
-      setTags(data.tags);
+      const data = await catalogApi.listTags({
+        page: pagination.current,
+        limit: pagination.pageSize,
+      });
+      setTags(data.data || []);
       setPagination((prev) => ({
         ...prev,
-        total: data?.pagination?.total,
+        total: data.pagination?.total ?? 0,
       }));
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to fetch tags"));
     } finally {
       setTableLoading(false);
     }
@@ -95,25 +123,24 @@ export default function TagsPage() {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch("/api/subject/list?limit=100");
-      const data = await response.json();
+      const data = await catalogApi.listSubjects();
       setSubjects(
-        data.subjects?.map((subject: any) => ({
-          value: subject._id,
+        (data.data || []).map((subject: Subject) => ({
+          value: subject.id,
           label: subject.name,
-          topics: subject.topics,
-        })) || []
+          topics: subject.topics || [],
+        }))
       );
     } catch (error) {
-      console.error("Failed to fetch subjects:", error);
+      message.error(formatEzPrepError(error, "Failed to fetch subjects"));
     }
   };
 
   const fetchTopicsBySubject = (subjectId: string) => {
-    const subject: any = subjects.find((s: any) => s.value === subjectId);
+    const subject = subjects.find((item) => item.value === subjectId);
     setTopics(
-      subject?.topics?.map((topic: any) => ({
-        value: topic._id,
+      subject?.topics?.map((topic) => ({
+        value: topic.id,
         label: topic.name,
       })) || []
     );
@@ -121,8 +148,11 @@ export default function TagsPage() {
 
   useEffect(() => {
     fetchTags();
-    fetchSubjects();
   }, [pagination.current, pagination.pageSize]);
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
@@ -130,22 +160,22 @@ export default function TagsPage() {
     fetchTopicsBySubject(value);
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    description?: string;
+    subject: string;
+    topic: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/tag", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      console.log(data);
+      await catalogApi.createTag(values);
+      message.success("Tag created successfully");
       form.resetFields();
       setSelectedSubject(null);
       setTopics([]);
       fetchTags();
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to create tag"));
     } finally {
       setLoading(false);
     }
@@ -159,12 +189,11 @@ export default function TagsPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          await fetch(`/api/tag/${id}`, {
-            method: "DELETE",
-          });
+          await catalogApi.deleteTag(id);
+          message.success("Tag deleted successfully");
           fetchTags();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, "Failed to delete tag"));
         } finally {
           setTableLoading(false);
         }
@@ -268,7 +297,7 @@ export default function TagsPage() {
           dataSource={tags}
           loading={tableLoading}
           scroll={{ x: true }}
-          rowKey="_id"
+          rowKey="id"
           pagination={{
             ...pagination,
             position: ["bottomCenter"],

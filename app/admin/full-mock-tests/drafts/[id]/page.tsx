@@ -20,6 +20,7 @@ import {
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
+import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../../api";
 import { QuestionPreview } from "../../QuestionPreview";
 import type {
@@ -121,15 +122,10 @@ export default function FullMockDraftPage({
       await Promise.all(
         draft.subjects.map(async (block) => {
           try {
-            const response = await fetch(
-              `/api/topic/subject/${block.subjectId}`
-            );
-            const data = await response.json();
-            (data.topics || []).forEach(
-              (topic: { _id: string; name: string }) => {
-                names.set(topic._id, topic.name);
-              }
-            );
+            const { data } = await catalogApi.getSubject(block.subjectId);
+            (data.topics || []).forEach((topic) => {
+              names.set(topic.id, topic.name);
+            });
           } catch {
             // Topic labels are display-only.
           }
@@ -192,11 +188,10 @@ export default function FullMockDraftPage({
     setReplaceResults([]);
 
     try {
-      const response = await fetch(`/api/topic/subject/${subject.subjectId}`);
-      const data = await response.json();
+      const { data } = await catalogApi.getSubject(subject.subjectId);
       setReplaceTopics(
-        (data.topics || []).map((topic: { _id: string; name: string }) => ({
-          value: topic._id,
+        (data.topics || []).map((topic) => ({
+          value: topic.id,
           label: topic.name,
         }))
       );

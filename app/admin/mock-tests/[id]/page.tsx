@@ -4,7 +4,7 @@ import { Button, Card, Descriptions, Tag, Table, Space, message, Spin } from "an
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { formatEzPrepError, mockTestsApi, refName } from "@/app/services/ezprep-api";
 
 export default function MockTestDetailPage({ params }: { params: { id: string } }) {
   const [mockTest, setMockTest] = useState<any>(null);
@@ -19,18 +19,10 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
   const fetchMockTest = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/mock-test/${params.id}`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setMockTest(data);
-      } else {
-        message.error('Failed to fetch mock test details');
-        router.push('/admin/mock-tests');
-      }
+      const { data } = await mockTestsApi.get(params.id);
+      setMockTest(data);
     } catch (error) {
-      console.error(error);
-      message.error('Failed to fetch mock test details');
+      message.error(formatEzPrepError(error, 'Failed to fetch mock test details'));
       router.push('/admin/mock-tests');
     } finally {
       setLoading(false);
@@ -51,7 +43,7 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
       title: "Subject",
       key: "subject",
       render: (record: any) => (
-        <Tag color="blue">{record?.subject?.name || 'N/A'}</Tag>
+        <Tag color="blue">{refName(record?.subject) || 'N/A'}</Tag>
       ),
     },
   ];
@@ -92,13 +84,13 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
             <Descriptions.Item label="Total Questions">{mockTest.totalQuestions}</Descriptions.Item>
             <Descriptions.Item label="Duration">{mockTest.durationInMinutes} minutes</Descriptions.Item>
             <Descriptions.Item label="Exam">
-              <Tag color="cyan">{mockTest.exam?.name || 'N/A'}</Tag>
+              <Tag color="cyan">{refName(mockTest.exam) || 'N/A'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Subject">
-              <Tag color="blue">{mockTest.subject?.name || 'N/A'}</Tag>
+              <Tag color="blue">{refName(mockTest.subject) || 'N/A'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Topic">
-              {mockTest.topic ? <Tag color="purple">{mockTest.topic.name}</Tag> : 'Not set'}
+              {refName(mockTest.topic) ? <Tag color="purple">{refName(mockTest.topic)}</Tag> : 'Not set'}
             </Descriptions.Item>
             <Descriptions.Item label="Difficulty Distribution" span={2}>
               {mockTest.difficultyDistribution ? (
@@ -139,11 +131,11 @@ export default function MockTestDetailPage({ params }: { params: { id: string } 
           </Descriptions>
         </Card>
 
-        <Card title={`Questions (${mockTest.questionIds?.length || 0})`}>
+        <Card title={`Questions (${(mockTest.questions || mockTest.questionIds)?.length || 0})`}>
           <Table 
             columns={questionColumns}
-            dataSource={mockTest.questionIds}
-            rowKey="_id"
+            dataSource={mockTest.questions || mockTest.questionIds}
+            rowKey="id"
             pagination={{ pageSize: 10 }}
           />
         </Card>

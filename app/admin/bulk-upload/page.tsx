@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Input, Modal, Pagination, Select, Space, Spin, Table, Tag, Tooltip, message } from "antd";
 import { ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
-import { ezPrepApiClient } from "@/app/services/ezprep-api";
+import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import {
   BulkUpload,
@@ -132,21 +132,29 @@ export default function BulkUploadPage() {
 
   const fetchLookups = useCallback(async () => {
     try {
-      const [subjectRes, topicRes, examRes] = await Promise.all([
-        fetch(`/api/subject/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-        fetch(`/api/topic/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-        fetch(`/api/exam/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-      ]);
-
       const [subjectData, topicData, examData] = await Promise.all([
-        subjectRes.json(),
-        topicRes.json(),
-        examRes.json(),
+        catalogApi.listSubjects(),
+        catalogApi.listTopics(),
+        catalogApi.listAllExams(),
       ]);
 
-      setSubjects(subjectData.subjects ?? []);
-      setTopics(topicData.topics ?? []);
-      setExams(examData.exams ?? []);
+      setSubjects(
+        (subjectData.data || []).map((subject) => ({
+          _id: subject.id,
+          name: subject.name,
+          topics: (subject.topics || []).map((topic) => ({
+            _id: topic.id,
+            name: topic.name,
+          })),
+        }))
+      );
+      setTopics(
+        (topicData.data || []).map((topic) => ({
+          _id: topic.id,
+          name: topic.name,
+        }))
+      );
+      setExams(examData.map((exam) => ({ _id: exam.id, name: exam.name })));
     } catch {
       message.error("Failed to fetch lookup data");
     }
@@ -208,9 +216,13 @@ export default function BulkUploadPage() {
         return;
       }
       try {
-        const res = await fetch(`/api/topic/subject/${selectedSubject}`);
-        const data = await res.json();
-        setFilteredTopics(data.topics ?? []);
+        const { data } = await catalogApi.getSubject(selectedSubject);
+        setFilteredTopics(
+          (data.topics || []).map((topic) => ({
+            _id: topic.id,
+            name: topic.name,
+          }))
+        );
       } catch {
         message.error("Failed to fetch topics");
         setFilteredTopics([]);

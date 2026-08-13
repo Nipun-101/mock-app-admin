@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Pagination, Select, Space, Table, Tag, Tooltip, message } from "antd";
 import Link from "next/link";
 import { showConfirmModal } from "@/components/ConfirmModal";
-import { ezPrepApiClient } from "@/app/services/ezprep-api";
+import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import {
   DeleteFailedQuestionResponse,
@@ -95,21 +95,29 @@ export default function FailedQuestionsPage() {
 
   const fetchLookups = useCallback(async () => {
     try {
-      const [subjectRes, topicRes, examRes] = await Promise.all([
-        fetch(`/api/subject/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-        fetch(`/api/topic/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-        fetch(`/api/exam/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`),
-      ]);
-
       const [subjectData, topicData, examData] = await Promise.all([
-        subjectRes.json(),
-        topicRes.json(),
-        examRes.json(),
+        catalogApi.listSubjects(),
+        catalogApi.listTopics(),
+        catalogApi.listAllExams(),
       ]);
 
-      setSubjects(subjectData.subjects ?? []);
-      setTopics(topicData.topics ?? []);
-      setExams(examData.exams ?? []);
+      setSubjects(
+        (subjectData.data || []).map((subject) => ({
+          _id: subject.id,
+          name: subject.name,
+          topics: (subject.topics || []).map((topic) => ({
+            _id: topic.id,
+            name: topic.name,
+          })),
+        }))
+      );
+      setTopics(
+        (topicData.data || []).map((topic) => ({
+          _id: topic.id,
+          name: topic.name,
+        }))
+      );
+      setExams(examData.map((exam) => ({ _id: exam.id, name: exam.name })));
     } catch {
       message.error("Failed to fetch lookup data");
     }
@@ -120,9 +128,9 @@ export default function FailedQuestionsPage() {
       setLoading(true);
       try {
         const searchParams: Record<string, string | number> = { page, limit };
-        if (selectedSubject) searchParams.subject = selectedSubject;
-        if (selectedExam) searchParams.exam = selectedExam;
-        if (selectedTopic) searchParams.topic = selectedTopic;
+        if (selectedSubject) searchParams.subjectId = selectedSubject;
+        if (selectedExam) searchParams.examId = selectedExam;
+        if (selectedTopic) searchParams.topicId = selectedTopic;
 
         const response = await ezPrepApiClient.get<FailedQuestionListResponse>(
           "/v1/imports/failed-questions",
@@ -164,9 +172,13 @@ export default function FailedQuestionsPage() {
         return;
       }
       try {
-        const res = await fetch(`/api/topic/subject/${selectedSubject}`);
-        const data = await res.json();
-        setFilteredTopics(data.topics ?? []);
+        const { data } = await catalogApi.getSubject(selectedSubject);
+        setFilteredTopics(
+          (data.topics || []).map((topic) => ({
+            _id: topic.id,
+            name: topic.name,
+          }))
+        );
       } catch {
         message.error("Failed to fetch topics");
         setFilteredTopics([]);
@@ -223,7 +235,7 @@ export default function FailedQuestionsPage() {
       title: "Question",
       key: "question",
       render: (_: unknown, record: FailedQuestion) => {
-        const draft = record.questionDraft;
+        const draft = record.question || record.questionDraft;
         return (
           <div>
             <div>{truncate(draft?.questionText?.en?.text)}</div>
@@ -257,14 +269,18 @@ export default function FailedQuestionsPage() {
     {
       title: "Subject",
       key: "subject",
-      render: (_: unknown, record: FailedQuestion) =>
-        subjectMap.get(record.questionDraft?.subject) ?? "-",
+      render: (_: unknown, record: FailedQuestion) => {
+        const subjectId = (record.question || record.questionDraft)?.subject;
+        if (!subjectId) return "-";
+        return subjectMap.get(subjectId) ?? "-";
+      },
     },
     {
       title: "Difficulty",
       key: "difficultyLevel",
       render: (_: unknown, record: FailedQuestion) => {
-        const level = record.questionDraft?.difficultyLevel;
+        const level = (record.question || record.questionDraft)
+          ?.difficultyLevel;
         if (!level) return "-";
         return (
           <Tag color={DIFFICULTY_COLORS[level] ?? "default"}>
@@ -277,7 +293,7 @@ export default function FailedQuestionsPage() {
       title: "Topic",
       key: "topic",
       render: (_: unknown, record: FailedQuestion) => {
-        const topicId = record.questionDraft?.topic;
+        const topicId = (record.question || record.questionDraft)?.topic;
         if (!topicId) return "-";
         const name = topicMap.get(topicId);
         return name ? <Tag>{name}</Tag> : "-";
@@ -287,7 +303,10 @@ export default function FailedQuestionsPage() {
       title: "Exams",
       key: "exams",
       render: (_: unknown, record: FailedQuestion) =>
-        renderExamTags(record.questionDraft?.exams, examMap),
+        renderExamTags(
+          (record.question || record.questionDraft)?.exams,
+          examMap
+        ),
     },
     {
       title: "Actions",

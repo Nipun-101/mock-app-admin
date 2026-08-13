@@ -1,8 +1,8 @@
 import { Upload, Button, message, Modal } from "antd";
 import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
-import { uploadToS3 } from "@/app/services/storage";
+import { filesApi, formatEzPrepError } from "@/app/services/ezprep-api";
 import { Form } from "antd";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePresignedUrl } from "@/app/hooks/usePresignedUrl";
 
 interface ImageUploadProps {
@@ -13,9 +13,28 @@ interface ImageUploadProps {
 export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   const form = Form.useFormInstance();
   const [fileList, setFileList] = useState<any[]>([]);
+  const metadataRef = useRef<Record<string, unknown> | undefined>(
+    form.getFieldValue(name)
+  );
 
   // Get the stored metadata from the form
   const formMetadata = Form.useWatch(name, form);
+
+  useEffect(() => {
+    if (
+      formMetadata &&
+      typeof formMetadata === "object" &&
+      typeof formMetadata.key === "string" &&
+      formMetadata.key &&
+      typeof formMetadata.bucket === "string" &&
+      formMetadata.bucket
+    ) {
+      metadataRef.current = formMetadata;
+      return;
+    }
+    metadataRef.current = undefined;
+    setFileList([]);
+  }, [formMetadata]);
   
   // Only pass metadata to the hook if it has the required fields
   const isValidMetadata = formMetadata && 
@@ -49,7 +68,30 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   const hasImage = fileList.length > 0;
 
   return (
-    <Form.Item name={name} label={label}>
+    <Form.Item
+      name={name}
+      label={label}
+      getValueFromEvent={() => {
+        const candidate = metadataRef.current;
+        if (
+          candidate &&
+          typeof candidate.key === "string" &&
+          candidate.key &&
+          typeof candidate.bucket === "string" &&
+          candidate.bucket
+        ) {
+          return {
+            key: candidate.key,
+            bucket: candidate.bucket,
+            region: candidate.region,
+            contentType: candidate.contentType,
+            size: candidate.size,
+            lastModified: candidate.lastModified,
+          };
+        }
+        return undefined;
+      }}
+    >
       <Upload
         onPreview={async (file) => {
           // Only show preview if we have a signed URL or file URL and form value exists
@@ -82,7 +124,7 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
         customRequest={async (options: any) => {
           const { file, onSuccess, onError } = options;
           try {
-            const response = await uploadToS3(file as File);
+            const { data: response } = await filesApi.upload(file as File);
 
             const metadata = {
               key: response.key,
@@ -97,8 +139,7 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
               uid: `-${Date.now()}`,
               name: file.name,
               status: "done",
-              url: response.url, // Initial signed URL
-              thumbUrl: response.previewUrl,
+              url: response.url,
               type: response.contentType,
               size: response.size,
             };
@@ -108,14 +149,14 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
               fileObject,
             ]);
 
-            // Store metadata in form
+            metadataRef.current = metadata;
             form.setFieldValue(name, metadata);
 
             onSuccess(null);
           } catch (error) {
             console.error("Upload error:", error);
             onError?.(new Error("Upload failed"));
-            message.error("Failed to upload image");
+            message.error(formatEzPrepError(error, "Failed to upload image"));
           }
         }}
         listType="picture"
@@ -123,6 +164,7 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
         accept="image/jpeg,image/png"
         onRemove={() => {
           setFileList([]);
+          metadataRef.current = undefined;
           form.setFieldValue(name, undefined);
           return true;
         }}

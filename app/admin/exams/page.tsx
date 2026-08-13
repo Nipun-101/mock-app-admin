@@ -6,6 +6,25 @@ import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refId,
+  type Exam,
+  type ExamSubjectConfig,
+} from "@/app/services/ezprep-api";
+
+function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfig[] | undefined {
+  if (!subjects?.length) return undefined;
+  return subjects.map((subject) => ({
+    subject: subject.subject,
+    numberOfQuestions: subject.numberOfQuestions,
+    marksPerQuestion: subject.marksPerQuestion,
+    hasNegativeMarking: Boolean(subject.hasNegativeMarking),
+    negativeMarksPerQuestion: subject.negativeMarksPerQuestion ?? 0,
+    sessionTime: subject.sessionTime,
+  }));
+}
 
 const { Title } = Typography;
 
@@ -13,13 +32,13 @@ export default function ExamsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [exams, setExams] = useState([]);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0
   });
-  const [subjects, setSubjects] = useState([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [examGroups, setExamGroups] = useState<any[]>([]);
   const [isExamSameAsGroup, setIsExamSameAsGroup] = useState(false);
@@ -55,8 +74,9 @@ export default function ExamsPage() {
       title: "Category",
       dataIndex: "category",
       key: "category",
-      render: (categoryId: string) => {
-        const cat: any = categories.find((c: any) => c.value === categoryId);
+      render: (categoryId: Exam["category"]) => {
+        const id = refId(categoryId);
+        const cat: any = categories.find((c: any) => c.value === id);
         return cat?.label || '-';
       },
     },
@@ -101,7 +121,7 @@ export default function ExamsPage() {
           <Button 
             type="link" 
             size="small"
-            onClick={() => router.push(`/admin/exams/${record._id}`)}
+            onClick={() => router.push(`/admin/exams/${record.id}`)}
           >
             Edit
           </Button>
@@ -109,7 +129,7 @@ export default function ExamsPage() {
             type="link" 
             size="small" 
             danger 
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -119,52 +139,60 @@ export default function ExamsPage() {
   ];
   
   const fetchExams = async () => {
-    const response = await fetch(`/api/exam/list?limit=${Number.MAX_SAFE_INTEGER}`);
-    const data = await response.json();
-    console.log(data);
-    setExams(data.exams);
-    setPagination(prev => ({
-      ...prev,
-      total: data?.pagination?.total
-    }));
+    setTableLoading(true);
+    try {
+      const examsList = await catalogApi.listAllExams();
+      setExams(examsList);
+      setPagination((prev) => ({
+        ...prev,
+        total: examsList.length,
+      }));
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch exams"));
+    } finally {
+      setTableLoading(false);
+    }
   };
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch('/api/subject/list?limit=100');
-      const data = await response.json();
-      setSubjects(data.subjects?.map((subject: any) => ({
-        value: subject._id,
-        label: subject.name
-      })) || []);
+      const data = await catalogApi.listSubjects();
+      setSubjects(
+        (data.data || []).map((subject) => ({
+          value: subject.id,
+          label: subject.name,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch subjects:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch subjects"));
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/category/list?limit=100');
-      const data = await response.json();
-      setCategories(data.categories?.map((cat: any) => ({
-        value: cat._id,
-        label: `${cat.name} (${cat.shortName})`,
-      })));
+      const data = await catalogApi.listActiveCategories();
+      setCategories(
+        (data.data || []).map((cat) => ({
+          value: cat.id,
+          label: `${cat.name} (${cat.shortName})`,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch categories"));
     }
   };
 
   const fetchExamGroups = async () => {
     try {
-      const response = await fetch('/api/exam-group/list?limit=100');
-      const data = await response.json();
-      setExamGroups(data.examGroups?.map((group: any) => ({
-        value: group._id,
-        label: group.name,
-      })));
+      const data = await catalogApi.listActiveExamGroups();
+      setExamGroups(
+        (data.data || []).map((group) => ({
+          value: group.id,
+          label: group.name,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch exam groups:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch exam groups"));
     }
   };
 
@@ -181,21 +209,39 @@ export default function ExamsPage() {
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/exam", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.details || data.error || 'Failed to create exam');
+      const { isExamSameAsGroup, shortName, ...examData } = values;
+      let examGroupId = examData.examGroup as string | undefined;
+
+      if (isExamSameAsGroup) {
+        const group = await catalogApi.createExamGroup({
+          name: examData.name,
+          shortName: shortName || examData.name,
+          category: examData.category,
+          description: examData.description,
+        });
+        examGroupId = group.data.id;
+        await fetchExamGroups();
       }
+
+      if (!examGroupId) {
+        throw new Error("Please select an exam group");
+      }
+
+      await catalogApi.createExam({
+        name: examData.name,
+        description: examData.description,
+        category: examData.category,
+        examGroup: examGroupId,
+        duration: examData.duration,
+        isSessionWise: examData.isSessionWise,
+        hasMultiLingualSupport: examData.hasMultiLingualSupport,
+        subjects: normalizeExamSubjects(examData.subjects),
+      });
       message.success('Exam created successfully');
       form.resetFields();
       fetchExams();
     } catch (error: any) {
-      console.error(error);
-      message.error(error.message || 'Failed to create exam');
+      message.error(formatEzPrepError(error, error.message || 'Failed to create exam'));
     } finally {
       setLoading(false);
     }
@@ -208,15 +254,11 @@ export default function ExamsPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          const response = await fetch(`/api/exam/${id}`, {
-            method: "DELETE"
-          });
-          const data = await response.json();
-          console.log(data);
-          // Reload the table after successful deletion
+          await catalogApi.deleteExam(id);
+          message.success('Exam deleted successfully');
           fetchExams();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, 'Failed to delete exam'));
         } finally {
           setTableLoading(false);
         }
@@ -492,7 +534,8 @@ export default function ExamsPage() {
         <Table 
           columns={columns} 
           loading={tableLoading}
-          dataSource={exams} 
+          dataSource={exams}
+          rowKey="id"
           scroll={{ x: true }}
           pagination={{
             position: ["bottomCenter"],

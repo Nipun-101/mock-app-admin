@@ -1,11 +1,17 @@
 "use client";
 
-import { Button, Card, Form, Input, Table, Typography, Select } from "antd";
+import { Button, Card, Form, Input, Table, Typography, Select, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import { Breakpoint } from 'antd/es/_util/responsiveObserver';
-import { showConfirmModal } from '@/components/ConfirmModal';
+import { useEffect, useMemo, useState } from "react";
+import { Breakpoint } from "antd/es/_util/responsiveObserver";
+import { showConfirmModal } from "@/components/ConfirmModal";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  type NamedRef,
+  type Subject,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
@@ -18,14 +24,18 @@ export default function SubjectsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [subjects, setSubjects] = useState([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0
   });
   const router = useRouter();
   const [topicOptions, setTopicOptions] = useState<TopicOption[]>([]);
+
+  const pagedSubjects = useMemo(() => {
+    const start = (pagination.current - 1) * pagination.pageSize;
+    return subjects.slice(start, start + pagination.pageSize);
+  }, [subjects, pagination.current, pagination.pageSize]);
 
   const columns = [
     {
@@ -37,37 +47,32 @@ export default function SubjectsPage() {
       title: "Description",
       dataIndex: "description",
       key: "description",
-      responsive: ['sm', 'md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+      responsive: ["sm", "md", "lg", "xl", "xxl"] as Breakpoint[],
     },
     {
       title: "Topics",
       dataIndex: "topics",
       key: "topics",
-      render: (topics: string[]) => {
-        const topicNames = topics?.map((topicId: string) => {
-          const topic = topicOptions.find((t: TopicOption) => t.value === topicId);
-          return topic?.label || topicId;
-        });
-        return topicNames?.join(', ') || '-';
-      },
+      render: (topics: NamedRef[]) =>
+        topics?.map((topic) => topic.name).filter(Boolean).join(", ") || "-",
     },
     {
       title: "Actions",
       key: "actions",
-      render: (record: any) => (
+      render: (record: Subject) => (
         <>
-          <Button 
-            type="link" 
+          <Button
+            type="link"
             size="small"
-            onClick={() => router.push(`/admin/subjects/${record._id}`)}
+            onClick={() => router.push(`/admin/subjects/${record.id}`)}
           >
             Edit
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            danger 
-            onClick={() => handleDelete(record._id)}
+          <Button
+            type="link"
+            size="small"
+            danger
+            onClick={() => handleDelete(record.id)}
           >
             Delete
           </Button>
@@ -79,15 +84,10 @@ export default function SubjectsPage() {
   const fetchSubjects = async () => {
     setTableLoading(true);
     try {
-      const response = await fetch(`/api/subject/simple?page=${pagination.current}&limit=${pagination.pageSize}`);
-      const data = await response.json();
-      setSubjects(data.subjects);
-      setPagination(prev => ({
-        ...prev,
-        total: data?.pagination?.total
-      }));
+      const data = await catalogApi.listSubjects();
+      setSubjects(data.data || []);
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to fetch subjects"));
     } finally {
       setTableLoading(false);
     }
@@ -95,38 +95,36 @@ export default function SubjectsPage() {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topic/list?limit=100');
-      const data = await response.json();
-      const options = data?.topics?.map((topic: any) => ({
-        value: topic._id,
-        label: topic.name,
-      }));
-      setTopicOptions(options);
+      const data = await catalogApi.listTopics();
+      setTopicOptions(
+        (data.data || []).map((topic) => ({
+          value: topic.id,
+          label: topic.name,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch topics:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch topics"));
     }
   };
 
   useEffect(() => {
     fetchSubjects();
     fetchTopics();
-  }, [pagination.current, pagination.pageSize]);
+  }, []);
 
-  const handleSubmit = async (values: any) => {
-    console.log(values);
+  const handleSubmit = async (values: {
+    name: string;
+    description?: string;
+    topics?: string[];
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/subject", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      console.log(data);
+      await catalogApi.createSubject(values);
+      message.success("Subject created successfully");
       form.resetFields();
       fetchSubjects();
     } catch (error) {
-      console.error(error);
-      console.log(error);
+      message.error(formatEzPrepError(error, "Failed to create subject"));
     } finally {
       setLoading(false);
     }
@@ -134,22 +132,21 @@ export default function SubjectsPage() {
 
   const handleDelete = async (id: string) => {
     showConfirmModal({
-      title: 'Delete Subject',
-      content: 'Are you sure you want to delete this subject? This action cannot be undone.',
+      title: "Delete Subject",
+      content:
+        "Are you sure you want to delete this subject? This action cannot be undone.",
       onConfirm: async () => {
         setTableLoading(true);
         try {
-          const response = await fetch(`/api/subject/${id}`, {
-            method: "DELETE"
-          });
-          const data = await response.json();
+          await catalogApi.deleteSubject(id);
+          message.success("Subject deleted successfully");
           fetchSubjects();
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, "Failed to delete subject"));
         } finally {
           setTableLoading(false);
         }
-      }
+      },
     });
   };
 
@@ -174,22 +171,15 @@ export default function SubjectsPage() {
               <Input placeholder="Enter subject name" size="large" />
             </Form.Item>
 
-            <Form.Item
-              label="Description"
-              name="description"
-              // rules={[{ required: true, message: "Please enter description" }]}
-            >
-              <Input.TextArea 
-                placeholder="Enter subject description" 
+            <Form.Item label="Description" name="description">
+              <Input.TextArea
+                placeholder="Enter subject description"
                 size="large"
                 autoSize={{ minRows: 2, maxRows: 6 }}
               />
             </Form.Item>
 
-            <Form.Item
-              label="Topics"
-              name="topics"
-            >
+            <Form.Item label="Topics" name="topics">
               <Select
                 mode="multiple"
                 placeholder="Select topics"
@@ -202,9 +192,9 @@ export default function SubjectsPage() {
 
           <Form.Item className="mb-0">
             <Button
-              type="primary" 
-              htmlType="submit" 
-              size="large" 
+              type="primary"
+              htmlType="submit"
+              size="large"
               icon={<PlusOutlined />}
               className="bg-blue-600 hover:bg-blue-700"
               loading={loading}
@@ -215,27 +205,29 @@ export default function SubjectsPage() {
         </Form>
       </Card>
 
-      <Card 
+      <Card
         title={<Title level={4} className="mb-0">Subjects List</Title>}
         className="shadow-sm"
       >
-        <Table 
-          columns={columns} 
-          dataSource={subjects} 
+        <Table
+          columns={columns}
+          dataSource={pagedSubjects}
+          rowKey="id"
           loading={tableLoading}
           scroll={{ x: true }}
           pagination={{
-            ...pagination,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: subjects.length,
             position: ["bottomCenter"],
             showSizeChanger: true,
             showTotal: (total) => `Total ${total} subjects`,
             onChange: (page, pageSize) => {
-              setPagination(prev => ({
-                ...prev,
+              setPagination({
                 current: page,
-                pageSize: pageSize || 10
-              }));
-            }
+                pageSize: pageSize || 10,
+              });
+            },
           }}
         />
       </Card>

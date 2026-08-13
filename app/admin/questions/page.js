@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Table, Button, Space, message, Pagination, Tag, Select } from 'antd';
 import Link from 'next/link';
 import { showConfirmModal } from '@/components/ConfirmModal';
+import { catalogApi, formatEzPrepError, questionsApi, refId, refName } from '@/app/services/ezprep-api';
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
@@ -22,21 +23,25 @@ export default function QuestionsPage() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await fetch(`/api/subject/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`);
-      const data = await res.json();
-      setSubjects(data.subjects);
+      const data = await catalogApi.listSubjects();
+      setSubjects(
+        (data.data || []).map((subject) => ({
+          _id: subject.id,
+          name: subject.name,
+          topics: subject.topics,
+        }))
+      );
     } catch (error) {
-      message.error('Failed to fetch subjects');
+      message.error(formatEzPrepError(error, 'Failed to fetch subjects'));
     }
   };
 
   const fetchExams = async () => {
     try {
-      const res = await fetch(`/api/exam/list?page=1&limit=${Number.MAX_SAFE_INTEGER}`);
-      const data = await res.json();
-      setExams(data.exams);
+      const examsList = await catalogApi.listAllExams();
+      setExams(examsList.map((exam) => ({ _id: exam.id, name: exam.name })));
     } catch (error) {
-      message.error('Failed to fetch exams');
+      message.error(formatEzPrepError(error, 'Failed to fetch exams'));
     }
   };
 
@@ -46,11 +51,15 @@ export default function QuestionsPage() {
       return;
     }
     try {
-      const res = await fetch(`/api/topic/subject/${subjectId}`);
-      const data = await res.json();
-      setTopics(data.topics);
+      const { data } = await catalogApi.getSubject(subjectId);
+      setTopics(
+        (data.topics || []).map((topic) => ({
+          _id: topic.id,
+          name: topic.name,
+        }))
+      );
     } catch (error) {
-      message.error('Failed to fetch topics');
+      message.error(formatEzPrepError(error, 'Failed to fetch topics'));
       setTopics([]);
     }
   };
@@ -58,19 +67,21 @@ export default function QuestionsPage() {
   const fetchQuestions = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const subjectQuery = selectedSubject ? `&subject=${selectedSubject}` : '';
-      const examQuery = selectedExam ? `&exam=${selectedExam}` : '';
-      const topicQuery = selectedTopic ? `&topic=${selectedTopic}` : '';
-      const res = await fetch(`/api/question/list?page=${page}&limit=${limit}${subjectQuery}${examQuery}${topicQuery}`);
-      const data = await res.json();
-      setQuestions(data.questions);
+      const data = await questionsApi.list({
+        page,
+        limit,
+        subjectId: selectedSubject || undefined,
+        examId: selectedExam || undefined,
+        topicId: selectedTopic || undefined,
+      });
+      setQuestions(data.data || []);
       setPagination({
         ...pagination,
-        total: data.pagination.total,
+        total: data.pagination?.total ?? 0,
         current: page
       });
     } catch (error) {
-      message.error('Failed to fetch questions');
+      message.error(formatEzPrepError(error, 'Failed to fetch questions'));
     }
     setLoading(false);
   };
@@ -101,14 +112,11 @@ export default function QuestionsPage() {
       onConfirm: async () => {
         setTableLoading(true);
         try {
-            const response = await fetch(`/api/question/${id}`, {
-            method: "DELETE"
-          });
-          const data = await response.json();
+            await questionsApi.delete(id);
           fetchQuestions(pagination.current);
           message.success('Question deleted successfully');
         } catch (error) {
-          console.error(error);
+          message.error(formatEzPrepError(error, 'Failed to delete question'));
         } finally {
           setTableLoading(false);
         }
@@ -132,8 +140,8 @@ export default function QuestionsPage() {
     },
     {
       title: 'Subject',
-      dataIndex: ['subject', 'name'],
       key: 'subject',
+      render: (record) => refName(record.subject) || '-',
     },
     {
       title: 'Difficulty',
@@ -157,7 +165,7 @@ export default function QuestionsPage() {
       render: (record) => (
         <>
           {record.topic ? (
-            <Tag key={record.topic._id}>{record.topic.name}</Tag>
+            <Tag key={refId(record.topic)}>{refName(record.topic) || refId(record.topic)}</Tag>
           ) : '-'}
         </>
       ),
@@ -168,7 +176,7 @@ export default function QuestionsPage() {
       render: (record) => (
         <>
           {record.exams?.map((exam) => (
-            <Tag key={exam._id} color="blue">{exam.name}</Tag>
+            <Tag key={refId(exam)} color="blue">{refName(exam) || refId(exam)}</Tag>
           ))}
         </>
       ),
@@ -178,10 +186,10 @@ export default function QuestionsPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Link href={`/admin/questions/${record._id}`}>
+          <Link href={`/admin/questions/${record.id}`}>
             <Button type="primary" className="bg-blue-600 hover:bg-blue-700">Edit</Button>
           </Link>
-          <Button danger onClick={() => handleDelete(record._id)}>Delete</Button>
+          <Button danger onClick={() => handleDelete(record.id)}>Delete</Button>
         </Space>
       ),
     },
@@ -235,7 +243,7 @@ export default function QuestionsPage() {
       <Table 
         columns={columns} 
         dataSource={questions}
-        rowKey="_id"
+        rowKey="id"
         loading={tableLoading || loading}
         pagination={false}
       />

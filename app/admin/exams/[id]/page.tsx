@@ -4,6 +4,24 @@ import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switc
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refId,
+  type ExamSubjectConfig,
+} from "@/app/services/ezprep-api";
+
+function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfig[] | undefined {
+  if (!subjects?.length) return undefined;
+  return subjects.map((subject) => ({
+    subject: subject.subject,
+    numberOfQuestions: subject.numberOfQuestions,
+    marksPerQuestion: subject.marksPerQuestion,
+    hasNegativeMarking: Boolean(subject.hasNegativeMarking),
+    negativeMarksPerQuestion: subject.negativeMarksPerQuestion ?? 0,
+    sessionTime: subject.sessionTime,
+  }));
+}
 
 const { Title } = Typography;
 
@@ -11,27 +29,22 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [subjects, setSubjects] = useState([]);
+  const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [examGroups, setExamGroups] = useState<any[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    // Fetch exam details when component mounts
     const fetchExam = async () => {
       try {
-        const response = await fetch(`/api/exam/${params.id}`);
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        // Set form values with examGroup properly extracted
+        const { data } = await catalogApi.getExam(params.id);
         form.setFieldsValue({
           ...data,
-          examGroup: data.examGroup?._id || data.examGroup,
+          category: refId(data.category),
+          examGroup: refId(data.examGroup),
         });
       } catch (error) {
-        console.error(error);
+        message.error(formatEzPrepError(error, "Failed to fetch exam"));
       } finally {
         setInitialLoading(false);
       }
@@ -41,37 +54,44 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   }, [params.id, form]);
 
   const fetchSubjects = async () => {
-    const response = await fetch(`/api/subject/simple`);
-    const data = await response.json();
-    setSubjects(data.subjects?.map((subject: any) => ({
-      value: subject._id,
-      label: subject.name
-    })));
+    try {
+      const data = await catalogApi.listSubjects();
+      setSubjects(
+        (data.data || []).map((subject) => ({
+          value: subject.id,
+          label: subject.name,
+        }))
+      );
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch subjects"));
+    }
   };
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/category/list?limit=100');
-      const data = await response.json();
-      setCategories(data.categories?.map((cat: any) => ({
-        value: cat._id,
-        label: `${cat.name} (${cat.shortName})`,
-      })));
+      const data = await catalogApi.listActiveCategories();
+      setCategories(
+        (data.data || []).map((cat) => ({
+          value: cat.id,
+          label: `${cat.name} (${cat.shortName})`,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch categories"));
     }
   };
 
   const fetchExamGroups = async () => {
     try {
-      const response = await fetch('/api/exam-group/list?limit=100');
-      const data = await response.json();
-      setExamGroups(data.examGroups?.map((group: any) => ({
-        value: group._id,
-        label: group.name,
-      })));
+      const data = await catalogApi.listActiveExamGroups();
+      setExamGroups(
+        (data.data || []).map((group) => ({
+          value: group.id,
+          label: group.name,
+        }))
+      );
     } catch (error) {
-      console.error('Failed to fetch exam groups:', error);
+      message.error(formatEzPrepError(error, "Failed to fetch exam groups"));
     }
   };
 
@@ -84,20 +104,20 @@ export default function EditExamPage({ params }: { params: { id: string } }) {
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/exam/${params.id}`, {
-        method: "PUT",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+      await catalogApi.updateExam(params.id, {
+        name: values.name,
+        description: values.description,
+        category: values.category,
+        examGroup: values.examGroup,
+        duration: values.duration,
+        isSessionWise: values.isSessionWise,
+        hasMultiLingualSupport: values.hasMultiLingualSupport,
+        subjects: normalizeExamSubjects(values.subjects),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.details || data.error || 'Failed to update exam');
-      }
       message.success('Exam updated successfully');
       router.push('/admin/exams');
     } catch (error: any) {
-      console.error(error);
-      message.error(error.message || 'Failed to update exam');
+      message.error(formatEzPrepError(error, error.message || 'Failed to update exam'));
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,26 @@ import { ezPrepApiServerClient } from "@/app/services/ezprep-api/server";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
 
+const ALLOWED_V1_ROOTS = new Set([
+  "categories",
+  "exam-groups",
+  "exams",
+  "subjects",
+  "topics",
+  "tags",
+  "questions",
+  "mock-tests",
+  "full-mock-tests",
+  "imports",
+  "files",
+]);
+
+class InvalidJsonBodyError extends Error {
+  constructor() {
+    super("Invalid JSON body");
+  }
+}
+
 async function readRequestBody(request: NextRequest): Promise<unknown> {
   if (request.method === "GET" || request.method === "HEAD") {
     return undefined;
@@ -14,7 +34,7 @@ async function readRequestBody(request: NextRequest): Promise<unknown> {
     try {
       return await request.json();
     } catch {
-      return undefined;
+      throw new InvalidJsonBodyError();
     }
   }
 
@@ -56,12 +76,55 @@ function buildForwardHeaders(
   return headers;
 }
 
+function isUnsafePathSegment(segment: string): boolean {
+  if (!segment || /[\\%\0/]/.test(segment)) {
+    return true;
+  }
+
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    return true;
+  }
+
+  return (
+    decoded === "." ||
+    decoded === ".." ||
+    decoded.includes("..") ||
+    decoded.includes("/") ||
+    decoded.includes("\\") ||
+    decoded.includes("\0")
+  );
+}
+
 async function proxyToEzPrep(request: NextRequest, pathSegments: string[]) {
+  if (pathSegments.some(isUnsafePathSegment)) {
+    return NextResponse.json({ message: "Invalid path" }, { status: 400 });
+  }
+
+  if (
+    pathSegments[0] !== "v1" ||
+    !pathSegments[1] ||
+    !ALLOWED_V1_ROOTS.has(pathSegments[1])
+  ) {
+    return NextResponse.json({ message: "Not found" }, { status: 404 });
+  }
+
   const path = `/${pathSegments.join("/")}`;
   const searchParams = Object.fromEntries(
     request.nextUrl.searchParams.entries()
   );
-  const body = await readRequestBody(request);
+
+  let body: unknown;
+  try {
+    body = await readRequestBody(request);
+  } catch (error) {
+    if (error instanceof InvalidJsonBodyError) {
+      return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
+    }
+    throw error;
+  }
 
   try {
     const { data, status } = await ezPrepApiServerClient.requestWithStatus(

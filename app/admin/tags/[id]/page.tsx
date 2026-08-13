@@ -1,42 +1,47 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Typography } from "antd";
+import { Button, Card, Form, Input, Select, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  catalogApi,
+  formatEzPrepError,
+  refId,
+  type NamedRef,
+  type Subject,
+} from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
+
+interface SubjectOption {
+  value: string;
+  label: string;
+  topics: NamedRef[];
+}
 
 export default function EditTagPage({ params }: { params: { id: string } }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const router = useRouter();
 
-  const fetchSubjects = async () => {
-    try {
-      const response = await fetch("/api/subject/list?limit=100");
-      const data = await response.json();
-      return (
-        data.subjects?.map((subject: any) => ({
-          value: subject._id,
-          label: subject.name,
-          topics: subject.topics,
-        })) || []
-      );
-    } catch (error) {
-      console.error("Failed to fetch subjects:", error);
-      return [];
-    }
+  const fetchSubjects = async (): Promise<SubjectOption[]> => {
+    const data = await catalogApi.listSubjects();
+    return (data.data || []).map((subject: Subject) => ({
+      value: subject.id,
+      label: subject.name,
+      topics: subject.topics || [],
+    }));
   };
 
-  const fetchTopicsBySubject = (subjectId: string, subjectsList: any[]) => {
-    const subject = subjectsList.find((s: any) => s.value === subjectId);
+  const topicsForSubject = (subjectId: string, subjectsList: SubjectOption[]) => {
+    const subject = subjectsList.find((item) => item.value === subjectId);
     return (
-      subject?.topics?.map((topic: any) => ({
-        value: topic._id,
+      subject?.topics?.map((topic) => ({
+        value: topic.id,
         label: topic.name,
       })) || []
     );
@@ -48,19 +53,13 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
         const subjectsList = await fetchSubjects();
         setSubjects(subjectsList);
 
-        const response = await fetch(`/api/tag/${params.id}`);
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        const subjectId = data.subject?._id || data.subject;
-        const topicId = data.topic?._id || data.topic;
+        const { data } = await catalogApi.getTag(params.id);
+        const subjectId = refId(data.subject);
+        const topicId = refId(data.topic);
 
         if (subjectId) {
           setSelectedSubject(subjectId);
-          const topicsList = fetchTopicsBySubject(subjectId, subjectsList);
-          setTopics(topicsList);
+          setTopics(topicsForSubject(subjectId, subjectsList));
         }
 
         form.setFieldsValue({
@@ -70,7 +69,7 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
           topic: topicId,
         });
       } catch (error) {
-        console.error(error);
+        message.error(formatEzPrepError(error, "Failed to fetch tag"));
       } finally {
         setInitialLoading(false);
       }
@@ -82,25 +81,22 @@ export default function EditTagPage({ params }: { params: { id: string } }) {
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
     form.setFieldValue("topic", undefined);
-    const topicsList = fetchTopicsBySubject(value, subjects);
-    setTopics(topicsList);
+    setTopics(topicsForSubject(value, subjects));
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {
+    name: string;
+    description?: string;
+    subject: string;
+    topic: string;
+  }) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/tag/${params.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      await catalogApi.updateTag(params.id, values);
+      message.success("Tag updated successfully");
       router.push("/admin/tags");
     } catch (error) {
-      console.error(error);
+      message.error(formatEzPrepError(error, "Failed to update tag"));
     } finally {
       setLoading(false);
     }
