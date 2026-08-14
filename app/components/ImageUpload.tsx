@@ -1,3 +1,5 @@
+"use client";
+
 import { Upload, Button, message, Modal } from "antd";
 import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
 import { filesApi, formatEzPrepError } from "@/app/services/ezprep-api";

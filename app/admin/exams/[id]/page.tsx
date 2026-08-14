@@ -2,7 +2,7 @@
 
 import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switch, Typography } from "antd";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   catalogApi,
@@ -25,7 +25,8 @@ function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfi
 
 const { Title } = Typography;
 
-export default function EditExamPage({ params }: { params: { id: string } }) {
+export default function EditExamPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);

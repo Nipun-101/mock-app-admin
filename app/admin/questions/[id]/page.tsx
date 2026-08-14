@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, Form, Input, Select, Radio, message, Tooltip } from "antd";
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { ImageUpload } from "@/app/components/ImageUpload";
@@ -20,7 +20,10 @@ function normalizeExplanationImages(images: unknown): QuestionImage[] {
   );
 }
 
-export default function EditQuestionPage({ params }: { params: { id: string } }) {
+export default function EditQuestionPage(props: {
+  params: Promise<{ id: string }>;
+}) {
+  const params = use(props.params);
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);

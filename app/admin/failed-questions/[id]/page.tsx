@@ -13,7 +13,7 @@ import {
   message,
 } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
 import { showConfirmModal } from "@/components/ConfirmModal";
@@ -37,11 +37,10 @@ import {
   toImageMetadata,
 } from "../form";
 
-export default function FixFailedQuestionPage({
-  params,
-}: {
-  params: { id: string };
+export default function FixFailedQuestionPage(props: {
+  params: Promise<{ id: string }>;
 }) {
+  const params = use(props.params);
   const [form] = Form.useForm<FixFormValues>();
   const router = useRouter();
   const [loading, setLoading] = useState(false);

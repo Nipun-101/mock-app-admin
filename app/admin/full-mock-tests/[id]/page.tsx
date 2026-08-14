@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Button, Card, Descriptions, Spin, Table, Tag, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { formatEzPrepError, fullMockApi } from "../api";
 import type { FullMockSubjectConfig, FullMockTestListItem } from "../types";
 
-export default function PublishedFullMockPage({
-  params,
-}: {
-  params: { id: string };
+export default function PublishedFullMockPage(props: {
+  params: Promise<{ id: string }>;
 }) {
+  const params = use(props.params);
   const router = useRouter();
   const [test, setTest] = useState<FullMockTestListItem | null>(null);
   const [loading, setLoading] = useState(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -53,11 +53,10 @@ interface TopicOption {
   label: string;
 }
 
-export default function FullMockDraftPage({
-  params,
-}: {
-  params: { id: string };
+export default function FullMockDraftPage(props: {
+  params: Promise<{ id: string }>;
 }) {
+  const params = use(props.params);
   const router = useRouter();
   const [form] = Form.useForm<PublishDraftPayload>();
   const [draft, setDraft] = useState<DraftResponse | null>(null);
@@ -573,7 +572,7 @@ export default function FullMockDraftPage({
         onCancel={() => setReplaceSlot(null)}
         footer={null}
         width={900}
-        destroyOnClose
+        destroyOnHidden
       >
         <p className="text-gray-500 mb-4">
           Replacement must be the same subject. Topic may differ. Marks and

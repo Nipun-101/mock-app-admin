@@ -346,7 +346,7 @@ export default function FullMockTestsPage() {
               showSearch
               optionFilterProp="label"
               options={examFilterOptions}
-              onDropdownVisibleChange={loadExamFilterOptions}
+              onOpenChange={loadExamFilterOptions}
               value={publishedExamId}
               onChange={(value) => {
                 setPublishedExamId(value);
