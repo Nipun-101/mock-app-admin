@@ -149,15 +149,21 @@ export default function PublishedFullMockPage(props: {
                 {test.shuffleOptions ? "Yes" : "No"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Show Results Immediately">
+            <Descriptions.Item label="Show Results Immediately" span="filled">
               <Tag color={test.showResultsImmediately ? "green" : "red"}>
                 {test.showResultsImmediately ? "Yes" : "No"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
+            <Descriptions.Item
+              label="Description"
+              span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+            >
               {test.description || "No description"}
             </Descriptions.Item>
-            <Descriptions.Item label="Created At" span={2}>
+            <Descriptions.Item
+              label="Created At"
+              span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+            >
               {test.createdAt
                 ? new Date(test.createdAt).toLocaleString()
                 : "N/A"}

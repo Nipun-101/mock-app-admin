@@ -92,10 +92,10 @@ export default function MockTestDetailPage(props: {
             <Descriptions.Item label="Subject">
               <Tag color="blue">{refName(mockTest.subject) || 'N/A'}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Topic">
+            <Descriptions.Item label="Topic" span="filled">
               {refName(mockTest.topic) ? <Tag color="purple">{refName(mockTest.topic)}</Tag> : 'Not set'}
             </Descriptions.Item>
-            <Descriptions.Item label="Difficulty Distribution" span={2}>
+            <Descriptions.Item label="Difficulty Distribution" span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}>
               {mockTest.difficultyDistribution ? (
                 <Space>
                   <Tag color="green">Easy: {mockTest.difficultyDistribution.easy}</Tag>
@@ -120,15 +120,15 @@ export default function MockTestDetailPage(props: {
                 {mockTest.shuffleOptions ? 'Yes' : 'No'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Show Results Immediately">
+            <Descriptions.Item label="Show Results Immediately" span="filled">
               <Tag color={mockTest.showResultsImmediately ? 'green' : 'red'}>
                 {mockTest.showResultsImmediately ? 'Yes' : 'No'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
+            <Descriptions.Item label="Description" span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}>
               {mockTest.description || 'No description'}
             </Descriptions.Item>
-            <Descriptions.Item label="Created At" span={2}>
+            <Descriptions.Item label="Created At" span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}>
               {new Date(mockTest.createdAt).toLocaleString()}
             </Descriptions.Item>
           </Descriptions>
