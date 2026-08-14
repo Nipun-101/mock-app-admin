@@ -16,6 +16,7 @@ import {
   UploadOutlined,
   CloseCircleOutlined,
   FileProtectOutlined,
+  ReadOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -105,6 +106,11 @@ export default function AdminLayout({
       label: <Link href="/admin/full-mock-tests">Full Mock Tests</Link>,
     },
     {
+      key: "/admin/current-affairs",
+      icon: <ReadOutlined />,
+      label: <Link href="/admin/current-affairs">Current Affairs</Link>,
+    },
+    {
       key: "/admin/categories",
       icon: <AppstoreOutlined />,
       label: <Link href="/admin/categories">Categories</Link>,
@@ -178,7 +184,9 @@ export default function AdminLayout({
                 ? "/admin/failed-questions"
                 : pathname.startsWith("/admin/full-mock-tests")
                   ? "/admin/full-mock-tests"
-                  : pathname,
+                  : pathname.startsWith("/admin/current-affairs")
+                    ? "/admin/current-affairs"
+                    : pathname,
           ]}
           items={menuItems}
           className="border-r-0 pt-4"
