@@ -8,6 +8,7 @@ import {
   formatEzPrepError,
   refId,
 } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 const { Title } = Typography;
 
@@ -79,11 +80,8 @@ export default function EditExamGroupPage(props: {
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={
@@ -158,5 +156,6 @@ export default function EditExamGroupPage(props: {
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

@@ -4,6 +4,7 @@ import { Button, Card, Form, Input, Typography, message } from "antd";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 const { Title } = Typography;
 
@@ -54,11 +55,8 @@ export default function EditCategoryPage(props: {
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={
@@ -127,5 +125,6 @@ export default function EditCategoryPage(props: {
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

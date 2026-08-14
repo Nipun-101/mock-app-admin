@@ -15,13 +15,13 @@ import {
   Table,
   Tag,
   message,
-  Spin,
 } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../../api";
+import { PageLoader } from "@/app/components/PageLoader";
 import { QuestionPreview } from "../../QuestionPreview";
 import type {
   DraftQuestionItem,
@@ -390,16 +390,13 @@ export default function FullMockDraftPage(props: {
     },
   ];
 
-  if (loading) {
+  if (loading || !draft) {
     return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        <Spin size="large" />
-      </div>
+      <>
+        <Form form={form} component={false} />
+        <PageLoader />
+      </>
     );
-  }
-
-  if (!draft) {
-    return null;
   }
 
   return (

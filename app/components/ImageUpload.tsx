@@ -1,188 +1,143 @@
 "use client";
 
 import { Upload, Button, message, Modal } from "antd";
+import type { UploadFile } from "antd/es/upload/interface";
 import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
 import { filesApi, formatEzPrepError } from "@/app/services/ezprep-api";
 import { Form } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePresignedUrl } from "@/app/hooks/usePresignedUrl";
 
 interface ImageUploadProps {
-  name: (string | number)[]; // Form field path
+  name: (string | number)[];
   label?: string;
+}
+
+function toPlainImageMetadata(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const row = value as Record<string, unknown>;
+  if (typeof row.key !== "string" || !row.key || typeof row.bucket !== "string" || !row.bucket) {
+    return undefined;
+  }
+
+  const lastModified =
+    row.lastModified instanceof Date
+      ? row.lastModified.toISOString()
+      : typeof row.lastModified === "string"
+        ? row.lastModified
+        : undefined;
+
+  return {
+    key: row.key,
+    bucket: row.bucket,
+    ...(typeof row.region === "string" ? { region: row.region } : {}),
+    ...(typeof row.contentType === "string" ? { contentType: row.contentType } : {}),
+    ...(typeof row.size === "number" ? { size: row.size } : {}),
+    ...(lastModified ? { lastModified } : {}),
+  };
+}
+
+/** Holds object values in Form state without mounting a DOM input. */
+function FormObjectValue(_props: { value?: unknown; onChange?: (value: unknown) => void }) {
+  return null;
 }
 
 export const ImageUpload = ({ name, label }: ImageUploadProps) => {
   const form = Form.useFormInstance();
-  const [fileList, setFileList] = useState<any[]>([]);
-  const metadataRef = useRef<Record<string, unknown> | undefined>(
-    form.getFieldValue(name)
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const formMetadata = Form.useWatch(name, form);
+  const storedMetadata = toPlainImageMetadata(formMetadata);
+  const imageKey = typeof storedMetadata?.key === "string" ? storedMetadata.key : undefined;
+  const { url: signedUrl } = usePresignedUrl(
+    storedMetadata
+      ? {
+          key: String(storedMetadata.key),
+          bucket: String(storedMetadata.bucket),
+          region:
+            typeof storedMetadata.region === "string"
+              ? storedMetadata.region
+              : undefined,
+        }
+      : null
   );
 
-  // Get the stored metadata from the form
-  const formMetadata = Form.useWatch(name, form);
-
-  useEffect(() => {
-    if (
-      formMetadata &&
-      typeof formMetadata === "object" &&
-      typeof formMetadata.key === "string" &&
-      formMetadata.key &&
-      typeof formMetadata.bucket === "string" &&
-      formMetadata.bucket
-    ) {
-      metadataRef.current = formMetadata;
-      return;
-    }
-    metadataRef.current = undefined;
-    setFileList([]);
-  }, [formMetadata]);
-  
-  // Only pass metadata to the hook if it has the required fields
-  const isValidMetadata = formMetadata && 
-    typeof formMetadata === 'object' && 
-    'key' in formMetadata && 
-    'bucket' in formMetadata;
-  
-  const { url: signedUrl } = usePresignedUrl(isValidMetadata ? formMetadata : null);
-
-  //when signedUrl is changed, update the fileList
   useEffect(() => {
     if (signedUrl) {
-      setFileList([{ url: signedUrl }]);
+      setFileList([{ uid: "current-image", name: "image", url: signedUrl, status: "done" }]);
+      return;
     }
-  }, [signedUrl]);
-
-  // Watch for form reset
-  useEffect(() => {
-    const resetHandler = () => {
+    if (!imageKey) {
       setFileList([]);
-    };
-
-    const fieldValue = form.getFieldValue(name);
-    if (fieldValue === undefined) {
-      resetHandler();
     }
-  }, [form, name]);
+  }, [signedUrl, imageKey]);
 
-
-  // Determine if an image is already uploaded
   const hasImage = fileList.length > 0;
 
   return (
-    <Form.Item
-      name={name}
-      label={label}
-      getValueProps={() => ({})}
-      getValueFromEvent={() => {
-        const candidate = metadataRef.current;
-        if (
-          candidate &&
-          typeof candidate.key === "string" &&
-          candidate.key &&
-          typeof candidate.bucket === "string" &&
-          candidate.bucket
-        ) {
-          return {
-            key: candidate.key,
-            bucket: candidate.bucket,
-            region: candidate.region,
-            contentType: candidate.contentType,
-            size: candidate.size,
-            lastModified: candidate.lastModified,
-          };
-        }
-        return undefined;
-      }}
-    >
-      <Upload
-        onPreview={async (file) => {
-          // Only show preview if we have a signed URL or file URL and form value exists
-          const previewUrl = signedUrl || file.url;
-          if (previewUrl && formMetadata) {
+    <>
+      <Form.Item name={name} hidden>
+        <FormObjectValue />
+      </Form.Item>
+      <Form.Item label={label}>
+        <Upload
+          fileList={fileList}
+          listType="picture"
+          maxCount={1}
+          accept="image/jpeg,image/png"
+          onPreview={(file) => {
+            const previewUrl = signedUrl || file.url;
+            if (!previewUrl) {
+              return;
+            }
             Modal.info({
-              title: 'Image Preview',
+              title: "Image Preview",
               content: (
-                <div style={{ textAlign: 'center' }}>
-                  <img 
-                    alt="preview" 
-                    src={previewUrl}
-                    style={{ maxWidth: '100%' }}
-                  />
+                <div style={{ textAlign: "center" }}>
+                  <img alt="preview" src={previewUrl} style={{ maxWidth: "100%" }} />
                 </div>
               ),
-              width: '60%',
+              width: "60%",
               maskClosable: true,
               footer: null,
               closable: true,
-              closeIcon: <CloseOutlined />
+              closeIcon: <CloseOutlined />,
             });
-          }
-        }}
-        fileList={fileList.map((file) => ({
-          ...file,
-          // Use the refreshed signed URL for displaying the image
-          url: signedUrl || file.url,
-        }))}     
-        customRequest={async (options: any) => {
-          const { file, onSuccess, onError } = options;
-          try {
-            const { data: response } = await filesApi.upload(file as File);
-
-            const metadata = {
-              key: response.key,
-              bucket: response.bucket,
-              region: response.region,
-              contentType: response.contentType,
-              size: response.size,
-              lastModified: response.lastModified,
-            };
-
-            const fileObject = {
-              uid: `-${Date.now()}`,
-              name: file.name,
-              status: "done",
-              url: response.url,
-              type: response.contentType,
-              size: response.size,
-            };
-
-            setFileList((prev) => [
-              ...prev.filter((f) => f.uid !== fileObject.uid),
-              fileObject,
-            ]);
-
-            metadataRef.current = metadata;
-            onSuccess(null);
-          } catch (error) {
-            console.error("Upload error:", error);
-            onError?.(new Error("Upload failed"));
-            message.error(formatEzPrepError(error, "Failed to upload image"));
-          }
-        }}
-        listType="picture"
-        maxCount={1}
-        accept="image/jpeg,image/png"
-        onRemove={() => {
-          setFileList([]);
-          metadataRef.current = undefined;
-          return true;
-        }}
-        beforeUpload={(file) => {
-          const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-          if (!isJpgOrPng) {
-            message.error('You can only upload JPG/PNG files!');
-          }
-          return isJpgOrPng;
-        }}
-      >
-        <Button 
-          icon={<UploadOutlined />}
-          disabled={hasImage}
+          }}
+          customRequest={async (options) => {
+            const { file, onSuccess, onError } = options;
+            try {
+              const { data: response } = await filesApi.upload(file as File);
+              const metadata = toPlainImageMetadata(response);
+              if (!metadata) {
+                throw new Error("Upload did not return image metadata");
+              }
+              form.setFieldValue(name, metadata);
+              onSuccess?.(metadata);
+            } catch (error) {
+              onError?.(error as Error);
+              message.error(formatEzPrepError(error, "Failed to upload image"));
+            }
+          }}
+          onRemove={() => {
+            form.setFieldValue(name, undefined);
+            setFileList([]);
+            return true;
+          }}
+          beforeUpload={(file) => {
+            const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
+            if (!isJpgOrPng) {
+              message.error("You can only upload JPG/PNG files!");
+            }
+            return isJpgOrPng;
+          }}
         >
-          Upload Image
-        </Button>
-      </Upload>
-    </Form.Item>
+          <Button icon={<UploadOutlined />} disabled={hasImage}>
+            Upload Image
+          </Button>
+        </Upload>
+      </Form.Item>
+    </>
   );
 };

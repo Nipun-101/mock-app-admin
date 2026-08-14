@@ -10,6 +10,7 @@ import {
   type NamedRef,
   type Subject,
 } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 const { Title } = Typography;
 
@@ -103,11 +104,8 @@ export default function EditTagPage(props: { params: Promise<{ id: string }> }) 
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={
@@ -196,5 +194,6 @@ export default function EditTagPage(props: { params: Promise<{ id: string }> }) 
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

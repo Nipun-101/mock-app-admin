@@ -6,6 +6,7 @@ import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/ic
 import { useRouter } from 'next/navigation';
 import { ImageUpload } from "@/app/components/ImageUpload";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 interface Option {
   id: string;
@@ -27,6 +28,7 @@ export default function EditQuestionPage(props: {
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
@@ -102,6 +104,7 @@ export default function EditQuestionPage(props: {
       } catch (error) {
         console.error('Error fetching data:', error);
         message.error('Failed to fetch data');
+        setPageLoading(false);
       }
     };
 
@@ -177,6 +180,8 @@ export default function EditQuestionPage(props: {
     } catch (error) {
       console.error('Error fetching question:', error);
       message.error(formatEzPrepError(error, 'Failed to fetch question'));
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -265,6 +270,7 @@ export default function EditQuestionPage(props: {
   };
 
   return (
+    <EditPageShell loading={pageLoading}>
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <Card title="Edit Question">
@@ -524,5 +530,6 @@ export default function EditQuestionPage(props: {
         </Card>
       </div>
     </div>
+    </EditPageShell>
   );
 } 

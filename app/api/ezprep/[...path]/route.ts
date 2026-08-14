@@ -15,6 +15,7 @@ const ALLOWED_V1_ROOTS = new Set([
   "full-mock-tests",
   "imports",
   "files",
+  "current-affairs",
 ]);
 
 class InvalidJsonBodyError extends Error {

@@ -5,5 +5,6 @@ export * from "./catalog";
 export * from "./questions";
 export * from "./mock-tests";
 export * from "./files";
+export * from "./current-affairs";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";

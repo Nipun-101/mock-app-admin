@@ -4,6 +4,7 @@ import { Button, Card, Form, Input, Typography, message } from "antd";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 const { Title } = Typography;
 
@@ -48,11 +49,8 @@ export default function EditTopicPage(props: { params: Promise<{ id: string }> }
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={<Title level={4} className="mb-0">Edit Topic</Title>}
@@ -103,5 +101,6 @@ export default function EditTopicPage(props: { params: Promise<{ id: string }> }
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

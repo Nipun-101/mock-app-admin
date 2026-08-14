@@ -10,6 +10,7 @@ import {
   refId,
   type ExamSubjectConfig,
 } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfig[] | undefined {
   if (!subjects?.length) return undefined;
@@ -124,11 +125,8 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={<Title level={4} className="mb-0">Edit Exam</Title>}
@@ -357,5 +355,6 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 } 
