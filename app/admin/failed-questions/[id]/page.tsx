@@ -36,6 +36,7 @@ import {
   normalizeFailedQuestionForm,
   toImageMetadata,
 } from "../form";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 export default function FixFailedQuestionPage(props: {
   params: Promise<{ id: string }>;
@@ -289,15 +290,8 @@ export default function FixFailedQuestionPage(props: {
     }
   };
 
-  if (pageLoading) {
-    return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
   return (
+    <EditPageShell loading={pageLoading}>
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {failedQuestion && (
@@ -609,5 +603,6 @@ export default function FixFailedQuestionPage(props: {
         </Card>
       </div>
     </div>
+    </EditPageShell>
   );
 }

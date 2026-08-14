@@ -1,10 +1,11 @@
 "use client";
 
-import { Button, Card, Descriptions, Tag, Table, Space, message, Spin } from "antd";
+import { Button, Card, Descriptions, Tag, Table, Space, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatEzPrepError, mockTestsApi, refName } from "@/app/services/ezprep-api";
+import { PageLoader } from "@/app/components/PageLoader";
 
 export default function MockTestDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -52,11 +53,7 @@ export default function MockTestDetailPage(props: {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!mockTest) {

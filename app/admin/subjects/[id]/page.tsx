@@ -4,6 +4,7 @@ import { Button, Card, Form, Input, Typography, Select, message } from "antd";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
+import { EditPageShell } from "@/app/components/PageLoader";
 
 const { Title } = Typography;
 
@@ -64,11 +65,8 @@ export default function EditSubjectPage(props: {
     }
   };
 
-  if (initialLoading) {
-    return <div>Loading...</div>;
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-6">
       <Card
         title={<Title level={4} className="mb-0">Edit Subject</Title>}
@@ -129,5 +127,6 @@ export default function EditSubjectPage(props: {
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

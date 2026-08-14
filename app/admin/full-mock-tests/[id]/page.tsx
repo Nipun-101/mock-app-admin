@@ -1,10 +1,11 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Button, Card, Descriptions, Spin, Table, Tag, message } from "antd";
+import { Button, Card, Descriptions, Table, Tag, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { formatEzPrepError, fullMockApi } from "../api";
+import { PageLoader } from "@/app/components/PageLoader";
 import type { FullMockSubjectConfig, FullMockTestListItem } from "../types";
 
 export default function PublishedFullMockPage(props: {
@@ -74,11 +75,7 @@ export default function PublishedFullMockPage(props: {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
-        <Spin size="large" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!test) {

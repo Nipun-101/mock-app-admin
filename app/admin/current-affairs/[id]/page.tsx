@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Form, Spin, Typography, message } from "antd";
+import { Button, Card, Form, Typography, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import {
   type CurrentAffairImage,
 } from "@/app/services/ezprep-api";
 import { toDateKey } from "../date-key";
+import { EditPageShell } from "@/app/components/PageLoader";
 import {
   CurrentAffairFormFields,
   affairCardClassName,
@@ -98,15 +99,8 @@ export default function EditCurrentAffairPage(props: {
     }
   };
 
-  if (initialLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
   return (
+    <EditPageShell loading={initialLoading}>
     <div className="space-y-4 sm:space-y-6 pb-6">
       <Button
         type="text"
@@ -157,5 +151,6 @@ export default function EditCurrentAffairPage(props: {
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }
