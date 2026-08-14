@@ -12,12 +12,12 @@ export const affairCardStyles = {
   body: { padding: "16px" },
 };
 
-export function AffairDatePicker(props: DatePickerProps) {
+export function AffairDatePicker({ className, ...props }: DatePickerProps) {
   return (
     <DatePicker
       allowClear={false}
       format="YYYY-MM-DD"
-      className="w-full min-h-11"
+      className={className ?? "w-full min-h-11"}
       size="large"
       inputReadOnly
       getPopupContainer={() => document.body}

@@ -298,8 +298,11 @@ export default function CurrentAffairsPage() {
         styles={affairCardStyles}
       >
         <div className="flex flex-col gap-2 mb-4 sm:mb-6 pb-4 border-b sm:flex-row sm:items-center">
-          <Text strong>Show items for</Text>
+          <Text strong className="shrink-0">
+            Show items for
+          </Text>
           <AffairDatePicker
+            className="w-full min-h-11 sm:w-[220px]"
             value={selectedDayjs}
             onChange={handleListDateChange}
           />
