@@ -33,18 +33,26 @@ export default function AdminLayout({
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+
+  const closeSidebar = () => setCollapsed(true);
+  const toggleSidebar = () => setCollapsed((open) => !open);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+    closeSidebar();
+  }, [pathname]);
+
+  useEffect(() => {
+    if (collapsed) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeSidebar();
+      }
     };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [collapsed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,12 +152,14 @@ export default function AdminLayout({
 
   return (
     <Layout className="min-h-screen">
-      <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b h-16 flex items-center px-4">
+      <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b h-16 flex items-center px-4">
         <Button
           type="text"
           icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleSidebar}
           className="text-lg"
+          aria-label={collapsed ? "Open navigation" : "Close navigation"}
+          aria-expanded={!collapsed}
         />
         <h1 className="text-base sm:text-xl font-bold ml-3 sm:ml-4 flex-1 truncate">
           Mock Test Admin
@@ -159,11 +169,11 @@ export default function AdminLayout({
         </Button>
       </div>
 
-      {/* Overlay for mobile */}
-      {!collapsed && isMobile && (
+      {!collapsed && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setCollapsed(true)}
+          className="fixed inset-x-0 bottom-0 top-16 z-20 bg-black/50"
+          onClick={closeSidebar}
+          aria-hidden="true"
         />
       )}
 
@@ -173,9 +183,9 @@ export default function AdminLayout({
         collapsed={collapsed}
         collapsedWidth={0}
         width={250}
-        className={`fixed left-0 top-0 bottom-0 ${isMobile ? 'z-40' : 'z-10'} transition-all duration-300 bg-white h-screen overflow-y-auto`}
+        className="fixed left-0 top-0 bottom-0 z-30 transition-all duration-300 bg-white h-screen overflow-y-auto"
         style={{
-          transform: collapsed ? 'translateX(-100%)' : 'translateX(0)',
+          transform: collapsed ? "translateX(-100%)" : "translateX(0)",
         }}
       >
         <div className="h-16" /> {/* Spacer for header */}

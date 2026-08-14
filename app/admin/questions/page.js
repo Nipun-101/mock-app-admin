@@ -64,7 +64,7 @@ export default function QuestionsPage() {
     }
   };
 
-  const fetchQuestions = async (page = 1, limit = 10) => {
+  const fetchQuestions = async (page = 1, limit = pagination.pageSize) => {
     setLoading(true);
     try {
       const data = await questionsApi.list({
@@ -75,11 +75,12 @@ export default function QuestionsPage() {
         topicId: selectedTopic || undefined,
       });
       setQuestions(data.data || []);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         total: data.pagination?.total ?? 0,
-        current: page
-      });
+        current: data.pagination?.page ?? page,
+        pageSize: data.pagination?.limit ?? limit,
+      }));
     } catch (error) {
       message.error(formatEzPrepError(error, 'Failed to fetch questions'));
     }
@@ -113,7 +114,7 @@ export default function QuestionsPage() {
         setTableLoading(true);
         try {
             await questionsApi.delete(id);
-          fetchQuestions(pagination.current);
+          fetchQuestions(pagination.current, pagination.pageSize);
           message.success('Question deleted successfully');
         } catch (error) {
           message.error(formatEzPrepError(error, 'Failed to delete question'));
@@ -252,7 +253,9 @@ export default function QuestionsPage() {
           current={pagination.current}
           total={pagination.total}
           pageSize={pagination.pageSize}
-          onChange={(page) => fetchQuestions(page)}
+          showSizeChanger
+          pageSizeOptions={['10', '20', '50']}
+          onChange={(page, pageSize) => fetchQuestions(page, pageSize)}
         />
       </div>
     </div>
