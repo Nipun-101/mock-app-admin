@@ -439,10 +439,13 @@ export default function FullMockDraftPage(props: {
             <Descriptions.Item label="Duration">
               {paperDuration}
             </Descriptions.Item>
-            <Descriptions.Item label="Total Marks">
+            <Descriptions.Item label="Total Marks" span="filled">
               {snapshot?.totalMarks ?? "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
+            <Descriptions.Item
+              label="Description"
+              span={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
+            >
               {snapshot?.description || "No description"}
             </Descriptions.Item>
           </Descriptions>

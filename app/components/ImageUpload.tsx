@@ -73,6 +73,7 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
     <Form.Item
       name={name}
       label={label}
+      getValueProps={() => ({})}
       getValueFromEvent={() => {
         const candidate = metadataRef.current;
         if (
@@ -152,8 +153,6 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
             ]);
 
             metadataRef.current = metadata;
-            form.setFieldValue(name, metadata);
-
             onSuccess(null);
           } catch (error) {
             console.error("Upload error:", error);
@@ -167,7 +166,6 @@ export const ImageUpload = ({ name, label }: ImageUploadProps) => {
         onRemove={() => {
           setFileList([]);
           metadataRef.current = undefined;
-          form.setFieldValue(name, undefined);
           return true;
         }}
         beforeUpload={(file) => {
