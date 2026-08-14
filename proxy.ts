@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Keep this literal in the Edge middleware. Importing @/lib here can break
-// Next 13's webpack-runtime ("Cannot read properties of undefined (reading 'call')").
 const ADMIN_SESSION_COOKIE = "ezprep_admin_session";
 
 const PUBLIC_PAGES = new Set(["/login"]);
@@ -76,7 +74,7 @@ async function isValidAdminSession(token: string | undefined): Promise<boolean> 
     const valid = await crypto.subtle.verify(
       "HMAC",
       key,
-      decodeBase64Url(parts[2]),
+      decodeBase64Url(parts[2]) as BufferSource,
       encoder.encode(`${parts[0]}.${parts[1]}`)
     );
     if (!valid) {
@@ -95,7 +93,7 @@ async function isValidAdminSession(token: string | undefined): Promise<boolean> 
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
   const authenticated = await isValidAdminSession(session);

@@ -1,13 +1,14 @@
 "use client";
 
 import { Button, Card, Form, Input, Typography, message } from "antd";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
 
-export default function EditTopicPage({ params }: { params: { id: string } }) {
+export default function EditTopicPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);

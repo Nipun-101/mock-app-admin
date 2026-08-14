@@ -2,11 +2,14 @@
 
 import { Button, Card, Descriptions, Tag, Table, Space, message, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatEzPrepError, mockTestsApi, refName } from "@/app/services/ezprep-api";
 
-export default function MockTestDetailPage({ params }: { params: { id: string } }) {
+export default function MockTestDetailPage(props: {
+  params: Promise<{ id: string }>;
+}) {
+  const params = use(props.params);
   const [mockTest, setMockTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, Form, Input, Select, Typography, message } from "antd";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   catalogApi,
@@ -11,11 +11,10 @@ import {
 
 const { Title } = Typography;
 
-export default function EditExamGroupPage({
-  params,
-}: {
-  params: { id: string };
+export default function EditExamGroupPage(props: {
+  params: Promise<{ id: string }>;
 }) {
+  const params = use(props.params);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
