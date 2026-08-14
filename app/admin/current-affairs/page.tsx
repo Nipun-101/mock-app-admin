@@ -73,12 +73,14 @@ export default function CurrentAffairsPage() {
       dataIndex: "title",
       key: "title",
       ellipsis: true,
+      width: 200,
     },
     {
       title: "Description",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
+      width: 280,
       responsive: ["lg", "xl", "xxl"] as Breakpoint[],
       render: (text: string) => excerpt(text),
     },
@@ -94,7 +96,8 @@ export default function CurrentAffairsPage() {
       title: "Image",
       dataIndex: "imageUrl",
       key: "imageUrl",
-      width: 72,
+      width: 104,
+      align: "center" as const,
       render: (url?: string) =>
         url ? (
           <img
