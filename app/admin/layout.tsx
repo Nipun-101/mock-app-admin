@@ -151,8 +151,12 @@ export default function AdminLayout({
           onClick={() => setCollapsed(!collapsed)}
           className="text-lg"
         />
-        <h1 className="text-xl font-bold ml-4 flex-1">Mock Test Admin</h1>
-        <Button onClick={handleLogout}>Sign out</Button>
+        <h1 className="text-base sm:text-xl font-bold ml-3 sm:ml-4 flex-1 truncate">
+          Mock Test Admin
+        </h1>
+        <Button size="small" className="sm:!h-8" onClick={handleLogout}>
+          Sign out
+        </Button>
       </div>
 
       {/* Overlay for mobile */}

@@ -1,22 +1,22 @@
 "use client";
 
-import { Button, Card, DatePicker, Form, Input, Typography, message } from "antd";
+import { Button, Card, Form, Spin, Typography, message } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImageUpload } from "@/app/components/ImageUpload";
 import {
   currentAffairsApi,
   formatEzPrepError,
   type CurrentAffairImage,
 } from "@/app/services/ezprep-api";
-import { dateKeyToDayjs, datePickerValueFromEvent, toDateKey } from "../date-key";
+import { toDateKey } from "../date-key";
+import {
+  CurrentAffairFormFields,
+  affairCardClassName,
+  affairCardStyles,
+} from "../form-fields";
 
 const { Title } = Typography;
-
-const cardStyles = {
-  header: { padding: "20px 28px 16px" },
-  body: { padding: "24px 28px 28px" },
-};
 
 function isImageMeta(value: unknown): value is CurrentAffairImage {
   if (!value || typeof value !== "object") {
@@ -99,95 +99,60 @@ export default function EditCurrentAffairPage(props: {
   };
 
   if (initialLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center py-16">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-6">
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        className="px-0 min-h-11"
+        onClick={() => router.push("/admin/current-affairs")}
+      >
+        Back to list
+      </Button>
       <Card
         title={
-          <Title level={4} className="mb-0">
-            Edit Current Affair
+          <Title level={4} className="!mb-0 !text-lg sm:!text-xl">
+            Edit current affair
           </Title>
         }
-        className="w-full shadow-sm"
-        styles={cardStyles}
+        className={affairCardClassName}
+        styles={affairCardStyles}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
           className="max-w-4xl"
+          scrollToFirstError={{ behavior: "smooth", block: "center" }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Form.Item
-              label="Title"
-              name="title"
-              rules={[{ required: true, message: "Please enter a title" }]}
-            >
-              <Input placeholder="Headline for this event" size="large" />
-            </Form.Item>
-
-            <Form.Item
-              label="Date"
-              name="date"
-              rules={[{ required: true, message: "Please select a date" }]}
-              getValueFromEvent={datePickerValueFromEvent}
-              getValueProps={(value: string | undefined) => ({
-                value: dateKeyToDayjs(value),
-              })}
-            >
-              <DatePicker
-                allowClear={false}
-                format="YYYY-MM-DD"
-                className="w-full"
-                size="large"
-                getPopupContainer={() => document.body}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[
-              { required: true, message: "Please enter a description" },
-            ]}
-          >
-            <Input.TextArea
-              placeholder="Details about the event"
-              size="large"
-              autoSize={{ minRows: 3, maxRows: 8 }}
-            />
-          </Form.Item>
-
-          <Form.Item label="Memory Trick" name="memoryTrick">
-            <Input.TextArea
-              placeholder="Optional mnemonic to remember this event"
-              size="large"
-              autoSize={{ minRows: 2, maxRows: 4 }}
-            />
-          </Form.Item>
-
-          <ImageUpload name={["image"]} label="Image (optional)" />
+          <CurrentAffairFormFields />
 
           <Form.Item className="mb-0">
-            <Button
-              type="primary"
-              htmlType="submit"
-              size="large"
-              className="bg-blue-600 hover:bg-blue-700"
-              loading={loading}
-            >
-              Update Current Affair
-            </Button>
-            <Button
-              className="ml-2"
-              size="large"
-              onClick={() => router.push("/admin/current-affairs")}
-            >
-              Cancel
-            </Button>
+            <div className="flex flex-col-reverse sm:flex-row gap-2">
+              <Button
+                size="large"
+                className="w-full sm:w-auto min-h-11"
+                onClick={() => router.push("/admin/current-affairs")}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                className="w-full sm:w-auto min-h-11 bg-blue-600 hover:bg-blue-700"
+                loading={loading}
+              >
+                Save changes
+              </Button>
+            </div>
           </Form.Item>
         </Form>
       </Card>
