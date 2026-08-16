@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, message, Pagination, Tag, Select } from 'antd';
+import { Table, Button, Space, message, Pagination, Tag } from 'antd';
+import { Select } from '@/app/components/SearchableSelect';
 import Link from 'next/link';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { catalogApi, formatEzPrepError, questionsApi, refId, refName } from '@/app/services/ezprep-api';

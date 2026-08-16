@@ -9,13 +9,13 @@ import {
   Input,
   InputNumber,
   Modal,
-  Select,
   Space,
   Switch,
   Table,
   Tag,
   message,
 } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";

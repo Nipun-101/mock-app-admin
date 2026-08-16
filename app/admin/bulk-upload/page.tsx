@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Input, Modal, Pagination, Select, Space, Spin, Table, Tag, Tooltip, message } from "antd";
+import { Button, Input, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";

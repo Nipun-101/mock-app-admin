@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Select, Upload, message } from "antd";
+import { Button, Card, Form, Upload, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { InboxOutlined } from "@ant-design/icons";
 import type { UploadFile } from "antd/es/upload/interface";
 import { useRouter } from "next/navigation";

@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, InputNumber, Select, Slider, Table, Typography, Switch, Space, message, Tag } from "antd";
+import { Button, Card, Form, Input, InputNumber, Slider, Table, Typography, Switch, Space, message, Tag } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';

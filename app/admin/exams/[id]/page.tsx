@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switch, Typography } from "antd";
+import { Button, Card, Divider, Form, Input, InputNumber, message, Switch, Typography } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";

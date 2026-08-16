@@ -7,11 +7,11 @@ import {
   Form,
   Input,
   Radio,
-  Select,
   Space,
   Tooltip,
   message,
 } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";

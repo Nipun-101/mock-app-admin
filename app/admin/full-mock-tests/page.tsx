@@ -6,7 +6,6 @@ import {
   Card,
   Input,
   Modal,
-  Select,
   Space,
   Spin,
   Table,
@@ -14,6 +13,7 @@ import {
   Typography,
   message,
 } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { useRouter } from "next/navigation";

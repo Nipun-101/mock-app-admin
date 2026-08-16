@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Upload, Radio, message, Tooltip } from "antd";
+import { Button, Card, Form, Input, Upload, Radio, message, Tooltip } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { useState, useEffect } from "react";
 import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';

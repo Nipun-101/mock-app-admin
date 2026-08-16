@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Pagination, Select, Space, Table, Tag, Tooltip, message } from "antd";
+import { Button, Pagination, Space, Table, Tag, Tooltip, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import Link from "next/link";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
