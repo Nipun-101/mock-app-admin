@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Form, Typography, message } from "antd";
+import { Button, Card, Form, Spin, Typography, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ export default function EditCurrentAffairPage(props: {
   const params = use(props.params);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hadImage, setHadImage] = useState(false);
   const router = useRouter();
@@ -72,6 +73,9 @@ export default function EditCurrentAffairPage(props: {
     memoryTrick?: string;
     image?: CurrentAffairImage;
   }) => {
+    if (imageUploading) {
+      return;
+    }
     setLoading(true);
     try {
       const nextImage = isImageMeta(values.image)
@@ -119,14 +123,16 @@ export default function EditCurrentAffairPage(props: {
         className={affairCardClassName}
         styles={affairCardStyles}
       >
+        <Spin spinning={loading} tip="Saving current affair…">
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
           className="max-w-4xl"
+          disabled={loading}
           scrollToFirstError={{ behavior: "smooth", block: "center" }}
         >
-          <CurrentAffairFormFields />
+          <CurrentAffairFormFields onImageUploadingChange={setImageUploading} />
 
           <Form.Item className="mb-0">
             <div className="flex flex-col-reverse sm:flex-row gap-2">
@@ -142,13 +148,15 @@ export default function EditCurrentAffairPage(props: {
                 htmlType="submit"
                 size="large"
                 className="w-full sm:w-auto min-h-11 bg-blue-600 hover:bg-blue-700"
-                loading={loading}
+                loading={loading || imageUploading}
+                disabled={imageUploading}
               >
-                Save changes
+                {imageUploading ? "Uploading image…" : "Save changes"}
               </Button>
             </div>
           </Form.Item>
         </Form>
+        </Spin>
       </Card>
     </div>
     </EditPageShell>

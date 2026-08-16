@@ -22,12 +22,14 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
       if (!metadata?.key || !metadata.bucket) {
         if (mounted) {
           setUrl(null);
+          setLoading(false);
         }
         return;
       }
 
       try {
         setLoading(true);
+        setUrl(null);
         const { data } = await filesApi.signedUrl(metadata.key, metadata.bucket);
         const newUrl = data.url;
 
