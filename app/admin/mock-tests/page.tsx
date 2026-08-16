@@ -7,6 +7,7 @@ import { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError, mockTestsApi } from "@/app/services/ezprep-api";
+import { setFormValue } from "@/app/lib/form-store";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -14,7 +15,7 @@ const { TextArea } = Input;
 export default function MockTestsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [mockTests, setMockTests] = useState<any[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -186,7 +187,7 @@ export default function MockTestsPage() {
   };
 
   const handleSubjectChange = (subjectId: string) => {
-    form.setFieldValue('topic', undefined);
+    setFormValue(form, "topic", undefined);
     setTopics([]);
     if (subjectId) {
       fetchTopicsBySubject(subjectId);

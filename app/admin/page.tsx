@@ -5,16 +5,20 @@ import { useState, useEffect } from "react";
 import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageUpload } from '@/app/components/ImageUpload';
+import { EditPageShell } from "@/app/components/PageLoader";
+import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionPayload } from "@/app/services/ezprep-api";
 
 export default function AdminPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   
@@ -49,6 +53,7 @@ export default function AdminPage() {
   // Initial data fetch (now only subjects and exams)
   useEffect(() => {
     const fetchData = async () => {
+      setPageLoading(true);
       try {
         const [subjectsData, examsData] = await Promise.all([
           catalogApi.listSubjects(),
@@ -67,6 +72,8 @@ export default function AdminPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         message.error(formatEzPrepError(error, "Failed to fetch form options"));
+      } finally {
+        setPageLoading(false);
       }
     };
 
@@ -75,6 +82,7 @@ export default function AdminPage() {
 
   // Fetch tags by subject and topic
   const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
+    setTagsLoading(true);
     try {
       const tags = await catalogApi.listAllTags({
         subjectId,
@@ -89,6 +97,8 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Failed to fetch tags:', error);
       setTags([]);
+    } finally {
+      setTagsLoading(false);
     }
   };
 
@@ -96,8 +106,10 @@ export default function AdminPage() {
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
     setSelectedTopic(null);
-    form.setFieldValue('topic', undefined);
-    form.setFieldValue('tag', undefined);
+    setFormValues(form, [
+      { name: "topic", value: undefined },
+      { name: "tag", value: undefined },
+    ]);
     setTags([]);
     fetchTopicsBySubject(value);
   };
@@ -105,7 +117,7 @@ export default function AdminPage() {
   // Handle topic change
   const handleTopicChange = (value: string) => {
     setSelectedTopic(value);
-    form.setFieldValue('tag', undefined);
+    setFormValue(form, "tag", undefined);
     if (selectedSubject && value) {
       fetchTagsBySubjectAndTopic(selectedSubject, value);
     } else {
@@ -176,6 +188,7 @@ export default function AdminPage() {
   };
 
   return (
+    <EditPageShell loading={pageLoading}>
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <Card title="Add New Question">
@@ -221,16 +234,23 @@ export default function AdminPage() {
                   console.log("option type changed:", e.target.value);
                   // Clear text fields when switching to image
                   if (e.target.value === 'image') {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(['options', i, 'en'], undefined);
-                      form.setFieldValue(['options', i, 'ml'], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.flatMap((_, i) => [
+                        { name: ["options", i, "en"], value: undefined },
+                        { name: ["options", i, "ml"], value: undefined },
+                      ])
+                    );
                   }
                   // Clear image field when switching to text 
                   if (e.target.value === 'text') {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(['options', i, 'image'], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.map((_, i) => ({
+                        name: ["options", i, "image"],
+                        value: undefined,
+                      }))
+                    );
                   }
                 }}
               >
@@ -367,6 +387,7 @@ export default function AdminPage() {
                 placeholder={selectedSubject && selectedTopic ? "Select tag" : "Please select subject and topic first"}
                 options={tags}
                 disabled={!selectedSubject || !selectedTopic}
+                loading={tagsLoading}
                 allowClear
               />
             </Form.Item>
@@ -401,7 +422,8 @@ export default function AdminPage() {
                 type="primary"
                 htmlType="submit"
                 icon={<PlusOutlined />}
-                loading={loading}
+                loading={loading || pageLoading}
+                disabled={pageLoading}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Add Question
@@ -411,5 +433,6 @@ export default function AdminPage() {
         </Card>
       </div>
     </div>
+    </EditPageShell>
   );
 }

@@ -6,6 +6,8 @@ import type { UploadFile } from "antd/es/upload/interface";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
+import { setFormValue, setFormValues } from "@/app/lib/form-store";
+import { EditPageShell } from "@/app/components/PageLoader";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import { BulkUploadPdfResponse, LookupItem } from "../types";
 
@@ -13,9 +15,11 @@ export default function BulkUploadFormPage() {
   const [form] = Form.useForm();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [lookupsLoading, setLookupsLoading] = useState(true);
   const [subjects, setSubjects] = useState<LookupItem[]>([]);
   const [topics, setTopics] = useState<LookupItem[]>([]);
   const [tags, setTags] = useState<LookupItem[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [exams, setExams] = useState<LookupItem[]>([]);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
@@ -24,6 +28,7 @@ export default function BulkUploadFormPage() {
 
   useEffect(() => {
     const fetchLookups = async () => {
+      setLookupsLoading(true);
       try {
         const [subjectData, examData] = await Promise.all([
           catalogApi.listSubjects(),
@@ -42,14 +47,18 @@ export default function BulkUploadFormPage() {
         setExams(examData.map((exam) => ({ _id: exam.id, name: exam.name })));
       } catch {
         message.error("Failed to load form options");
+      } finally {
+        setLookupsLoading(false);
       }
     };
     fetchLookups();
   }, []);
 
   useEffect(() => {
-    form.setFieldValue("topicId", undefined);
-    form.setFieldValue("tagIds", undefined);
+    setFormValues(form, [
+      { name: "topicId", value: undefined },
+      { name: "tagIds", value: undefined },
+    ]);
     setTags([]);
 
     if (!selectedSubject) {
@@ -62,12 +71,13 @@ export default function BulkUploadFormPage() {
   }, [selectedSubject, subjects, form]);
 
   useEffect(() => {
-    form.setFieldValue("tagIds", undefined);
+    setFormValue(form, "tagIds", undefined);
     setTags([]);
 
     if (!selectedSubject || !selectedTopic) return;
 
     const fetchTags = async () => {
+      setTagsLoading(true);
       try {
         const tags = await catalogApi.listAllTags({
           subjectId: selectedSubject,
@@ -81,6 +91,8 @@ export default function BulkUploadFormPage() {
         );
       } catch {
         message.error("Failed to fetch tags");
+      } finally {
+        setTagsLoading(false);
       }
     };
     fetchTags();
@@ -138,6 +150,7 @@ export default function BulkUploadFormPage() {
   };
 
   return (
+    <EditPageShell loading={lookupsLoading}>
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Upload PDF</h1>
@@ -148,9 +161,12 @@ export default function BulkUploadFormPage() {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="file"
-            label="PDF File"
+            hidden
             rules={[{ required: true, message: "Please upload a PDF file" }]}
           >
+            <input type="hidden" />
+          </Form.Item>
+          <Form.Item label="PDF File">
             <Upload.Dragger
               accept=".pdf,application/pdf"
               maxCount={1}
@@ -171,12 +187,12 @@ export default function BulkUploadFormPage() {
                     originFileObj: file,
                   },
                 ]);
-                form.setFieldValue("file", file);
+                setFormValue(form, "file", file.name);
                 return false;
               }}
               onRemove={() => {
                 setFileList([]);
-                form.setFieldValue("file", undefined);
+                setFormValue(form, "file", undefined);
               }}
             >
               <p className="ant-upload-drag-icon">
@@ -217,6 +233,7 @@ export default function BulkUploadFormPage() {
               mode="multiple"
               placeholder="Select tags"
               disabled={!selectedSubject || !selectedTopic}
+              loading={tagsLoading}
               options={tags.map((t) => ({ value: t._id, label: t.name }))}
               allowClear
             />
@@ -240,7 +257,8 @@ export default function BulkUploadFormPage() {
             <Button
               type="primary"
               htmlType="submit"
-              loading={submitting}
+              loading={submitting || lookupsLoading}
+              disabled={lookupsLoading}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Upload
@@ -249,5 +267,6 @@ export default function BulkUploadFormPage() {
         </Form>
       </Card>
     </div>
+    </EditPageShell>
   );
 }

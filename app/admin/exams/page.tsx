@@ -31,7 +31,7 @@ const { Title } = Typography;
 export default function ExamsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [exams, setExams] = useState<Exam[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

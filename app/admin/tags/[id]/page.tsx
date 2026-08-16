@@ -11,6 +11,7 @@ import {
   type Subject,
 } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
+import { setFormValue } from "@/app/lib/form-store";
 
 const { Title } = Typography;
 
@@ -82,7 +83,7 @@ export default function EditTagPage(props: { params: Promise<{ id: string }> }) 
 
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
-    form.setFieldValue("topic", undefined);
+    setFormValue(form, "topic", undefined);
     setTopics(topicsForSubject(value, subjects));
   };
 

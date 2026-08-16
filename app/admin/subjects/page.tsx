@@ -23,7 +23,7 @@ interface TopicOption {
 export default function SubjectsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

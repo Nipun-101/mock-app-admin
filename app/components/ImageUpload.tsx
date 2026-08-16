@@ -1,11 +1,11 @@
 "use client";
 
-import { Upload, Button, message, Modal, Spin } from "antd";
+import { Upload, Button, message, Modal, Spin, Form } from "antd";
 import type { UploadFile } from "antd/es/upload/interface";
 import { CloseOutlined, UploadOutlined } from "@ant-design/icons";
 import { filesApi, formatEzPrepError } from "@/app/services/ezprep-api";
-import { Form } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { setFormValue } from "@/app/lib/form-store";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { usePresignedUrl } from "@/app/hooks/usePresignedUrl";
 
 interface ImageUploadProps {
@@ -14,7 +14,18 @@ interface ImageUploadProps {
   onUploadingChange?: (uploading: boolean) => void;
 }
 
-function toPlainImageMetadata(value: unknown): Record<string, unknown> | undefined {
+export type PlainImageMetadata = {
+  key: string;
+  bucket: string;
+  region?: string;
+  contentType?: string;
+  size?: number;
+  lastModified?: string;
+};
+
+export function toPlainImageMetadata(
+  value: unknown
+): PlainImageMetadata | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
@@ -41,12 +52,21 @@ function toPlainImageMetadata(value: unknown): Record<string, unknown> | undefin
 }
 
 /** Holds object values in Form state without mounting a DOM input. */
-function FormObjectValue(_props: { value?: unknown; onChange?: (value: unknown) => void }) {
+function FormObjectValue({
+  onChange,
+  changeRef,
+}: {
+  value?: unknown;
+  onChange?: (value: unknown) => void;
+  changeRef: MutableRefObject<((value: unknown) => void) | undefined>;
+}) {
+  changeRef.current = onChange;
   return null;
 }
 
 export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps) => {
   const form = Form.useFormInstance();
+  const setValueRef = useRef<((value: unknown) => void) | undefined>(undefined);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const localPreviewUrlRef = useRef<string | null>(null);
@@ -64,6 +84,17 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
               : undefined,
         }
       : null
+  );
+
+  const writeValue = useCallback(
+    (value: unknown) => {
+      if (setValueRef.current) {
+        setValueRef.current(value);
+        return;
+      }
+      setFormValue(form, name, value);
+    },
+    [form, name]
   );
 
   const revokeLocalPreview = useCallback(() => {
@@ -98,7 +129,7 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
   return (
     <>
       <Form.Item name={name} hidden>
-        <FormObjectValue />
+        <FormObjectValue changeRef={setValueRef} />
       </Form.Item>
       <Form.Item label={label}>
         <Spin spinning={uploading} tip="Uploading image…">
@@ -152,7 +183,7 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
                 if (!metadata) {
                   throw new Error("Upload did not return image metadata");
                 }
-                form.setFieldValue(name, metadata);
+                writeValue(metadata);
                 setFileList([
                   {
                     uid: "current-image",
@@ -161,11 +192,11 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
                     url: localUrl,
                   },
                 ]);
-                onSuccess?.(metadata);
+                onSuccess?.({});
               } catch (error) {
                 revokeLocalPreview();
                 setFileList([]);
-                form.setFieldValue(name, undefined);
+                writeValue(undefined);
                 onError?.(error as Error);
                 message.error(formatEzPrepError(error, "Failed to upload image"));
               } finally {
@@ -177,7 +208,7 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
                 return false;
               }
               revokeLocalPreview();
-              form.setFieldValue(name, undefined);
+              writeValue(undefined);
               setFileList([]);
               return true;
             }}

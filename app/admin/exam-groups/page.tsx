@@ -18,7 +18,7 @@ const { Title } = Typography;
 export default function ExamGroupsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [pagination, setPagination] = useState({

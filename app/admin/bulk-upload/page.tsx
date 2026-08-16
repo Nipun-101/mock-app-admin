@@ -93,7 +93,7 @@ function renderExamTags(
 
 export default function BulkUploadPage() {
   const [uploads, setUploads] = useState<BulkUpload[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [processingUpload, setProcessingUpload] = useState<{
     id: string;

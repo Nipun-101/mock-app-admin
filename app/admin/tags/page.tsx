@@ -5,6 +5,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { showConfirmModal } from "@/components/ConfirmModal";
+import { setFormValue } from "@/app/lib/form-store";
 import { useRouter } from "next/navigation";
 import {
   catalogApi,
@@ -26,7 +27,7 @@ interface SubjectOption {
 export default function TagsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [tags, setTags] = useState<Tag[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -156,7 +157,7 @@ export default function TagsPage() {
 
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
-    form.setFieldValue("topic", undefined);
+    setFormValue(form, "topic", undefined);
     fetchTopicsBySubject(value);
   };
 

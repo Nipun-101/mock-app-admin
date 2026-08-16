@@ -4,7 +4,8 @@ import { Button, Card, Form, Input, Select, Radio, message, Tooltip } from "antd
 import { use, useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
-import { ImageUpload } from "@/app/components/ImageUpload";
+import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
+import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
 
@@ -15,10 +16,9 @@ interface Option {
 
 function normalizeExplanationImages(images: unknown): QuestionImage[] {
   if (!Array.isArray(images)) return [];
-  return images.filter(
-    (img): img is QuestionImage =>
-      !!img && typeof img === "object" && "key" in img && "bucket" in img
-  );
+  return images
+    .map((img) => toPlainImageMetadata(img))
+    .filter((img): img is NonNullable<typeof img> => !!img);
 }
 
 export default function EditQuestionPage(props: {
@@ -31,13 +31,16 @@ export default function EditQuestionPage(props: {
   const [pageLoading, setPageLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
   const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
 
   const fetchTopicsBySubject = async (subjectId: string) => {
+    setTopicsLoading(true);
     try {
       const { data } = await catalogApi.getSubject(subjectId);
       setTopics(
@@ -51,11 +54,14 @@ export default function EditQuestionPage(props: {
     } catch (error) {
       message.error(formatEzPrepError(error, "Failed to fetch topics"));
       setTopics([]);
+    } finally {
+      setTopicsLoading(false);
     }
   };
 
   // Fetch tags by subject and topic
   const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
+    setTagsLoading(true);
     try {
       const tags = await catalogApi.listAllTags({
         subjectId,
@@ -70,6 +76,8 @@ export default function EditQuestionPage(props: {
     } catch (error) {
       console.error('Failed to fetch tags:', error);
       setTags([]);
+    } finally {
+      setTagsLoading(false);
     }
   };
 
@@ -149,11 +157,11 @@ export default function EditQuestionPage(props: {
         questionText: {
           en: {
             text: questionText.en?.text ?? undefined,
-            image: questionText.en?.image ?? undefined,
+            image: toPlainImageMetadata(questionText.en?.image),
           },
           ml: {
             text: questionText.ml?.text ?? undefined,
-            image: questionText.ml?.image ?? undefined,
+            image: toPlainImageMetadata(questionText.ml?.image),
           },
         },
         optionType: question.optionType || 'text',
@@ -162,13 +170,13 @@ export default function EditQuestionPage(props: {
           type: opt?.type,
           en: opt?.en,
           ml: opt?.ml,
-          image: opt?.image,
+          image: toPlainImageMetadata(opt?.image),
         })),
         correctAnswer: question.correctAnswer,
         explanation: {
           en: explanation.en ?? undefined,
           ml: explanation.ml ?? undefined,
-          image: explanation.image ?? undefined,
+          image: toPlainImageMetadata(explanation.image),
           images: normalizeExplanationImages(explanation.images),
         },
         subject: subjectId,
@@ -189,8 +197,10 @@ export default function EditQuestionPage(props: {
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
     setSelectedTopic(null);
-    form.setFieldValue('topic', undefined);
-    form.setFieldValue('tag', undefined);
+    setFormValues(form, [
+      { name: "topic", value: undefined },
+      { name: "tag", value: undefined },
+    ]);
     setTags([]);
     fetchTopicsBySubject(value);
   };
@@ -198,7 +208,7 @@ export default function EditQuestionPage(props: {
   // Handle topic change
   const handleTopicChange = (value: string) => {
     setSelectedTopic(value);
-    form.setFieldValue('tag', undefined);
+    setFormValue(form, "tag", undefined);
     if (selectedSubject && value) {
       fetchTagsBySubjectAndTopic(selectedSubject, value);
     } else {
@@ -317,16 +327,23 @@ export default function EditQuestionPage(props: {
                   console.log("option type changed:", e.target.value);
                   // Clear text fields when switching to image
                   if (e.target.value === 'image') {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(['options', i, 'en'], undefined);
-                      form.setFieldValue(['options', i, 'ml'], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.flatMap((_, i) => [
+                        { name: ["options", i, "en"], value: undefined },
+                        { name: ["options", i, "ml"], value: undefined },
+                      ])
+                    );
                   }
                   // Clear image field when switching to text 
                   if (e.target.value === 'text') {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(['options', i, 'image'], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.map((_, i) => ({
+                        name: ["options", i, "image"],
+                        value: undefined,
+                      }))
+                    );
                   }
                 }}
               >
@@ -473,6 +490,7 @@ export default function EditQuestionPage(props: {
                 placeholder={selectedSubject ? "Select topic" : "Please select a subject first"}
                 options={topics}
                 disabled={!selectedSubject}
+                loading={topicsLoading}
                 onChange={handleTopicChange}
                 allowClear
               />
@@ -487,6 +505,7 @@ export default function EditQuestionPage(props: {
                 placeholder={selectedSubject && selectedTopic ? "Select tag" : "Please select subject and topic first"}
                 options={tags}
                 disabled={!selectedSubject || !selectedTopic}
+                loading={tagsLoading}
                 allowClear
               />
             </Form.Item>

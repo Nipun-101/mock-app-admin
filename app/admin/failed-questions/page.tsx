@@ -65,7 +65,7 @@ function renderExamTags(
 
 export default function FailedQuestionsPage() {
   const [items, setItems] = useState<FailedQuestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,

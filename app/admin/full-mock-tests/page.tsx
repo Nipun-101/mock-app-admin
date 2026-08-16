@@ -30,7 +30,7 @@ const primaryButtonClass = "bg-blue-600 hover:bg-blue-700";
 export default function FullMockTestsPage() {
   const router = useRouter();
   const [exams, setExams] = useState<FullMockExamListItem[]>([]);
-  const [examLoading, setExamLoading] = useState(false);
+  const [examLoading, setExamLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [examSearch, setExamSearch] = useState("");
   const [examPagination, setExamPagination] = useState({
@@ -44,7 +44,7 @@ export default function FullMockTestsPage() {
     { value: string; label: string }[]
   >([]);
   const [published, setPublished] = useState<FullMockTestListItem[]>([]);
-  const [publishedLoading, setPublishedLoading] = useState(false);
+  const [publishedLoading, setPublishedLoading] = useState(true);
   const [publishedPagination, setPublishedPagination] = useState({
     current: 1,
     pageSize: 10,

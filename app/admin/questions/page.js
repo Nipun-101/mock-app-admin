@@ -7,7 +7,7 @@ import { catalogApi, formatEzPrepError, questionsApi, refId, refName } from '@/a
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
