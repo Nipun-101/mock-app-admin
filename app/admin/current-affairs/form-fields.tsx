@@ -26,7 +26,11 @@ export function AffairDatePicker({ className, ...props }: DatePickerProps) {
   );
 }
 
-export function CurrentAffairFormFields() {
+export function CurrentAffairFormFields({
+  onImageUploadingChange,
+}: {
+  onImageUploadingChange?: (uploading: boolean) => void;
+}) {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-4">
@@ -78,7 +82,11 @@ export function CurrentAffairFormFields() {
       </Form.Item>
 
       <div className="overflow-x-auto">
-        <ImageUpload name={["image"]} label="Image (optional)" />
+        <ImageUpload
+          name={["image"]}
+          label="Image (optional)"
+          onUploadingChange={onImageUploadingChange}
+        />
       </div>
     </>
   );

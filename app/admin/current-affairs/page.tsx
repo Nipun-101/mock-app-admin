@@ -58,6 +58,7 @@ function isImageMeta(value: unknown): value is CurrentAffairImage {
 export default function CurrentAffairsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
   const [items, setItems] = useState<CurrentAffair[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayDateKey());
@@ -190,6 +191,9 @@ export default function CurrentAffairsPage() {
     memoryTrick?: string;
     image?: CurrentAffairImage;
   }) => {
+    if (imageUploading) {
+      return;
+    }
     const date = toDateKey(values.date) ?? selectedDate;
     const image = isImageMeta(values.image)
       ? values.image
@@ -261,15 +265,17 @@ export default function CurrentAffairsPage() {
         className={affairCardClassName}
         styles={affairCardStyles}
       >
+        <Spin spinning={loading} tip="Saving current affair…">
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
           className="max-w-4xl"
+          disabled={loading}
           initialValues={{ date: selectedDate }}
           scrollToFirstError={{ behavior: "smooth", block: "center" }}
         >
-          <CurrentAffairFormFields />
+          <CurrentAffairFormFields onImageUploadingChange={setImageUploading} />
 
           <Form.Item className="mb-0">
             <Button
@@ -278,12 +284,14 @@ export default function CurrentAffairsPage() {
               size="large"
               icon={<PlusOutlined />}
               className="w-full sm:w-auto min-h-11 bg-blue-600 hover:bg-blue-700"
-              loading={loading}
+              loading={loading || imageUploading}
+              disabled={imageUploading}
             >
-              Create item
+              {imageUploading ? "Uploading image…" : "Create item"}
             </Button>
           </Form.Item>
         </Form>
+        </Spin>
       </Card>
 
       <Card

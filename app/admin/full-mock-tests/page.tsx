@@ -5,8 +5,10 @@ import {
   Button,
   Card,
   Input,
+  Modal,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Typography,
@@ -132,19 +134,12 @@ export default function FullMockTestsPage() {
 
   const handleGenerate = async (examId: string) => {
     setGeneratingId(examId);
-    const hide = message.loading(
-      "Generating full mock draft from exam blueprint…",
-      0
-    );
     try {
       const response = await fullMockApi.createDraft(examId);
-      hide();
       message.success(response.message || "Draft generated");
       router.push(`/admin/full-mock-tests/drafts/${response.data.id}`);
     } catch (error) {
-      hide();
       message.error(formatEzPrepError(error, "Failed to generate draft"));
-    } finally {
       setGeneratingId(null);
     }
   };
@@ -379,6 +374,26 @@ export default function FullMockTestsPage() {
           />
         </Card>
       </div>
+
+      <Modal
+        open={!!generatingId}
+        footer={null}
+        closable={false}
+        maskClosable={false}
+        centered
+        width={400}
+      >
+        <div className="flex flex-col items-center py-8 gap-5">
+          <Spin size="large" />
+          <div className="text-center">
+            <div className="text-lg font-medium">Generating full mock draft</div>
+            <p className="text-gray-600 mt-2">
+              Sampling questions from the exam blueprint. This can take a few
+              seconds.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
