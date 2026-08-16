@@ -17,7 +17,7 @@ const { Title } = Typography;
 export default function TopicsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

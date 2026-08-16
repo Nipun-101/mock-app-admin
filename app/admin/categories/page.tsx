@@ -17,7 +17,7 @@ const { Title } = Typography;
 export default function CategoriesPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

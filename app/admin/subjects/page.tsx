@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, Table, Typography, Select, message } from "antd";
+import { Button, Card, Form, Input, Table, Typography, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
@@ -23,7 +24,7 @@ interface TopicOption {
 export default function SubjectsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

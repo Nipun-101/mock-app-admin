@@ -22,6 +22,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
+import { PageLoader } from "@/app/components/PageLoader";
 
 const { Sider, Content } = Layout;
 
@@ -33,6 +34,8 @@ export default function AdminLayout({
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const closeSidebar = () => setCollapsed(true);
   const toggleSidebar = () => setCollapsed((open) => !open);
@@ -57,10 +60,18 @@ export default function AdminLayout({
   useEffect(() => {
     let cancelled = false;
     const verifySession = async () => {
-      const response = await fetchAdminSession();
-      if (cancelled) return;
-      if (response.status === 401 || response.status === 403) {
-        router.replace("/login");
+      try {
+        const response = await fetchAdminSession();
+        if (cancelled) return;
+        if (response.status === 401 || response.status === 403) {
+          router.replace("/login");
+          return;
+        }
+        setSessionReady(true);
+      } catch {
+        if (!cancelled) {
+          setSessionReady(true);
+        }
       }
     };
     void verifySession();
@@ -70,15 +81,20 @@ export default function AdminLayout({
   }, [router]);
 
   const handleLogout = async () => {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       if (!response.ok) {
+        setSigningOut(false);
         return;
       }
       router.replace("/login");
       router.refresh();
     } catch {
-      // Keep the current page if sign-out cannot be confirmed.
+      setSigningOut(false);
     }
   };
 
@@ -164,7 +180,12 @@ export default function AdminLayout({
         <h1 className="text-base sm:text-xl font-bold ml-3 sm:ml-4 flex-1 truncate">
           Mock Test Admin
         </h1>
-        <Button size="small" className="sm:!h-8" onClick={handleLogout}>
+        <Button
+          size="small"
+          className="sm:!h-8"
+          onClick={handleLogout}
+          loading={signingOut}
+        >
           Sign out
         </Button>
       </div>
@@ -192,7 +213,11 @@ export default function AdminLayout({
         <Menu
           mode="inline"
           selectedKeys={[
-            pathname.startsWith("/admin/bulk-upload")
+            pathname === "/admin"
+              ? "/admin"
+              : pathname.startsWith("/admin/questions")
+                ? "/admin/questions"
+                : pathname.startsWith("/admin/bulk-upload")
               ? "/admin/bulk-upload"
               : pathname.startsWith("/admin/failed-questions")
                 ? "/admin/failed-questions"
@@ -210,7 +235,7 @@ export default function AdminLayout({
       <Layout>
         <Content className="mt-16 p-4 md:p-6">
           <div className="w-full">
-            {children}
+            {sessionReady ? children : <PageLoader />}
           </div>
         </Content>
       </Layout>

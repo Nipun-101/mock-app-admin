@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, message, Pagination, Tag, Select } from 'antd';
+import { Table, Button, Space, message, Pagination, Tag } from 'antd';
+import { Select } from '@/app/components/SearchableSelect';
 import Link from 'next/link';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { catalogApi, formatEzPrepError, questionsApi, refId, refName } from '@/app/services/ezprep-api';
 
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -237,7 +238,7 @@ export default function QuestionsPage() {
             }))}
           />
         </div>
-        <Link href="/admin">
+        <Link href="/admin/questions/new">
           <Button type="primary" className="bg-blue-600 hover:bg-blue-700">Add Question</Button>
         </Link>
       </div>

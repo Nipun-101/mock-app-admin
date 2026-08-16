@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Divider, Form, Input, InputNumber, message, Select, Switch, Table, Typography } from "antd";
+import { Button, Card, Divider, Form, Input, InputNumber, message, Switch, Table, Typography } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
@@ -31,7 +32,7 @@ const { Title } = Typography;
 export default function ExamsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [exams, setExams] = useState<Exam[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,

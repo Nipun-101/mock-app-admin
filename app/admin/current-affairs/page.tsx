@@ -23,6 +23,7 @@ import {
   type CurrentAffair,
   type CurrentAffairImage,
 } from "@/app/services/ezprep-api";
+import { toPlainImageMetadata } from "@/app/components/ImageUpload";
 import {
   dateKeyToDayjs,
   datePickerValueFromEvent,
@@ -44,22 +45,14 @@ function excerpt(text?: string, max = 80) {
 }
 
 function isImageMeta(value: unknown): value is CurrentAffairImage {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const image = value as CurrentAffairImage;
-  return (
-    typeof image.key === "string" &&
-    typeof image.bucket === "string" &&
-    typeof image.region === "string"
-  );
+  return Boolean(toPlainImageMetadata(value));
 }
 
 export default function CurrentAffairsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [items, setItems] = useState<CurrentAffair[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayDateKey());
   const [page, setPage] = useState(1);

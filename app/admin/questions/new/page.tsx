@@ -1,33 +1,17 @@
 "use client";
 
-import { Button, Card, Form, Input, Radio, message, Tooltip } from "antd";
+import { Button, Card, Form, Input, Upload, Radio, message, Tooltip } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
-import { use, useState, useEffect } from "react";
-import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { useRouter } from 'next/navigation';
-import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
-import { setFormValue, setFormValues } from "@/app/lib/form-store";
-import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
+import { useState, useEffect } from "react";
+import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { v4 as uuidv4 } from 'uuid';
+import { ImageUpload } from '@/app/components/ImageUpload';
 import { EditPageShell } from "@/app/components/PageLoader";
+import { setFormValue, setFormValues } from "@/app/lib/form-store";
+import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionPayload } from "@/app/services/ezprep-api";
 
-interface Option {
-  id: string;
-  label: string;
-}
-
-function normalizeExplanationImages(images: unknown): QuestionImage[] {
-  if (!Array.isArray(images)) return [];
-  return images
-    .map((img) => toPlainImageMetadata(img))
-    .filter((img): img is NonNullable<typeof img> => !!img);
-}
-
-export default function EditQuestionPage(props: {
-  params: Promise<{ id: string }>;
-}) {
-  const params = use(props.params);
+export default function CreateQuestionPage() {
   const [form] = Form.useForm();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
@@ -38,7 +22,14 @@ export default function EditQuestionPage(props: {
   const [tagsLoading, setTagsLoading] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
+  
+  // Move OPTIONS to state to maintain consistent IDs
+  const [OPTIONS] = useState([
+    { id: uuidv4(), label: 'A', type: 'text' },
+    { id: uuidv4(), label: 'B', type: 'text' },
+    { id: uuidv4(), label: 'C', type: 'text' },
+    { id: uuidv4(), label: 'D', type: 'text' }
+  ]);
 
   const fetchTopicsBySubject = async (subjectId: string) => {
     setTopicsLoading(true);
@@ -60,6 +51,36 @@ export default function EditQuestionPage(props: {
     }
   };
 
+  // Initial data fetch (now only subjects and exams)
+  useEffect(() => {
+    const fetchData = async () => {
+      setPageLoading(true);
+      try {
+        const [subjectsData, examsData] = await Promise.all([
+          catalogApi.listSubjects(),
+          catalogApi.listAllExams(),
+        ]);
+
+        setSubjects((subjectsData.data || []).map((subject) => ({
+          value: subject.id,
+          label: subject.name,
+        })) || []);
+
+        setExams(examsData.map((exam) => ({
+          value: exam.id,
+          label: exam.name
+        })) || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        message.error(formatEzPrepError(error, "Failed to fetch form options"));
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // Fetch tags by subject and topic
   const fetchTagsBySubjectAndTopic = async (subjectId: string, topicId: string) => {
     setTagsLoading(true);
@@ -79,118 +100,6 @@ export default function EditQuestionPage(props: {
       setTags([]);
     } finally {
       setTagsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedSubject && subjects.length > 0) {
-      fetchTopicsBySubject(selectedSubject);
-    }
-  }, [selectedSubject,subjects]);
-
-  // Initial data fetch
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [subjectsData, examsData] = await Promise.all([
-          catalogApi.listSubjects(),
-          catalogApi.listAllExams(),
-        ]);
-
-        setSubjects((subjectsData.data || []).map((subject) => ({
-          value: subject.id,
-          label: subject.name,
-        })) );
-
-        setExams(examsData.map((exam) => ({
-          value: exam.id,
-          label: exam.name
-        })) );
-
-
-        // Fetch question data after getting subjects and exams
-        fetchQuestion();
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        message.error('Failed to fetch data');
-        setPageLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-
-
-  const fetchQuestion = async () => {
-    try {
-      const { data: question } = await questionsApi.get(params.id);
-
-      const options = Array.isArray(question.options) ? question.options : [];
-
-      // Set OPTIONS based on existing question options
-      setOPTIONS(options.map((opt: any, index: number) => ({
-        id: opt?.id ?? String.fromCharCode(65 + index),
-        label: String.fromCharCode(65 + index) // A, B, C, D
-      })));
-
-      // Set selected subject and fetch related topics
-      const subjectId = refId(question.subject);
-      const topicId = refId(question.topic);
-
-      if (subjectId) {
-        setSelectedSubject(subjectId);
-      }
-
-      if (topicId) {
-        setSelectedTopic(topicId);
-      }
-
-      if (subjectId && topicId) {
-        await fetchTagsBySubjectAndTopic(subjectId, topicId);
-      }
-
-      const questionText = question.questionText ?? {};
-      const explanation = question.explanation ?? {};
-
-      // Set form values
-      form.setFieldsValue({
-        questionText: {
-          en: {
-            text: questionText.en?.text ?? undefined,
-            image: toPlainImageMetadata(questionText.en?.image),
-          },
-          ml: {
-            text: questionText.ml?.text ?? undefined,
-            image: toPlainImageMetadata(questionText.ml?.image),
-          },
-        },
-        optionType: question.optionType || 'text',
-        options: options.map((opt: any) => ({
-          id: opt?.id,
-          type: opt?.type,
-          en: opt?.en,
-          ml: opt?.ml,
-          image: toPlainImageMetadata(opt?.image),
-        })),
-        correctAnswer: question.correctAnswer,
-        explanation: {
-          en: explanation.en ?? undefined,
-          ml: explanation.ml ?? undefined,
-          image: toPlainImageMetadata(explanation.image),
-          images: normalizeExplanationImages(explanation.images),
-        },
-        subject: subjectId,
-        topic: topicId,
-        exams: (question.exams || []).map((exam) => refId(exam)).filter(Boolean),
-        tag: question.tag || null,
-        difficultyLevel: question.difficultyLevel
-      });
-    } catch (error) {
-      console.error('Error fetching question:', error);
-      message.error(formatEzPrepError(error, 'Failed to fetch question'));
-    } finally {
-      setPageLoading(false);
     }
   };
 
@@ -258,8 +167,7 @@ export default function EditQuestionPage(props: {
         explanation: {
           en: values.explanation?.en || null,
           ml: values.explanation?.ml || null,
-          image: values.explanation?.image || null,
-          images: normalizeExplanationImages(values.explanation?.images),
+          image: values.explanation?.image || null
         },
         correctAnswer: values.correctAnswer,
         subject: values.subject,
@@ -269,12 +177,12 @@ export default function EditQuestionPage(props: {
         difficultyLevel: values.difficultyLevel
       };
 
-      await questionsApi.update(params.id, transformedValues as QuestionPayload);
-      message.success('Question updated successfully');
-      router.push('/admin/questions');
+      await questionsApi.create(transformedValues as QuestionPayload);
+      message.success('Question created successfully');
+      form.resetFields(['questionText', 'options', 'correctAnswer', 'explanation', 'difficultyLevel']);
     } catch (error) {
-      console.error('Error updating question:', error);
-      message.error(formatEzPrepError(error, 'Failed to update question'));
+      console.error('Error creating question:', error);
+      message.error(formatEzPrepError(error, 'Failed to create question'));
     } finally {
       setLoading(false);
     }
@@ -284,7 +192,7 @@ export default function EditQuestionPage(props: {
     <EditPageShell loading={pageLoading}>
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <Card title="Edit Question">
+        <Card title="Add New Question">
           <Form
             form={form}
             layout="vertical"
@@ -292,12 +200,13 @@ export default function EditQuestionPage(props: {
           >
             {/* English Question */}
             <Form.Item label="Question (English)">
-              <Form.Item name={["questionText", "en", "text"]}>
+              <Form.Item
+                name={["questionText", "en", "text"]}
+                rules={[{ required: true, message: "Please enter the question in English" }]}
+              >
                 <Input.TextArea rows={4} placeholder="Enter question text in English" />
               </Form.Item>
-              <Form.Item label="Question Image">
-                <ImageUpload name={["questionText", "en", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["questionText", "en", "image"]} />
             </Form.Item>
 
             {/* Malayalam Question */}
@@ -305,13 +214,11 @@ export default function EditQuestionPage(props: {
               <Form.Item name={["questionText", "ml", "text"]}>
                 <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
               </Form.Item>
-              <Form.Item label="Question Image">
-                <ImageUpload name={["questionText", "ml", "image"]} />
-              </Form.Item>
+              <ImageUpload name={["questionText", "ml", "image"]} />
             </Form.Item>
 
-              {/* Question Type */}
-              <Form.Item 
+            {/* Question Type */}
+            <Form.Item 
               label={
                 <>
                   Options Type
@@ -411,60 +318,35 @@ export default function EditQuestionPage(props: {
               </Select>
             </Form.Item>
 
-            {/* Explanation */}
-            <Form.Item label="Explanation (English)">
-              <Form.Item name={["explanation", "en"]}>
-                <Input.TextArea rows={4} placeholder="Enter explanation in English" />
-              </Form.Item>
-            </Form.Item>
 
-            <Form.Item label="Explanation (Malayalam)">
-              <Form.Item name={["explanation", "ml"]}>
-                <Input.TextArea rows={4} placeholder="Enter explanation in Malayalam" />
-              </Form.Item>
-            </Form.Item>
-            
-            {/* Explanation Image (primary) */}
+            {/* Explanation Image */}
             <Form.Item label="Explanation Image">
               <ImageUpload name={["explanation", "image"]} />
             </Form.Item>
 
-            {/* Extra explanation images */}
-            <Form.Item label="Additional Explanation Images">
-              <Form.List name={["explanation", "images"]}>
-                {(fields, { add, remove }) => (
-                  <div className="space-y-3">
-                    {fields.map((field, index) => (
-                      <div
-                        key={field.key}
-                        className="flex items-start gap-3 border p-3 rounded"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <ImageUpload
-                            name={["explanation", "images", field.name]}
-                            label={`Image ${index + 1}`}
-                          />
-                        </div>
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => remove(field.name)}
-                          aria-label={`Remove additional image ${index + 1}`}
-                        />
-                      </div>
-                    ))}
-                    <Button
-                      type="dashed"
-                      icon={<PlusOutlined />}
-                      onClick={() => add()}
-                      block
-                    >
-                      Add Image
-                    </Button>
-                  </div>
-                )}
-              </Form.List>
+            {/* Explanation in English */}
+            <Form.Item label="Explanation (English)">
+              <Form.Item
+                name={["explanation", "en"]}
+                // rules={[{ required: true, message: "Please enter explanation in English" }]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Enter explanation in English"
+                />
+              </Form.Item>
+            </Form.Item>
+
+            {/* Explanation in Malayalam */}
+            <Form.Item label="Explanation (Malayalam)">
+              <Form.Item
+                name={["explanation", "ml"]}
+              >
+                <Input.TextArea 
+                  rows={4} 
+                  placeholder="Enter explanation in Malayalam"
+                />
+              </Form.Item>
             </Form.Item>
 
             {/* Subject */}
@@ -540,10 +422,12 @@ export default function EditQuestionPage(props: {
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={loading}
+                icon={<PlusOutlined />}
+                loading={loading || pageLoading}
+                disabled={pageLoading}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Update Question
+                Add Question
               </Button>
             </Form.Item>
           </Form>
@@ -552,4 +436,4 @@ export default function EditQuestionPage(props: {
     </div>
     </EditPageShell>
   );
-} 
+}

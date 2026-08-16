@@ -7,15 +7,16 @@ import {
   Form,
   Input,
   Radio,
-  Select,
   Space,
   Tooltip,
   message,
 } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
+import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import {
   catalogApi,
@@ -57,6 +58,7 @@ export default function FixFailedQuestionPage(props: {
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [tags, setTags] = useState<{ value: string; label: string }[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<FixOptionSlot[]>([]);
@@ -94,6 +96,7 @@ export default function FixFailedQuestionPage(props: {
     subjectId: string,
     topicId: string
   ) => {
+    setTagsLoading(true);
     try {
       const tags = await catalogApi.listAllTags({
         subjectId,
@@ -107,6 +110,8 @@ export default function FixFailedQuestionPage(props: {
       );
     } catch {
       setTags([]);
+    } finally {
+      setTagsLoading(false);
     }
   };
 
@@ -178,15 +183,17 @@ export default function FixFailedQuestionPage(props: {
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
     setSelectedTopic(null);
-    form.setFieldValue("topic", undefined);
-    form.setFieldValue("tag", undefined);
+    setFormValues(form, [
+      { name: "topic", value: undefined },
+      { name: "tag", value: undefined },
+    ]);
     setTags([]);
     fetchTopicsBySubject(value);
   };
 
   const handleTopicChange = (value: string) => {
     setSelectedTopic(value);
-    form.setFieldValue("tag", undefined);
+    setFormValue(form, "tag", undefined);
     if (selectedSubject && value) {
       fetchTagsBySubjectAndTopic(selectedSubject, value);
     } else {
@@ -378,15 +385,22 @@ export default function FixFailedQuestionPage(props: {
               <Radio.Group
                 onChange={(e) => {
                   if (e.target.value === "image") {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(["options", i, "en"], undefined);
-                      form.setFieldValue(["options", i, "ml"], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.flatMap((_, i) => [
+                        { name: ["options", i, "en"], value: undefined },
+                        { name: ["options", i, "ml"], value: undefined },
+                      ])
+                    );
                   }
                   if (e.target.value === "text") {
-                    OPTIONS.forEach((_, i) => {
-                      form.setFieldValue(["options", i, "image"], undefined);
-                    });
+                    setFormValues(
+                      form,
+                      OPTIONS.map((_, i) => ({
+                        name: ["options", i, "image"],
+                        value: undefined,
+                      }))
+                    );
                   }
                 }}
               >
@@ -538,6 +552,7 @@ export default function FixFailedQuestionPage(props: {
                 }
                 options={tags}
                 disabled={!selectedSubject || !selectedTopic}
+                loading={tagsLoading}
                 allowClear
               />
             </Form.Item>

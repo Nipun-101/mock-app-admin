@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Input, Modal, Pagination, Select, Space, Spin, Table, Tag, Tooltip, message } from "antd";
+import { Button, Input, Modal, Pagination, Space, Spin, Table, Tag, Tooltip, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { ImportOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
@@ -76,15 +77,17 @@ function renderExamTags(
   const hidden = labels.slice(MAX_VISIBLE_EXAMS);
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1 min-w-0 max-w-full">
       {visible.map(({ id, name }) => (
-        <Tag key={id} color="blue">
-          {name}
-        </Tag>
+        <Tooltip key={id} title={name}>
+          <Tag color="blue" className="!m-0 max-w-full overflow-hidden">
+            <span className="block max-w-full truncate">{name}</span>
+          </Tag>
+        </Tooltip>
       ))}
       {hidden.length > 0 && (
         <Tooltip title={hidden.map(({ name }) => name).join(", ")}>
-          <Tag className="cursor-default">+{hidden.length}</Tag>
+          <Tag className="cursor-default shrink-0">+{hidden.length}</Tag>
         </Tooltip>
       )}
     </div>
@@ -93,7 +96,7 @@ function renderExamTags(
 
 export default function BulkUploadPage() {
   const [uploads, setUploads] = useState<BulkUpload[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [processingUpload, setProcessingUpload] = useState<{
     id: string;
@@ -459,6 +462,8 @@ export default function BulkUploadPage() {
       title: "Exams",
       key: "exams",
       width: "21%",
+      ellipsis: true,
+      onCell: () => ({ className: "!max-w-0 overflow-hidden" }),
       render: (_: unknown, record: BulkUpload) =>
         renderExamTags(record.examIds, examMap),
     },

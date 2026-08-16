@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Pagination, Select, Space, Table, Tag, Tooltip, message } from "antd";
+import { Button, Pagination, Space, Table, Tag, Tooltip, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import Link from "next/link";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
@@ -48,15 +49,17 @@ function renderExamTags(
   const hidden = labels.slice(MAX_VISIBLE_EXAMS);
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1 min-w-0 max-w-full">
       {visible.map(({ id, name }) => (
-        <Tag key={id} color="blue">
-          {name}
-        </Tag>
+        <Tooltip key={id} title={name}>
+          <Tag color="blue" className="!m-0 max-w-full overflow-hidden">
+            <span className="block max-w-full truncate">{name}</span>
+          </Tag>
+        </Tooltip>
       ))}
       {hidden.length > 0 && (
         <Tooltip title={hidden.map(({ name }) => name).join(", ")}>
-          <Tag className="cursor-default">+{hidden.length}</Tag>
+          <Tag className="cursor-default shrink-0">+{hidden.length}</Tag>
         </Tooltip>
       )}
     </div>
@@ -65,7 +68,7 @@ function renderExamTags(
 
 export default function FailedQuestionsPage() {
   const [items, setItems] = useState<FailedQuestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,

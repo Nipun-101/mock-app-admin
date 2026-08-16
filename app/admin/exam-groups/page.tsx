@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, Select, Table, Typography, message } from "antd";
+import { Button, Card, Form, Input, Table, Typography, message } from "antd";
+import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
@@ -18,7 +19,7 @@ const { Title } = Typography;
 export default function ExamGroupsPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(true);
   const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [pagination, setPagination] = useState({

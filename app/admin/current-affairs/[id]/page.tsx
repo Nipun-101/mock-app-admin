@@ -10,6 +10,7 @@ import {
   type CurrentAffairImage,
 } from "@/app/services/ezprep-api";
 import { toDateKey } from "../date-key";
+import { toPlainImageMetadata } from "@/app/components/ImageUpload";
 import { EditPageShell } from "@/app/components/PageLoader";
 import {
   CurrentAffairFormFields,
@@ -20,15 +21,7 @@ import {
 const { Title } = Typography;
 
 function isImageMeta(value: unknown): value is CurrentAffairImage {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const image = value as CurrentAffairImage;
-  return (
-    typeof image.key === "string" &&
-    typeof image.bucket === "string" &&
-    typeof image.region === "string"
-  );
+  return Boolean(toPlainImageMetadata(value));
 }
 
 export default function EditCurrentAffairPage(props: {
@@ -51,7 +44,7 @@ export default function EditCurrentAffairPage(props: {
           description: data.description,
           memoryTrick: data.memoryTrick,
           date: data.date,
-          image: isImageMeta(data.image) ? data.image : undefined,
+          image: toPlainImageMetadata(data.image),
         });
         setHadImage(isImageMeta(data.image));
       } catch (error) {
