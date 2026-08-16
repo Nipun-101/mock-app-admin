@@ -213,7 +213,11 @@ export default function AdminLayout({
         <Menu
           mode="inline"
           selectedKeys={[
-            pathname.startsWith("/admin/bulk-upload")
+            pathname === "/admin"
+              ? "/admin"
+              : pathname.startsWith("/admin/questions")
+                ? "/admin/questions"
+                : pathname.startsWith("/admin/bulk-upload")
               ? "/admin/bulk-upload"
               : pathname.startsWith("/admin/failed-questions")
                 ? "/admin/failed-questions"

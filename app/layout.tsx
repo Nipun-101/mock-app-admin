@@ -6,8 +6,8 @@ import { AntdProvider } from '@/components/antd-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Mock Test App',
-  description: 'Mock Test App',
+  title: 'Mock Test Admin',
+  description: 'Admin console for questions, papers, catalog, and uploads',
 };
 
 export default function RootLayout({

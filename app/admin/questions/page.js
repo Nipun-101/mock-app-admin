@@ -237,7 +237,7 @@ export default function QuestionsPage() {
             }))}
           />
         </div>
-        <Link href="/admin">
+        <Link href="/admin/questions/new">
           <Button type="primary" className="bg-blue-600 hover:bg-blue-700">Add Question</Button>
         </Link>
       </div>

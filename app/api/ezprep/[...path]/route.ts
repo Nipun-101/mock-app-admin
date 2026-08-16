@@ -16,6 +16,7 @@ const ALLOWED_V1_ROOTS = new Set([
   "imports",
   "files",
   "current-affairs",
+  "admin",
 ]);
 
 class InvalidJsonBodyError extends Error {
