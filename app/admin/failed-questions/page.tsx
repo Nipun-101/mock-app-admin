@@ -48,15 +48,17 @@ function renderExamTags(
   const hidden = labels.slice(MAX_VISIBLE_EXAMS);
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1 min-w-0 max-w-full">
       {visible.map(({ id, name }) => (
-        <Tag key={id} color="blue">
-          {name}
-        </Tag>
+        <Tooltip key={id} title={name}>
+          <Tag color="blue" className="!m-0 max-w-full overflow-hidden">
+            <span className="block max-w-full truncate">{name}</span>
+          </Tag>
+        </Tooltip>
       ))}
       {hidden.length > 0 && (
         <Tooltip title={hidden.map(({ name }) => name).join(", ")}>
-          <Tag className="cursor-default">+{hidden.length}</Tag>
+          <Tag className="cursor-default shrink-0">+{hidden.length}</Tag>
         </Tooltip>
       )}
     </div>
