@@ -16,6 +16,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
+import { PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import {
@@ -329,43 +330,47 @@ export default function FixFailedQuestionPage(props: {
             onFinish={handleSubmit}
             initialValues={normalizeFailedQuestionForm(null).values}
           >
-            <Form.Item label="Question (English)">
-              <Form.Item
-                name={["questionText", "en", "text"]}
-                rules={[
-                  {
-                    validator: async (_, value) => {
-                      const image = form.getFieldValue([
-                        "questionText",
-                        "en",
-                        "image",
-                      ]);
-                      if (!value?.trim() && !image?.key) {
-                        throw new Error(
-                          "Please enter the question in English or upload an image"
-                        );
-                      }
+            <PasteToImage target={["questionText", "en", "image"]}>
+              <Form.Item label="Question (English)">
+                <Form.Item
+                  name={["questionText", "en", "text"]}
+                  rules={[
+                    {
+                      validator: async (_, value) => {
+                        const image = form.getFieldValue([
+                          "questionText",
+                          "en",
+                          "image",
+                        ]);
+                        if (!value?.trim() && !image?.key) {
+                          throw new Error(
+                            "Please enter the question in English or upload an image"
+                          );
+                        }
+                      },
                     },
-                  },
-                ]}
-              >
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter question text in English"
-                />
+                  ]}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter question text in English"
+                  />
+                </Form.Item>
+                <ImageUpload name={["questionText", "en", "image"]} />
               </Form.Item>
-              <ImageUpload name={["questionText", "en", "image"]} />
-            </Form.Item>
+            </PasteToImage>
 
-            <Form.Item label="Question (Malayalam)">
-              <Form.Item name={["questionText", "ml", "text"]}>
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter question text in Malayalam"
-                />
+            <PasteToImage target={["questionText", "ml", "image"]}>
+              <Form.Item label="Question (Malayalam)">
+                <Form.Item name={["questionText", "ml", "text"]}>
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter question text in Malayalam"
+                  />
+                </Form.Item>
+                <ImageUpload name={["questionText", "ml", "image"]} />
               </Form.Item>
-              <ImageUpload name={["questionText", "ml", "image"]} />
-            </Form.Item>
+            </PasteToImage>
 
             <Form.Item
               label={
@@ -411,7 +416,11 @@ export default function FixFailedQuestionPage(props: {
 
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <div key={option.id} className="mb-4 border p-4 rounded">
+                <PasteToImage
+                  key={option.id}
+                  target={["options", index, "image"]}
+                  className="mb-4 border p-4 rounded"
+                >
                   <Form.Item label={`Option ${option.label}`}>
                     <Form.Item
                       name={["options", index, "id"]}
@@ -461,7 +470,7 @@ export default function FixFailedQuestionPage(props: {
                       }}
                     </Form.Item>
                   </Form.Item>
-                </div>
+                </PasteToImage>
               ))}
             </Form.Item>
 
@@ -481,35 +490,37 @@ export default function FixFailedQuestionPage(props: {
               </Select>
             </Form.Item>
 
-            <Form.Item label="Explanation Image">
-              <ImageUpload name={["explanation", "image"]} />
-            </Form.Item>
-
-            <Form.Item label="Explanation (English)">
-              <Form.Item
-                name={["explanation", "en"]}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please enter explanation in English",
-                  },
-                ]}
-              >
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter explanation in English"
-                />
+            <PasteToImage target={["explanation", "image"]}>
+              <Form.Item label="Explanation Image">
+                <ImageUpload name={["explanation", "image"]} />
               </Form.Item>
-            </Form.Item>
 
-            <Form.Item label="Explanation (Malayalam)">
-              <Form.Item name={["explanation", "ml"]}>
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Enter explanation in Malayalam"
-                />
+              <Form.Item label="Explanation (English)">
+                <Form.Item
+                  name={["explanation", "en"]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter explanation in English",
+                    },
+                  ]}
+                >
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter explanation in English"
+                  />
+                </Form.Item>
               </Form.Item>
-            </Form.Item>
+
+              <Form.Item label="Explanation (Malayalam)">
+                <Form.Item name={["explanation", "ml"]}>
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Enter explanation in Malayalam"
+                  />
+                </Form.Item>
+              </Form.Item>
+            </PasteToImage>
 
             <Form.Item
               label="Subject"

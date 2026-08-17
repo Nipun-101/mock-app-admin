@@ -1,11 +1,12 @@
 "use client";
 
-import { Button, Card, Form, Input, Upload, Radio, message, Tooltip } from "antd";
+import { Button, Card, Form, Input, Radio, message, Tooltip } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
 import { useState, useEffect } from "react";
-import { InfoCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageUpload } from '@/app/components/ImageUpload';
+import { PasteToImage } from '@/app/components/PasteToImage';
 import { EditPageShell } from "@/app/components/PageLoader";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionPayload } from "@/app/services/ezprep-api";
@@ -199,23 +200,27 @@ export default function CreateQuestionPage() {
             onFinish={handleSubmit}
           >
             {/* English Question */}
-            <Form.Item label="Question (English)">
-              <Form.Item
-                name={["questionText", "en", "text"]}
-                rules={[{ required: true, message: "Please enter the question in English" }]}
-              >
-                <Input.TextArea rows={4} placeholder="Enter question text in English" />
+            <PasteToImage target={["questionText", "en", "image"]}>
+              <Form.Item label="Question (English)">
+                <Form.Item
+                  name={["questionText", "en", "text"]}
+                  rules={[{ required: true, message: "Please enter the question in English" }]}
+                >
+                  <Input.TextArea rows={4} placeholder="Enter question text in English" />
+                </Form.Item>
+                <ImageUpload name={["questionText", "en", "image"]} />
               </Form.Item>
-              <ImageUpload name={["questionText", "en", "image"]} />
-            </Form.Item>
+            </PasteToImage>
 
             {/* Malayalam Question */}
-            <Form.Item label="Question (Malayalam)">
-              <Form.Item name={["questionText", "ml", "text"]}>
-                <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
+            <PasteToImage target={["questionText", "ml", "image"]}>
+              <Form.Item label="Question (Malayalam)">
+                <Form.Item name={["questionText", "ml", "text"]}>
+                  <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
+                </Form.Item>
+                <ImageUpload name={["questionText", "ml", "image"]} />
               </Form.Item>
-              <ImageUpload name={["questionText", "ml", "image"]} />
-            </Form.Item>
+            </PasteToImage>
 
             {/* Question Type */}
             <Form.Item 
@@ -263,7 +268,11 @@ export default function CreateQuestionPage() {
             {/* Options */}
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <div key={option.id} className="mb-4 border p-4 rounded">
+                <PasteToImage
+                  key={option.id}
+                  target={["options", index, "image"]}
+                  className="mb-4 border p-4 rounded"
+                >
                   <Form.Item label={`Option ${option.label}`}>
                     <Form.Item
                       name={["options", index, "id"]}
@@ -299,7 +308,7 @@ export default function CreateQuestionPage() {
                       }}
                     </Form.Item>
                   </Form.Item>
-                </div>
+                </PasteToImage>
               ))}
             </Form.Item>
 
@@ -319,35 +328,37 @@ export default function CreateQuestionPage() {
             </Form.Item>
 
 
-            {/* Explanation Image */}
-            <Form.Item label="Explanation Image">
-              <ImageUpload name={["explanation", "image"]} />
-            </Form.Item>
-
-            {/* Explanation in English */}
-            <Form.Item label="Explanation (English)">
-              <Form.Item
-                name={["explanation", "en"]}
-                // rules={[{ required: true, message: "Please enter explanation in English" }]}
-              >
-                <Input.TextArea 
-                  rows={4} 
-                  placeholder="Enter explanation in English"
-                />
+            <PasteToImage target={["explanation", "image"]}>
+              {/* Explanation Image */}
+              <Form.Item label="Explanation Image">
+                <ImageUpload name={["explanation", "image"]} />
               </Form.Item>
-            </Form.Item>
 
-            {/* Explanation in Malayalam */}
-            <Form.Item label="Explanation (Malayalam)">
-              <Form.Item
-                name={["explanation", "ml"]}
-              >
-                <Input.TextArea 
-                  rows={4} 
-                  placeholder="Enter explanation in Malayalam"
-                />
+              {/* Explanation in English */}
+              <Form.Item label="Explanation (English)">
+                <Form.Item
+                  name={["explanation", "en"]}
+                  // rules={[{ required: true, message: "Please enter explanation in English" }]}
+                >
+                  <Input.TextArea 
+                    rows={4} 
+                    placeholder="Enter explanation in English"
+                  />
+                </Form.Item>
               </Form.Item>
-            </Form.Item>
+
+              {/* Explanation in Malayalam */}
+              <Form.Item label="Explanation (Malayalam)">
+                <Form.Item
+                  name={["explanation", "ml"]}
+                >
+                  <Input.TextArea 
+                    rows={4} 
+                    placeholder="Enter explanation in Malayalam"
+                  />
+                </Form.Item>
+              </Form.Item>
+            </PasteToImage>
 
             {/* Subject */}
             <Form.Item

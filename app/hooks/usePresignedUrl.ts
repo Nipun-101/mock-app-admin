@@ -12,7 +12,9 @@ interface S3ObjectMetadata {
 
 export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
   const [url, setUrl] = useState<string | null>(null);
+  const [urlKey, setUrlKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const metadataKey = metadata?.key ?? null;
 
   useEffect(() => {
     let mounted = true;
@@ -22,6 +24,7 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
       if (!metadata?.key || !metadata.bucket) {
         if (mounted) {
           setUrl(null);
+          setUrlKey(null);
           setLoading(false);
         }
         return;
@@ -29,12 +32,12 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
 
       try {
         setLoading(true);
-        setUrl(null);
         const { data } = await filesApi.signedUrl(metadata.key, metadata.bucket);
         const newUrl = data.url;
 
         if (mounted) {
           setUrl(newUrl);
+          setUrlKey(metadata.key);
           // Schedule next refresh for 45 minutes (75% of the 1-hour expiry)
           refreshTimeout = setTimeout(refreshUrl, 45 * 60 * 1000);
         }
@@ -57,5 +60,8 @@ export function usePresignedUrl(metadata: S3ObjectMetadata | null) {
     };
   }, [metadata?.key, metadata?.bucket]);
 
-  return { url, loading };
+  return {
+    url: urlKey === metadataKey ? url : null,
+    loading,
+  };
 }

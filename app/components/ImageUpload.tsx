@@ -51,6 +51,40 @@ export function toPlainImageMetadata(
   };
 }
 
+type ImageUploader = (file: File) => Promise<void>;
+
+const imageUploaders = new Map<string, ImageUploader>();
+
+export function imageFieldKey(name: (string | number)[]) {
+  return JSON.stringify(name);
+}
+
+export function registerImageUploader(name: (string | number)[], upload: ImageUploader) {
+  const key = imageFieldKey(name);
+  imageUploaders.set(key, upload);
+  return () => {
+    if (imageUploaders.get(key) === upload) {
+      imageUploaders.delete(key);
+    }
+  };
+}
+
+export function hasImageUploader(name: (string | number)[]) {
+  return imageUploaders.has(imageFieldKey(name));
+}
+
+export function uploadPastedImage(name: (string | number)[], file: File) {
+  const upload = imageUploaders.get(imageFieldKey(name));
+  if (!upload) {
+    return Promise.resolve();
+  }
+  return upload(file).catch(() => undefined);
+}
+
+function isJpgOrPng(file: File) {
+  return file.type === "image/jpeg" || file.type === "image/png";
+}
+
 /** Holds object values in Form state without mounting a DOM input. */
 function FormObjectValue({
   onChange,
@@ -69,6 +103,7 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
   const setValueRef = useRef<((value: unknown) => void) | undefined>(undefined);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const uploadingRef = useRef(false);
   const localPreviewUrlRef = useRef<string | null>(null);
   const formMetadata = Form.useWatch(name, form);
   const storedMetadata = toPlainImageMetadata(formMetadata);
@@ -86,15 +121,18 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
       : null
   );
 
+  const nameRef = useRef(name);
+  nameRef.current = name;
+
   const writeValue = useCallback(
     (value: unknown) => {
       if (setValueRef.current) {
         setValueRef.current(value);
         return;
       }
-      setFormValue(form, name, value);
+      setFormValue(form, nameRef.current, value);
     },
-    [form, name]
+    [form]
   );
 
   const revokeLocalPreview = useCallback(() => {
@@ -119,10 +157,70 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
       setFileList([{ uid: "current-image", name: "image", url: signedUrl, status: "done" }]);
       return;
     }
+    if (localPreviewUrlRef.current) {
+      return;
+    }
     if (!imageKey) {
       setFileList([]);
     }
   }, [signedUrl, imageKey, uploading, revokeLocalPreview]);
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!isJpgOrPng(file)) {
+        message.error("You can only upload JPG/PNG files!");
+        throw new Error("Invalid image type");
+      }
+      if (uploadingRef.current) {
+        message.warning("Please wait for the current upload to finish");
+        throw new Error("Upload in progress");
+      }
+
+      revokeLocalPreview();
+      const localUrl = URL.createObjectURL(file);
+      localPreviewUrlRef.current = localUrl;
+      uploadingRef.current = true;
+      setUploading(true);
+      setFileList([
+        {
+          uid: "uploading-image",
+          name: file.name,
+          status: "uploading",
+          url: localUrl,
+        },
+      ]);
+
+      try {
+        const { data: response } = await filesApi.upload(file);
+        const metadata = toPlainImageMetadata(response);
+        if (!metadata) {
+          throw new Error("Upload did not return image metadata");
+        }
+        writeValue(metadata);
+        setFileList([
+          {
+            uid: "current-image",
+            name: file.name,
+            status: "done",
+            url: localUrl,
+          },
+        ]);
+      } catch (error) {
+        revokeLocalPreview();
+        setFileList([]);
+        writeValue(undefined);
+        message.error(formatEzPrepError(error, "Failed to upload image"));
+        throw error;
+      } finally {
+        uploadingRef.current = false;
+        setUploading(false);
+      }
+    },
+    [revokeLocalPreview, writeValue]
+  );
+
+  const nameKey = imageFieldKey(name);
+  useEffect(() => registerImageUploader(name, uploadFile), [name, nameKey, uploadFile]);
 
   const hasImage = fileList.length > 0;
 
@@ -164,43 +262,11 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
             }}
             customRequest={async (options) => {
               const { file, onSuccess, onError } = options;
-              const uploadFile = file as File;
-              revokeLocalPreview();
-              const localUrl = URL.createObjectURL(uploadFile);
-              localPreviewUrlRef.current = localUrl;
-              setUploading(true);
-              setFileList([
-                {
-                  uid: "uploading-image",
-                  name: uploadFile.name,
-                  status: "uploading",
-                  url: localUrl,
-                },
-              ]);
               try {
-                const { data: response } = await filesApi.upload(uploadFile);
-                const metadata = toPlainImageMetadata(response);
-                if (!metadata) {
-                  throw new Error("Upload did not return image metadata");
-                }
-                writeValue(metadata);
-                setFileList([
-                  {
-                    uid: "current-image",
-                    name: uploadFile.name,
-                    status: "done",
-                    url: localUrl,
-                  },
-                ]);
+                await uploadFile(file as File);
                 onSuccess?.({});
               } catch (error) {
-                revokeLocalPreview();
-                setFileList([]);
-                writeValue(undefined);
                 onError?.(error as Error);
-                message.error(formatEzPrepError(error, "Failed to upload image"));
-              } finally {
-                setUploading(false);
               }
             }}
             onRemove={() => {
@@ -213,11 +279,11 @@ export const ImageUpload = ({ name, label, onUploadingChange }: ImageUploadProps
               return true;
             }}
             beforeUpload={(file) => {
-              const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
-              if (!isJpgOrPng) {
+              if (!isJpgOrPng(file)) {
                 message.error("You can only upload JPG/PNG files!");
+                return false;
               }
-              return isJpgOrPng;
+              return true;
             }}
           >
             <Button

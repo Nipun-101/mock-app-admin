@@ -6,6 +6,7 @@ import { use, useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
+import { PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
@@ -291,24 +292,28 @@ export default function EditQuestionPage(props: {
             onFinish={handleSubmit}
           >
             {/* English Question */}
-            <Form.Item label="Question (English)">
-              <Form.Item name={["questionText", "en", "text"]}>
-                <Input.TextArea rows={4} placeholder="Enter question text in English" />
+            <PasteToImage target={["questionText", "en", "image"]}>
+              <Form.Item label="Question (English)">
+                <Form.Item name={["questionText", "en", "text"]}>
+                  <Input.TextArea rows={4} placeholder="Enter question text in English" />
+                </Form.Item>
+                <Form.Item label="Question Image">
+                  <ImageUpload name={["questionText", "en", "image"]} />
+                </Form.Item>
               </Form.Item>
-              <Form.Item label="Question Image">
-                <ImageUpload name={["questionText", "en", "image"]} />
-              </Form.Item>
-            </Form.Item>
+            </PasteToImage>
 
             {/* Malayalam Question */}
-            <Form.Item label="Question (Malayalam)">
-              <Form.Item name={["questionText", "ml", "text"]}>
-                <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
+            <PasteToImage target={["questionText", "ml", "image"]}>
+              <Form.Item label="Question (Malayalam)">
+                <Form.Item name={["questionText", "ml", "text"]}>
+                  <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
+                </Form.Item>
+                <Form.Item label="Question Image">
+                  <ImageUpload name={["questionText", "ml", "image"]} />
+                </Form.Item>
               </Form.Item>
-              <Form.Item label="Question Image">
-                <ImageUpload name={["questionText", "ml", "image"]} />
-              </Form.Item>
-            </Form.Item>
+            </PasteToImage>
 
               {/* Question Type */}
               <Form.Item 
@@ -356,7 +361,11 @@ export default function EditQuestionPage(props: {
             {/* Options */}
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <div key={option.id} className="mb-4 border p-4 rounded">
+                <PasteToImage
+                  key={option.id}
+                  target={["options", index, "image"]}
+                  className="mb-4 border p-4 rounded"
+                >
                   <Form.Item label={`Option ${option.label}`}>
                     <Form.Item
                       name={["options", index, "id"]}
@@ -392,7 +401,7 @@ export default function EditQuestionPage(props: {
                       }}
                     </Form.Item>
                   </Form.Item>
-                </div>
+                </PasteToImage>
               ))}
             </Form.Item>
 
@@ -411,23 +420,25 @@ export default function EditQuestionPage(props: {
               </Select>
             </Form.Item>
 
-            {/* Explanation */}
-            <Form.Item label="Explanation (English)">
-              <Form.Item name={["explanation", "en"]}>
-                <Input.TextArea rows={4} placeholder="Enter explanation in English" />
+            <PasteToImage target={["explanation", "image"]}>
+              {/* Explanation */}
+              <Form.Item label="Explanation (English)">
+                <Form.Item name={["explanation", "en"]}>
+                  <Input.TextArea rows={4} placeholder="Enter explanation in English" />
+                </Form.Item>
               </Form.Item>
-            </Form.Item>
 
-            <Form.Item label="Explanation (Malayalam)">
-              <Form.Item name={["explanation", "ml"]}>
-                <Input.TextArea rows={4} placeholder="Enter explanation in Malayalam" />
+              <Form.Item label="Explanation (Malayalam)">
+                <Form.Item name={["explanation", "ml"]}>
+                  <Input.TextArea rows={4} placeholder="Enter explanation in Malayalam" />
+                </Form.Item>
               </Form.Item>
-            </Form.Item>
-            
-            {/* Explanation Image (primary) */}
-            <Form.Item label="Explanation Image">
-              <ImageUpload name={["explanation", "image"]} />
-            </Form.Item>
+              
+              {/* Explanation Image (primary) */}
+              <Form.Item label="Explanation Image">
+                <ImageUpload name={["explanation", "image"]} />
+              </Form.Item>
+            </PasteToImage>
 
             {/* Extra explanation images */}
             <Form.Item label="Additional Explanation Images">
@@ -440,10 +451,12 @@ export default function EditQuestionPage(props: {
                         className="flex items-start gap-3 border p-3 rounded"
                       >
                         <div className="flex-1 min-w-0">
-                          <ImageUpload
-                            name={["explanation", "images", field.name]}
-                            label={`Image ${index + 1}`}
-                          />
+                          <PasteToImage target={["explanation", "images", field.name]}>
+                            <ImageUpload
+                              name={["explanation", "images", field.name]}
+                              label={`Image ${index + 1}`}
+                            />
+                          </PasteToImage>
                         </div>
                         <Button
                           type="text"
