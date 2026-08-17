@@ -17,6 +17,7 @@ import {
   CloseCircleOutlined,
   FileProtectOutlined,
   ReadOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import Image from "next/image";
@@ -105,6 +106,11 @@ export default function AdminLayout({
       key: "/admin",
       icon: <DashboardOutlined />,
       label: <Link href="/admin">Dashboard</Link>,
+    },
+    {
+      key: "/admin/users",
+      icon: <TeamOutlined />,
+      label: <Link href="/admin/users">Users</Link>,
     },
     {
       key: "/admin/questions",
@@ -227,7 +233,9 @@ export default function AdminLayout({
           selectedKeys={[
             pathname === "/admin"
               ? "/admin"
-              : pathname.startsWith("/admin/questions")
+              : pathname.startsWith("/admin/users")
+                ? "/admin/users"
+                : pathname.startsWith("/admin/questions")
                 ? "/admin/questions"
                 : pathname.startsWith("/admin/bulk-upload")
               ? "/admin/bulk-upload"

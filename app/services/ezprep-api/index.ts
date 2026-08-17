@@ -7,5 +7,6 @@ export * from "./mock-tests";
 export * from "./files";
 export * from "./current-affairs";
 export * from "./admin-dashboard";
+export * from "./users";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";
