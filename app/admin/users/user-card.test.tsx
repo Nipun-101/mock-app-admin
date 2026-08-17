@@ -27,8 +27,10 @@ describe("UserCard", () => {
     render(<UserCard user={makeUser()} />);
 
     expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
-    expect(screen.getByText("anita@example.com")).toBeInTheDocument();
-    expect(screen.getByText("+919876543210")).toBeInTheDocument();
+    expect(screen.getByText("a***@***.com")).toBeInTheDocument();
+    expect(screen.getByText("+**********10")).toBeInTheDocument();
+    expect(screen.queryByText("anita@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByText("+919876543210")).not.toBeInTheDocument();
     expect(screen.getByText("Active")).toBeInTheDocument();
     expect(screen.getByText("Premium")).toBeInTheDocument();
     expect(screen.getByText("Gold")).toBeInTheDocument();
@@ -70,5 +72,21 @@ describe("UserCard", () => {
   it("shows a singular tests label for a single attempt", () => {
     render(<UserCard user={makeUser({ testsAttendedCount: 1 })} />);
     expect(screen.getByText(/test attended/i)).toBeInTheDocument();
+  });
+
+  it("never renders a full email or phone even if the payload is unmasked", () => {
+    render(
+      <UserCard
+        user={makeUser({
+          email: "anita.sharma@gmail.com",
+          phoneNumber: "9876543210",
+        })}
+      />
+    );
+
+    expect(screen.getByText("a***@***.com")).toBeInTheDocument();
+    expect(screen.getByText("********10")).toBeInTheDocument();
+    expect(screen.queryByText("anita.sharma@gmail.com")).not.toBeInTheDocument();
+    expect(screen.queryByText("9876543210")).not.toBeInTheDocument();
   });
 });
