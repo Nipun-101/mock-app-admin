@@ -39,7 +39,6 @@ function request(path: string, cookie?: string) {
 
 describe("proxy", () => {
   const originalSecret = process.env.JWT_SECRET;
-  const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     process.env.JWT_SECRET = SECRET;
@@ -51,7 +50,6 @@ describe("proxy", () => {
     } else {
       process.env.JWT_SECRET = originalSecret;
     }
-    process.env.NODE_ENV = originalEnv;
   });
 
   it("exports a matcher that skips static assets", () => {

@@ -17,6 +17,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
 });
 
 const signedUrl = vi.mocked(filesApi.signedUrl);
+type SignedUrlResponse = Awaited<ReturnType<typeof filesApi.signedUrl>>;
 
 describe("usePresignedUrl", () => {
   beforeEach(() => {
@@ -80,11 +81,11 @@ describe("usePresignedUrl", () => {
       expect(result.current.url).toBe("https://cdn.example/old.png")
     );
 
-    let resolveNext: ((value: unknown) => void) | undefined;
+    let resolveNext: ((value: SignedUrlResponse) => void) | undefined;
     signedUrl.mockReturnValueOnce(
-      new Promise((resolve) => {
+      new Promise<SignedUrlResponse>((resolve) => {
         resolveNext = resolve;
-      }) as Promise<never>
+      })
     );
 
     rerender({ metadata: { key: "new.png", bucket: "media" } });
@@ -104,11 +105,11 @@ describe("usePresignedUrl", () => {
   });
 
   it("does not apply a signed url after unmount", async () => {
-    let resolveSigned: ((value: unknown) => void) | undefined;
+    let resolveSigned: ((value: SignedUrlResponse) => void) | undefined;
     signedUrl.mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<SignedUrlResponse>((resolve) => {
         resolveSigned = resolve;
-      }) as Promise<never>
+      })
     );
 
     const { unmount } = renderHook(() =>

@@ -120,9 +120,7 @@ describe("BulkUploadFormPage", () => {
     expect(await screen.findByText("Please select a subject")).toBeInTheDocument();
     expect(screen.getByText("Please select a topic")).toBeInTheDocument();
     expect(screen.getByText("Please select at least one exam")).toBeInTheDocument();
-    expect(
-      screen.getByText("Please upload a PDF file", { hidden: true })
-    ).toBeInTheDocument();
+    expect(document.body).toHaveTextContent("Please upload a PDF file");
   });
 
   it("rejects a non-PDF file", async () => {

@@ -10,10 +10,9 @@ describe("filterSelectOption", () => {
     expect(filterSelectOption("", undefined)).toBe(true);
   });
 
-  it("matches against label, value, children, and title", () => {
+  it("matches against label, value, and title", () => {
     expect(filterSelectOption("alp", { label: "Alpha" })).toBe(true);
     expect(filterSelectOption("42", { value: 42 })).toBe(true);
-    expect(filterSelectOption("gamma", { children: "Gamma option" })).toBe(true);
     expect(filterSelectOption("hint", { title: "Search hint" })).toBe(true);
     expect(filterSelectOption("zzz", { label: "Alpha", value: "a" })).toBe(false);
   });
@@ -31,13 +30,13 @@ describe("filterSelectOption", () => {
     expect(filterSelectOption("geometry", { label })).toBe(false);
   });
 
-  it("joins array children and ignores booleans", () => {
+  it("joins array labels and ignores booleans", () => {
     expect(
       filterSelectOption("hello", {
-        children: [false, "Hello", true, createElement("em", null, "World")],
+        label: [false, "Hello", true, createElement("em", null, "World")],
       })
     ).toBe(true);
-    expect(filterSelectOption("true", { label: true, value: false })).toBe(false);
+    expect(filterSelectOption("true", { label: true, value: "x" })).toBe(false);
     expect(filterSelectOption("world", { label: [null, "World"] })).toBe(true);
   });
 

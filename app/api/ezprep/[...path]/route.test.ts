@@ -13,20 +13,43 @@ import { DELETE, GET, PATCH, POST, PUT } from "./route";
 
 const requestWithStatus = vi.mocked(ezPrepApiServerClient.requestWithStatus);
 
-function makeRequest(
-  url: string,
-  init?: RequestInit & { cookies?: Record<string, string> }
-) {
-  const headers = new Headers(init?.headers);
-  if (init?.cookies) {
+type TestRequestInit = Omit<RequestInit, "headers" | "signal"> & {
+  headers?: HeadersInit;
+  cookies?: Record<string, string>;
+  signal?: AbortSignal;
+};
+
+function makeRequest(url: string, init: TestRequestInit = {}) {
+  const { cookies, headers: initHeaders, ...rest } = init;
+  const headers = new Headers(initHeaders);
+  if (cookies) {
     headers.set(
       "cookie",
-      Object.entries(init.cookies)
+      Object.entries(cookies)
         .map(([key, value]) => `${key}=${value}`)
         .join("; ")
     );
   }
-  return new NextRequest(url, { ...init, headers });
+  return new NextRequest(url, { ...rest, headers });
+}
+
+function lastProxyOptions() {
+  const options = requestWithStatus.mock.calls.at(-1)?.[1];
+  if (!options) {
+    throw new Error("expected ezPrepApiServerClient.requestWithStatus to be called");
+  }
+  return options;
+}
+
+function isFormDataLike(
+  value: unknown
+): value is Pick<FormData, "get"> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "get" in value &&
+    typeof value.get === "function"
+  );
 }
 
 const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
@@ -113,9 +136,12 @@ describe("EzPrep proxy route", () => {
       }),
       ctx(["v1", "files"])
     );
-    const options = requestWithStatus.mock.calls[0][1];
-    expect(typeof (options.body as FormData).get).toBe("function");
-    expect((options.body as FormData).get("file")).toBe("x");
+    const options = lastProxyOptions();
+    expect(isFormDataLike(options.body)).toBe(true);
+    if (!isFormDataLike(options.body)) {
+      throw new Error("expected FormData body");
+    }
+    expect(options.body.get("file")).toBe("x");
     expect(options.headers).not.toHaveProperty("Authorization");
   });
 
@@ -128,7 +154,7 @@ describe("EzPrep proxy route", () => {
       }),
       ctx(["v1", "questions", "1"])
     );
-    expect(requestWithStatus.mock.calls[0][1].body).toBe("hello");
+    expect(lastProxyOptions().body).toBe("hello");
   });
 
   it("exports PATCH and DELETE", async () => {

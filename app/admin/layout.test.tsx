@@ -58,11 +58,11 @@ describe("AdminLayout", () => {
   });
 
   it("shows a loader until the session is ready", async () => {
-    let resolveSession: ((value: { status: number }) => void) | undefined;
+    let resolveSession: ((value: Response) => void) | undefined;
     vi.mocked(fetchAdminSession).mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<Response>((resolve) => {
         resolveSession = resolve;
-      }) as Promise<Response>
+      })
     );
 
     const { container } = render(<AdminLayout>Secret page</AdminLayout>);
@@ -71,7 +71,7 @@ describe("AdminLayout", () => {
     expect(container.querySelector(".ant-spin")).toBeTruthy();
 
     await act(async () => {
-      resolveSession?.({ status: 200 });
+      resolveSession?.(new Response(null, { status: 200 }));
     });
 
     expect(await screen.findByText("Secret page")).toBeInTheDocument();

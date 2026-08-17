@@ -37,7 +37,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
   };
 });
 
-import { catalogApi, mockTestsApi } from "@/app/services/ezprep-api";
+import { catalogApi, mockTestsApi, type MockTest } from "@/app/services/ezprep-api";
 
 const list = vi.mocked(mockTestsApi.list);
 const create = vi.mocked(mockTestsApi.create);
@@ -46,7 +46,7 @@ const listSubjects = vi.mocked(catalogApi.listSubjects);
 const listAllExams = vi.mocked(catalogApi.listAllExams);
 const getSubject = vi.mocked(catalogApi.getSubject);
 
-const mockTest = {
+const mockTest: MockTest = {
   id: "mt-1",
   title: "Polity Practice",
   durationInMinutes: 15,
@@ -55,6 +55,11 @@ const mockTest = {
   subject: { id: "sub-1", name: "Polity" },
   topic: { id: "top-1", name: "Parliament" },
   isActive: true,
+  marksPerQuestion: 1,
+  negativeMarking: 0,
+  allowRetake: true,
+  shuffleOptions: false,
+  showResultsImmediately: true,
 };
 
 async function chooseOption(formLabel: string, optionText: string) {
