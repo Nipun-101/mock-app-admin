@@ -19,10 +19,12 @@ import {
   ReadOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
 import { PageLoader } from "@/app/components/PageLoader";
+import logo from "@/assets/logo.png";
 
 const { Sider, Content } = Layout;
 
@@ -177,9 +179,19 @@ export default function AdminLayout({
           aria-label={collapsed ? "Open navigation" : "Close navigation"}
           aria-expanded={!collapsed}
         />
-        <h1 className="text-base sm:text-xl font-bold ml-3 sm:ml-4 flex-1 truncate">
-          Mock Test Admin
-        </h1>
+        <Link
+          href="/admin"
+          className="ml-3 sm:ml-4 flex-1 flex items-center min-w-0"
+          aria-label="Go to admin dashboard"
+        >
+          <Image
+            src={logo}
+            alt="Mock Test Admin"
+            className="h-8 sm:h-10 w-auto max-w-full object-contain object-left"
+            style={{ width: "auto" }}
+            priority
+          />
+        </Link>
         <Button
           size="small"
           className="sm:!h-8"

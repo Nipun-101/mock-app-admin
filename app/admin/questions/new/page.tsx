@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { v4 as uuidv4 } from 'uuid';
 import { ImageUpload } from '@/app/components/ImageUpload';
-import { PasteToImage } from '@/app/components/PasteToImage';
+import { PasteHint, PasteToImage } from '@/app/components/PasteToImage';
 import { EditPageShell } from "@/app/components/PageLoader";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionPayload } from "@/app/services/ezprep-api";
@@ -205,6 +205,7 @@ export default function CreateQuestionPage() {
                 <Form.Item
                   name={["questionText", "en", "text"]}
                   rules={[{ required: true, message: "Please enter the question in English" }]}
+                  extra={<PasteHint />}
                 >
                   <Input.TextArea rows={4} placeholder="Enter question text in English" />
                 </Form.Item>
@@ -215,7 +216,7 @@ export default function CreateQuestionPage() {
             {/* Malayalam Question */}
             <PasteToImage target={["questionText", "ml", "image"]}>
               <Form.Item label="Question (Malayalam)">
-                <Form.Item name={["questionText", "ml", "text"]}>
+                <Form.Item name={["questionText", "ml", "text"]} extra={<PasteHint />}>
                   <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
                 </Form.Item>
                 <ImageUpload name={["questionText", "ml", "image"]} />
@@ -268,34 +269,27 @@ export default function CreateQuestionPage() {
             {/* Options */}
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <PasteToImage
+                <Form.Item
                   key={option.id}
-                  target={["options", index, "image"]}
-                  className="mb-4 border p-4 rounded"
+                  noStyle
+                  shouldUpdate={(prevValues, currentValues) =>
+                    prevValues?.optionType !== currentValues?.optionType
+                  }
                 >
-                  <Form.Item label={`Option ${option.label}`}>
-                    <Form.Item
-                      name={["options", index, "id"]}
-                      initialValue={option.id}
-                      hidden
-                    >
-                      <Input type="hidden" />
-                    </Form.Item>
-                    
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) => {
-                        return prevValues?.optionType !== currentValues?.optionType;
-                      }}
-                    >
-                      {({ getFieldValue }) => {
-                        const type = getFieldValue("optionType");
-                        
-                        if (type === "image") {
-                          return <ImageUpload name={["options", index, "image"]} />;
-                        }
-                        
-                        return (
+                  {({ getFieldValue }) => {
+                    const isImage = getFieldValue("optionType") === "image";
+                    const fields = (
+                      <Form.Item label={`Option ${option.label}`}>
+                        <Form.Item
+                          name={["options", index, "id"]}
+                          initialValue={option.id}
+                          hidden
+                        >
+                          <Input type="hidden" />
+                        </Form.Item>
+                        {isImage ? (
+                          <ImageUpload name={["options", index, "image"]} />
+                        ) : (
                           <>
                             <Form.Item name={["options", index, "en"]} rules={[{ required: true, message: "Please enter the option in English" }]}>
                               <Input placeholder={`Option ${option.label} in English`} />
@@ -304,11 +298,25 @@ export default function CreateQuestionPage() {
                               <Input placeholder={`Option ${option.label} in Malayalam`} />
                             </Form.Item>
                           </>
-                        );
-                      }}
-                    </Form.Item>
-                  </Form.Item>
-                </PasteToImage>
+                        )}
+                      </Form.Item>
+                    );
+
+                    if (isImage) {
+                      return (
+                        <PasteToImage
+                          target={["options", index, "image"]}
+                          variant="zone"
+                          className="mb-4 p-4"
+                        >
+                          {fields}
+                        </PasteToImage>
+                      );
+                    }
+
+                    return <div className="mb-4 border p-4 rounded">{fields}</div>;
+                  }}
+                </Form.Item>
               ))}
             </Form.Item>
 
@@ -338,6 +346,7 @@ export default function CreateQuestionPage() {
               <Form.Item label="Explanation (English)">
                 <Form.Item
                   name={["explanation", "en"]}
+                  extra={<PasteHint />}
                   // rules={[{ required: true, message: "Please enter explanation in English" }]}
                 >
                   <Input.TextArea 
@@ -351,6 +360,7 @@ export default function CreateQuestionPage() {
               <Form.Item label="Explanation (Malayalam)">
                 <Form.Item
                   name={["explanation", "ml"]}
+                  extra={<PasteHint />}
                 >
                   <Input.TextArea 
                     rows={4} 
