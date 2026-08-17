@@ -6,7 +6,7 @@ import { use, useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter } from 'next/navigation';
 import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
-import { PasteToImage } from "@/app/components/PasteToImage";
+import { PasteHint, PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
@@ -294,7 +294,7 @@ export default function EditQuestionPage(props: {
             {/* English Question */}
             <PasteToImage target={["questionText", "en", "image"]}>
               <Form.Item label="Question (English)">
-                <Form.Item name={["questionText", "en", "text"]}>
+                <Form.Item name={["questionText", "en", "text"]} extra={<PasteHint />}>
                   <Input.TextArea rows={4} placeholder="Enter question text in English" />
                 </Form.Item>
                 <Form.Item label="Question Image">
@@ -306,7 +306,7 @@ export default function EditQuestionPage(props: {
             {/* Malayalam Question */}
             <PasteToImage target={["questionText", "ml", "image"]}>
               <Form.Item label="Question (Malayalam)">
-                <Form.Item name={["questionText", "ml", "text"]}>
+                <Form.Item name={["questionText", "ml", "text"]} extra={<PasteHint />}>
                   <Input.TextArea rows={4} placeholder="Enter question text in Malayalam" />
                 </Form.Item>
                 <Form.Item label="Question Image">
@@ -361,34 +361,27 @@ export default function EditQuestionPage(props: {
             {/* Options */}
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <PasteToImage
+                <Form.Item
                   key={option.id}
-                  target={["options", index, "image"]}
-                  className="mb-4 border p-4 rounded"
+                  noStyle
+                  shouldUpdate={(prevValues, currentValues) =>
+                    prevValues?.optionType !== currentValues?.optionType
+                  }
                 >
-                  <Form.Item label={`Option ${option.label}`}>
-                    <Form.Item
-                      name={["options", index, "id"]}
-                      initialValue={option.id}
-                      hidden
-                    >
-                      <Input type="hidden" />
-                    </Form.Item>
-                    
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) => {
-                        return prevValues?.optionType !== currentValues?.optionType;
-                      }}
-                    >
-                      {({ getFieldValue }) => {
-                        const type = getFieldValue("optionType");
-                        
-                        if (type === "image") {
-                          return <ImageUpload name={["options", index, "image"]} />;
-                        }
-                        
-                        return (
+                  {({ getFieldValue }) => {
+                    const isImage = getFieldValue("optionType") === "image";
+                    const fields = (
+                      <Form.Item label={`Option ${option.label}`}>
+                        <Form.Item
+                          name={["options", index, "id"]}
+                          initialValue={option.id}
+                          hidden
+                        >
+                          <Input type="hidden" />
+                        </Form.Item>
+                        {isImage ? (
+                          <ImageUpload name={["options", index, "image"]} />
+                        ) : (
                           <>
                             <Form.Item name={["options", index, "en"]} rules={[{ required: true, message: "Please enter the option in English" }]}>
                               <Input placeholder={`Option ${option.label} in English`} />
@@ -397,11 +390,25 @@ export default function EditQuestionPage(props: {
                               <Input placeholder={`Option ${option.label} in Malayalam`} />
                             </Form.Item>
                           </>
-                        );
-                      }}
-                    </Form.Item>
-                  </Form.Item>
-                </PasteToImage>
+                        )}
+                      </Form.Item>
+                    );
+
+                    if (isImage) {
+                      return (
+                        <PasteToImage
+                          target={["options", index, "image"]}
+                          variant="zone"
+                          className="mb-4 p-4"
+                        >
+                          {fields}
+                        </PasteToImage>
+                      );
+                    }
+
+                    return <div className="mb-4 border p-4 rounded">{fields}</div>;
+                  }}
+                </Form.Item>
               ))}
             </Form.Item>
 
@@ -423,13 +430,13 @@ export default function EditQuestionPage(props: {
             <PasteToImage target={["explanation", "image"]}>
               {/* Explanation */}
               <Form.Item label="Explanation (English)">
-                <Form.Item name={["explanation", "en"]}>
+                <Form.Item name={["explanation", "en"]} extra={<PasteHint />}>
                   <Input.TextArea rows={4} placeholder="Enter explanation in English" />
                 </Form.Item>
               </Form.Item>
 
               <Form.Item label="Explanation (Malayalam)">
-                <Form.Item name={["explanation", "ml"]}>
+                <Form.Item name={["explanation", "ml"]} extra={<PasteHint />}>
                   <Input.TextArea rows={4} placeholder="Enter explanation in Malayalam" />
                 </Form.Item>
               </Form.Item>
@@ -451,7 +458,11 @@ export default function EditQuestionPage(props: {
                         className="flex items-start gap-3 border p-3 rounded"
                       >
                         <div className="flex-1 min-w-0">
-                          <PasteToImage target={["explanation", "images", field.name]}>
+                          <PasteToImage
+                            target={["explanation", "images", field.name]}
+                            variant="zone"
+                            className="p-3"
+                          >
                             <ImageUpload
                               name={["explanation", "images", field.name]}
                               label={`Image ${index + 1}`}

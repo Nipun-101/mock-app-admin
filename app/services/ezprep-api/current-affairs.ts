@@ -19,7 +19,7 @@ export interface CurrentAffairImage {
 export interface CurrentAffair {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   memoryTrick?: string;
   date: string;
   image?: CurrentAffairImage;
@@ -32,7 +32,7 @@ export interface CurrentAffair {
 
 export interface CurrentAffairPayload {
   title: string;
-  description: string;
+  description?: string;
   date: string;
   memoryTrick?: string;
   image?: CurrentAffairImage | null;

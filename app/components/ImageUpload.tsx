@@ -73,12 +73,17 @@ export function hasImageUploader(name: (string | number)[]) {
   return imageUploaders.has(imageFieldKey(name));
 }
 
-export function uploadPastedImage(name: (string | number)[], file: File) {
+export async function uploadPastedImage(name: (string | number)[], file: File) {
   const upload = imageUploaders.get(imageFieldKey(name));
   if (!upload) {
-    return Promise.resolve();
+    return false;
   }
-  return upload(file).catch(() => undefined);
+  try {
+    await upload(file);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isJpgOrPng(file: File) {

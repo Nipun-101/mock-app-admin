@@ -16,7 +16,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUpload } from "@/app/components/ImageUpload";
-import { PasteToImage } from "@/app/components/PasteToImage";
+import { PasteHint, PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import {
@@ -334,6 +334,7 @@ export default function FixFailedQuestionPage(props: {
               <Form.Item label="Question (English)">
                 <Form.Item
                   name={["questionText", "en", "text"]}
+                  extra={<PasteHint />}
                   rules={[
                     {
                       validator: async (_, value) => {
@@ -362,7 +363,7 @@ export default function FixFailedQuestionPage(props: {
 
             <PasteToImage target={["questionText", "ml", "image"]}>
               <Form.Item label="Question (Malayalam)">
-                <Form.Item name={["questionText", "ml", "text"]}>
+                <Form.Item name={["questionText", "ml", "text"]} extra={<PasteHint />}>
                   <Input.TextArea
                     rows={4}
                     placeholder="Enter question text in Malayalam"
@@ -416,36 +417,27 @@ export default function FixFailedQuestionPage(props: {
 
             <Form.Item label="Options">
               {OPTIONS.map((option, index) => (
-                <PasteToImage
+                <Form.Item
                   key={option.id}
-                  target={["options", index, "image"]}
-                  className="mb-4 border p-4 rounded"
+                  noStyle
+                  shouldUpdate={(prevValues, currentValues) =>
+                    prevValues?.optionType !== currentValues?.optionType
+                  }
                 >
-                  <Form.Item label={`Option ${option.label}`}>
-                    <Form.Item
-                      name={["options", index, "id"]}
-                      initialValue={option.id}
-                      hidden
-                    >
-                      <Input type="hidden" />
-                    </Form.Item>
-
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) =>
-                        prevValues?.optionType !== currentValues?.optionType
-                      }
-                    >
-                      {({ getFieldValue }) => {
-                        const type = getFieldValue("optionType");
-
-                        if (type === "image") {
-                          return (
-                            <ImageUpload name={["options", index, "image"]} />
-                          );
-                        }
-
-                        return (
+                  {({ getFieldValue }) => {
+                    const isImage = getFieldValue("optionType") === "image";
+                    const fields = (
+                      <Form.Item label={`Option ${option.label}`}>
+                        <Form.Item
+                          name={["options", index, "id"]}
+                          initialValue={option.id}
+                          hidden
+                        >
+                          <Input type="hidden" />
+                        </Form.Item>
+                        {isImage ? (
+                          <ImageUpload name={["options", index, "image"]} />
+                        ) : (
                           <>
                             <Form.Item
                               name={["options", index, "en"]}
@@ -466,11 +458,25 @@ export default function FixFailedQuestionPage(props: {
                               />
                             </Form.Item>
                           </>
-                        );
-                      }}
-                    </Form.Item>
-                  </Form.Item>
-                </PasteToImage>
+                        )}
+                      </Form.Item>
+                    );
+
+                    if (isImage) {
+                      return (
+                        <PasteToImage
+                          target={["options", index, "image"]}
+                          variant="zone"
+                          className="mb-4 p-4"
+                        >
+                          {fields}
+                        </PasteToImage>
+                      );
+                    }
+
+                    return <div className="mb-4 border p-4 rounded">{fields}</div>;
+                  }}
+                </Form.Item>
               ))}
             </Form.Item>
 
@@ -498,6 +504,7 @@ export default function FixFailedQuestionPage(props: {
               <Form.Item label="Explanation (English)">
                 <Form.Item
                   name={["explanation", "en"]}
+                  extra={<PasteHint />}
                   rules={[
                     {
                       required: true,
@@ -513,7 +520,7 @@ export default function FixFailedQuestionPage(props: {
               </Form.Item>
 
               <Form.Item label="Explanation (Malayalam)">
-                <Form.Item name={["explanation", "ml"]}>
+                <Form.Item name={["explanation", "ml"]} extra={<PasteHint />}>
                   <Input.TextArea
                     rows={4}
                     placeholder="Enter explanation in Malayalam"

@@ -61,7 +61,7 @@ export default function EditCurrentAffairPage(props: {
 
   const handleSubmit = async (values: {
     title: string;
-    description: string;
+    description?: string;
     date: string;
     memoryTrick?: string;
     image?: CurrentAffairImage;
