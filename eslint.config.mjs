@@ -6,7 +6,7 @@ const plugin = nextPlugin.default ?? nextPlugin;
 
 const eslintConfig = [
   {
-    ignores: [".next/**", "out/**", "node_modules/**"],
+    ignores: [".next/**", "out/**", "node_modules/**", "coverage/**"],
   },
   {
     files: ["**/*.{js,jsx,ts,tsx,mjs}"],
