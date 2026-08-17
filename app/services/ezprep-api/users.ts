@@ -26,6 +26,8 @@ export interface AppUserTargetExam {
 /**
  * Learner directory row. `role` is always `"user"` — admins are excluded
  * by the API and again in the UI before render.
+ * `email` and `phoneNumber` are masked by the API (`a***@gmail.com`,
+ * `+91**********`). The UI also remasks before render.
  */
 export interface AppUser {
   id: string;

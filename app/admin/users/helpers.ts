@@ -79,3 +79,92 @@ export function testsAttendedLabel(count: number): string {
   const safe = Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0;
   return safe === 1 ? "1 test attended" : `${safe} tests attended`;
 }
+
+/**
+ * Display-only mask. The API already redacts email; this is a second
+ * barrier so a full address never renders even if a payload regresses.
+ * `anita.sharma@gmail.com` → `a***@gmail.com`
+ */
+export function maskEmail(value?: string | null): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const email = value.trim();
+  if (!email) {
+    return "";
+  }
+  if (email.includes("*")) {
+    return email;
+  }
+
+  const at = email.lastIndexOf("@");
+  if (at <= 0 || at === email.length - 1) {
+    return `${email[0]}***`;
+  }
+
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  const lead = local[0] && /[a-z0-9]/i.test(local[0]) ? local[0] : "*";
+
+  return `${lead}***@${domain}`;
+}
+
+function countryCodeDigitCount(digits: string, hadPlus: boolean): number {
+  if (digits.startsWith("91") && digits.length >= 12) {
+    return 2;
+  }
+  if (!hadPlus) {
+    return 0;
+  }
+  if (digits.startsWith("1") && digits.length === 11) {
+    return 1;
+  }
+  if (digits.length >= 13) {
+    return 3;
+  }
+  if (digits.length === 12) {
+    return 2;
+  }
+  if (digits.length === 11) {
+    return 1;
+  }
+  return Math.min(digits.length, 2);
+}
+
+/**
+ * Display-only mask. The API already redacts phone numbers; this is a
+ * second barrier so a full number never renders even if a payload regresses.
+ * `+919876543210` → `+91**********`
+ */
+export function maskPhoneNumber(value?: string | null): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const phone = value.trim();
+  if (!phone) {
+    return undefined;
+  }
+  if (phone.includes("*")) {
+    return phone;
+  }
+
+  const plus = phone.startsWith("+") ? "+" : "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 0) {
+    return `${plus}****`;
+  }
+
+  const ccLen = countryCodeDigitCount(digits, plus === "+");
+  const country = digits.slice(0, ccLen);
+  const rest = digits.slice(ccLen);
+  const maskedLocal =
+    rest.length === 0 ? "" : "*".repeat(Math.max(rest.length, 2));
+
+  if (!country && !maskedLocal) {
+    return `${plus}**`;
+  }
+
+  return `${plus}${country}${maskedLocal}`;
+}

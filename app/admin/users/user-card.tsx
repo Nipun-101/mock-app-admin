@@ -15,6 +15,8 @@ import {
   formatJoinedDate,
   formatLocation,
   getInitials,
+  maskEmail,
+  maskPhoneNumber,
   testsAttendedLabel,
 } from "./helpers";
 
@@ -26,6 +28,8 @@ export function UserCard({ user }: { user: AppUser }) {
   const testsCount = Number.isFinite(user.testsAttendedCount)
     ? Math.max(0, user.testsAttendedCount)
     : 0;
+  const email = maskEmail(user.email);
+  const phoneNumber = maskPhoneNumber(user.phoneNumber);
 
   return (
     <article
@@ -69,12 +73,12 @@ export function UserCard({ user }: { user: AppUser }) {
             </div>
             <p className="mt-1 mb-0 flex items-center gap-1.5 text-sm text-neutral-500 truncate">
               <MailOutlined className="shrink-0" />
-              <span className="truncate">{user.email || "No email"}</span>
+              <span className="truncate">{email || "No email"}</span>
             </p>
-            {user.phoneNumber ? (
+            {phoneNumber ? (
               <p className="mt-0.5 mb-0 flex items-center gap-1.5 text-sm text-neutral-500 truncate">
                 <PhoneOutlined className="shrink-0" />
-                <span className="truncate">{user.phoneNumber}</span>
+                <span className="truncate">{phoneNumber}</span>
               </p>
             ) : null}
           </div>

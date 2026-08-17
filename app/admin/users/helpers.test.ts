@@ -7,6 +7,8 @@ import {
   formatLocation,
   getInitials,
   isLearnerUser,
+  maskEmail,
+  maskPhoneNumber,
   testsAttendedLabel,
 } from "./helpers";
 
@@ -85,5 +87,40 @@ describe("testsAttendedLabel", () => {
     expect(testsAttendedLabel(4)).toBe("4 tests attended");
     expect(testsAttendedLabel(-3)).toBe("0 tests attended");
     expect(testsAttendedLabel(Number.NaN)).toBe("0 tests attended");
+  });
+});
+
+describe("maskEmail", () => {
+  it("keeps the first letter and the full domain", () => {
+    expect(maskEmail("anita@example.com")).toBe("a***@example.com");
+    expect(maskEmail("Anita.Sharma@Gmail.COM")).toBe("A***@Gmail.COM");
+  });
+
+  it("never returns the original local part", () => {
+    expect(maskEmail("anita.sharma@gmail.com")).toBe("a***@gmail.com");
+    expect(maskEmail("anita.sharma@gmail.com")).not.toContain("anita.sharma");
+  });
+
+  it("treats blank values as empty and leaves already-masked values alone", () => {
+    expect(maskEmail()).toBe("");
+    expect(maskEmail("  ")).toBe("");
+    expect(maskEmail("a***@gmail.com")).toBe("a***@gmail.com");
+  });
+});
+
+describe("maskPhoneNumber", () => {
+  it("keeps the country code and masks the subscriber digits", () => {
+    expect(maskPhoneNumber("+919876543210")).toBe("+91**********");
+    expect(maskPhoneNumber("9876543210")).toBe("**********");
+  });
+
+  it("never returns the original subscriber number", () => {
+    expect(maskPhoneNumber("+919876543210")).not.toContain("9876543210");
+  });
+
+  it("treats blank values as missing and leaves already-masked values alone", () => {
+    expect(maskPhoneNumber()).toBeUndefined();
+    expect(maskPhoneNumber("")).toBeUndefined();
+    expect(maskPhoneNumber("+91**********")).toBe("+91**********");
   });
 });

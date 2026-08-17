@@ -91,6 +91,7 @@ describe("UsersPage", () => {
     expect(await screen.findByText("Anita Sharma")).toBeInTheDocument();
     expect(screen.queryByText("Root Admin")).not.toBeInTheDocument();
     expect(screen.queryByText("root@ezprep.local")).not.toBeInTheDocument();
+    expect(screen.queryByText("anita@example.com")).not.toBeInTheDocument();
   });
 
   it("shows an empty state when there are no learners", async () => {
