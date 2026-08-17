@@ -179,7 +179,7 @@ export default function CurrentAffairsPage() {
 
   const handleSubmit = async (values: {
     title: string;
-    description: string;
+    description?: string;
     date?: unknown;
     memoryTrick?: string;
     image?: CurrentAffairImage;
@@ -338,9 +338,11 @@ export default function CurrentAffairsPage() {
                         <h3 className="font-medium text-base leading-snug">
                           {item.title}
                         </h3>
-                        <p className="text-sm text-neutral-500 mt-1 line-clamp-3">
-                          {item.description}
-                        </p>
+                        {item.description ? (
+                          <p className="text-sm text-neutral-500 mt-1 line-clamp-3">
+                            {item.description}
+                          </p>
+                        ) : null}
                         {item.memoryTrick ? (
                           <p className="text-xs text-neutral-400 mt-1 line-clamp-2">
                             {item.memoryTrick}

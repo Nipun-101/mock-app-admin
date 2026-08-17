@@ -59,13 +59,9 @@ export function CurrentAffairFormFields({
         </Form.Item>
       </div>
 
-      <Form.Item
-        label="Description"
-        name="description"
-        rules={[{ required: true, message: "Please enter a description" }]}
-      >
+      <Form.Item label="Description" name="description">
         <Input.TextArea
-          placeholder="Details about the event"
+          placeholder="Optional details about the event"
           size="large"
           className="text-base"
           autoSize={{ minRows: 3, maxRows: 8 }}
