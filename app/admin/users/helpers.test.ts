@@ -91,36 +91,36 @@ describe("testsAttendedLabel", () => {
 });
 
 describe("maskEmail", () => {
-  it("hides the local part and domain while keeping a lead character and TLD", () => {
-    expect(maskEmail("anita@example.com")).toBe("a***@***.com");
-    expect(maskEmail("Anita.Sharma@Gmail.COM")).toBe("A***@***.COM");
+  it("keeps the first letter and the full domain", () => {
+    expect(maskEmail("anita@example.com")).toBe("a***@example.com");
+    expect(maskEmail("Anita.Sharma@Gmail.COM")).toBe("A***@Gmail.COM");
   });
 
-  it("never returns the original address", () => {
-    expect(maskEmail("anita.sharma@example.com")).not.toContain("anita.sharma");
-    expect(maskEmail("anita.sharma@example.com")).not.toContain("example");
+  it("never returns the original local part", () => {
+    expect(maskEmail("anita.sharma@gmail.com")).toBe("a***@gmail.com");
+    expect(maskEmail("anita.sharma@gmail.com")).not.toContain("anita.sharma");
   });
 
   it("treats blank values as empty and leaves already-masked values alone", () => {
     expect(maskEmail()).toBe("");
     expect(maskEmail("  ")).toBe("");
-    expect(maskEmail("a***@***.com")).toBe("a***@***.com");
+    expect(maskEmail("a***@gmail.com")).toBe("a***@gmail.com");
   });
 });
 
 describe("maskPhoneNumber", () => {
-  it("keeps a leading plus and the last two digits", () => {
-    expect(maskPhoneNumber("+919876543210")).toBe("+**********10");
-    expect(maskPhoneNumber("9876543210")).toBe("********10");
+  it("keeps the country code and masks the subscriber digits", () => {
+    expect(maskPhoneNumber("+919876543210")).toBe("+91**********");
+    expect(maskPhoneNumber("9876543210")).toBe("**********");
   });
 
-  it("never returns the original number", () => {
+  it("never returns the original subscriber number", () => {
     expect(maskPhoneNumber("+919876543210")).not.toContain("9876543210");
   });
 
   it("treats blank values as missing and leaves already-masked values alone", () => {
     expect(maskPhoneNumber()).toBeUndefined();
     expect(maskPhoneNumber("")).toBeUndefined();
-    expect(maskPhoneNumber("+**********10")).toBe("+**********10");
+    expect(maskPhoneNumber("+91**********")).toBe("+91**********");
   });
 });

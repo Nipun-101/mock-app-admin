@@ -27,8 +27,8 @@ describe("UserCard", () => {
     render(<UserCard user={makeUser()} />);
 
     expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
-    expect(screen.getByText("a***@***.com")).toBeInTheDocument();
-    expect(screen.getByText("+**********10")).toBeInTheDocument();
+    expect(screen.getByText("a***@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+91**********")).toBeInTheDocument();
     expect(screen.queryByText("anita@example.com")).not.toBeInTheDocument();
     expect(screen.queryByText("+919876543210")).not.toBeInTheDocument();
     expect(screen.getByText("Active")).toBeInTheDocument();
@@ -84,8 +84,8 @@ describe("UserCard", () => {
       />
     );
 
-    expect(screen.getByText("a***@***.com")).toBeInTheDocument();
-    expect(screen.getByText("********10")).toBeInTheDocument();
+    expect(screen.getByText("a***@gmail.com")).toBeInTheDocument();
+    expect(screen.getByText("**********")).toBeInTheDocument();
     expect(screen.queryByText("anita.sharma@gmail.com")).not.toBeInTheDocument();
     expect(screen.queryByText("9876543210")).not.toBeInTheDocument();
   });

@@ -83,6 +83,7 @@ export function testsAttendedLabel(count: number): string {
 /**
  * Display-only mask. The API already redacts email; this is a second
  * barrier so a full address never renders even if a payload regresses.
+ * `anita.sharma@gmail.com` → `a***@gmail.com`
  */
 export function maskEmail(value?: string | null): string {
   if (typeof value !== "string") {
@@ -104,16 +105,37 @@ export function maskEmail(value?: string | null): string {
 
   const local = email.slice(0, at);
   const domain = email.slice(at + 1);
-  const lastDot = domain.lastIndexOf(".");
-  const tld = lastDot > 0 ? domain.slice(lastDot) : "";
   const lead = local[0] && /[a-z0-9]/i.test(local[0]) ? local[0] : "*";
 
-  return `${lead}***@***${tld}`;
+  return `${lead}***@${domain}`;
+}
+
+function countryCodeDigitCount(digits: string, hadPlus: boolean): number {
+  if (digits.startsWith("91") && digits.length >= 12) {
+    return 2;
+  }
+  if (!hadPlus) {
+    return 0;
+  }
+  if (digits.startsWith("1") && digits.length === 11) {
+    return 1;
+  }
+  if (digits.length >= 13) {
+    return 3;
+  }
+  if (digits.length === 12) {
+    return 2;
+  }
+  if (digits.length === 11) {
+    return 1;
+  }
+  return Math.min(digits.length, 2);
 }
 
 /**
  * Display-only mask. The API already redacts phone numbers; this is a
  * second barrier so a full number never renders even if a payload regresses.
+ * `+919876543210` → `+91**********`
  */
 export function maskPhoneNumber(value?: string | null): string | undefined {
   if (typeof value !== "string") {
@@ -133,11 +155,16 @@ export function maskPhoneNumber(value?: string | null): string | undefined {
   if (digits.length === 0) {
     return `${plus}****`;
   }
-  if (digits.length <= 2) {
-    return `${plus}${"*".repeat(digits.length)}`;
+
+  const ccLen = countryCodeDigitCount(digits, plus === "+");
+  const country = digits.slice(0, ccLen);
+  const rest = digits.slice(ccLen);
+  const maskedLocal =
+    rest.length === 0 ? "" : "*".repeat(Math.max(rest.length, 2));
+
+  if (!country && !maskedLocal) {
+    return `${plus}**`;
   }
 
-  const visible = digits.slice(-2);
-  const hidden = Math.max(digits.length - 2, 4);
-  return `${plus}${"*".repeat(hidden)}${visible}`;
+  return `${plus}${country}${maskedLocal}`;
 }
