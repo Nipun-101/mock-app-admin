@@ -34,8 +34,14 @@ describe("fullMockApi", () => {
     await fullMockApi.listExams({ page: 1, search: "upsc" });
     await fullMockApi.createDraft("e1");
     await fullMockApi.getDraft("d1");
-    await fullMockApi.searchQuestions({ subjectId: "s1", page: 1 });
-    await fullMockApi.replaceQuestion("d1", 3, "q9");
+    await fullMockApi.searchQuestions({
+      subjectId: "s1",
+      page: 1,
+      allowCrossSubject: true,
+    });
+    await fullMockApi.replaceQuestion("d1", 3, "q9", {
+      allowCrossSubject: true,
+    });
     await fullMockApi.publishDraft("d1", { title: "Paper 1" });
     await fullMockApi.discardDraft("d1");
     await fullMockApi.listPublished({ examId: "e1" });
@@ -47,11 +53,11 @@ describe("fullMockApi", () => {
     expect(post).toHaveBeenCalledWith("/v1/full-mock-tests/drafts", { examId: "e1" });
     expect(get).toHaveBeenCalledWith("/v1/full-mock-tests/drafts/d1");
     expect(get).toHaveBeenCalledWith("/v1/full-mock-tests/questions", {
-      searchParams: { subjectId: "s1", page: 1 },
+      searchParams: { subjectId: "s1", page: 1, allowCrossSubject: true },
     });
     expect(patch).toHaveBeenCalledWith(
       "/v1/full-mock-tests/drafts/d1/questions/3",
-      { questionId: "q9" }
+      { questionId: "q9", allowCrossSubject: true }
     );
     expect(post).toHaveBeenCalledWith("/v1/full-mock-tests/drafts/d1/publish", {
       title: "Paper 1",
