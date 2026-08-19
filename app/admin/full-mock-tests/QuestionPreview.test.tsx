@@ -7,6 +7,14 @@ vi.mock("next/image", () => ({
   default: (props: { alt?: string }) => <img alt={props.alt ?? ""} />,
 }));
 
+vi.mock("mathpix-markdown-it", () => ({
+  MathpixMarkdownModel: {
+    markdownToHTML: (text: string) => `<span>${text}</span>`,
+    getMathpixFontsStyle: () => "",
+    getMathpixStyleOnly: () => "",
+  },
+}));
+
 function makeQuestion(overrides: Partial<SafeQuestion> = {}): SafeQuestion {
   return {
     _id: "q1",
@@ -39,6 +47,7 @@ describe("QuestionPreview", () => {
   it("shows the full short snippet without an ellipsis", () => {
     render(<QuestionPreview snippetOnly question={makeQuestion()} />);
     expect(screen.getByText("What is the capital of India?")).toBeInTheDocument();
+    expect(document.querySelector("[data-mathpix='true']")).toBeNull();
   });
 
   it("labels image-only snippets", () => {
@@ -127,5 +136,25 @@ describe("QuestionPreview", () => {
       "src",
       "https://cdn.example/a.png"
     );
+  });
+
+  it("renders latex through mathpix in the expanded preview", async () => {
+    render(
+      <QuestionPreview
+        question={makeQuestion({
+          questionText: {
+            en: { text: "Solve 1/2" },
+            ml: { text: null },
+          },
+          options: [{ id: "a", type: "text", en: "x^2" }],
+        })}
+      />
+    );
+
+    expect(await screen.findByText("Solve 1/2")).toBeInTheDocument();
+    expect(await screen.findByText("x^2")).toBeInTheDocument();
+    expect(
+      screen.getByText("Solve 1/2").closest("[data-mathpix='true']")
+    ).toBeTruthy();
   });
 });
