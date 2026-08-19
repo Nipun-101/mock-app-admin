@@ -53,6 +53,7 @@ describe("QuestionsPage", () => {
           id: "q-1",
           questionText: { en: { text: "Capital of India?" }, ml: { text: null } },
           options: [],
+          correctAnswer: "opt-a",
           isActive: true,
         },
       ],
