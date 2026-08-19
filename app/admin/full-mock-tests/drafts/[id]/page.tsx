@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Button,
   Card,
   Descriptions,
@@ -77,6 +78,10 @@ export default function FullMockDraftPage(props: {
     string | undefined
   >();
   const [replaceTopics, setReplaceTopics] = useState<TopicOption[]>([]);
+  const [replaceSubjects, setReplaceSubjects] = useState<TopicOption[]>([]);
+  const [replaceAllowCrossSubject, setReplaceAllowCrossSubject] =
+    useState(false);
+  const [replaceSubjectId, setReplaceSubjectId] = useState<string | undefined>();
   const [replaceResults, setReplaceResults] = useState<SearchQuestionItem[]>(
     []
   );
@@ -113,24 +118,33 @@ export default function FullMockDraftPage(props: {
     loadDraft();
   }, [loadDraft]);
 
+  const mergeTopicNames = (
+    topics: Array<{ id: string; name: string }> | undefined
+  ) => {
+    if (!topics?.length) return;
+    setTopicNameById((prev) => {
+      const next = new Map(prev);
+      topics.forEach((topic) => {
+        next.set(topic.id, topic.name);
+      });
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (!draft) return;
 
     const loadTopicNames = async () => {
-      const names = new Map<string, string>();
       await Promise.all(
         draft.subjects.map(async (block) => {
           try {
             const { data } = await catalogApi.getSubject(block.subjectId);
-            (data.topics || []).forEach((topic) => {
-              names.set(topic.id, topic.name);
-            });
+            mergeTopicNames(data.topics);
           } catch {
             // Topic labels are display-only.
           }
         })
       );
-      setTopicNameById(names);
     };
 
     void loadTopicNames();
@@ -141,13 +155,16 @@ export default function FullMockDraftPage(props: {
     setReplaceLoading(true);
     try {
       const response = await fullMockApi.searchQuestions({
-        subjectId: replaceSlot.subject.subjectId,
+        subjectId: replaceAllowCrossSubject
+          ? replaceSubjectId
+          : replaceSlot.subject.subjectId,
         draftId: params.id,
         search: replaceSearch.trim() || undefined,
         topicId: replaceTopicId,
         difficultyLevel: replaceDifficulty,
         page: replacePagination.current,
         limit: replacePagination.pageSize,
+        allowCrossSubject: replaceAllowCrossSubject || undefined,
       });
       setReplaceResults(response.data || []);
       setReplacePagination((prev) => ({
@@ -167,6 +184,8 @@ export default function FullMockDraftPage(props: {
     replaceSearch,
     replaceSlot,
     replaceTopicId,
+    replaceAllowCrossSubject,
+    replaceSubjectId,
   ]);
 
   useEffect(() => {
@@ -183,11 +202,14 @@ export default function FullMockDraftPage(props: {
     setReplaceSearch("");
     setReplaceTopicId(undefined);
     setReplaceDifficulty(undefined);
+    setReplaceAllowCrossSubject(false);
+    setReplaceSubjectId(undefined);
     setReplacePagination((prev) => ({ ...prev, current: 1, total: 0 }));
     setReplaceResults([]);
 
     try {
       const { data } = await catalogApi.getSubject(subject.subjectId);
+      mergeTopicNames(data.topics);
       setReplaceTopics(
         (data.topics || []).map((topic) => ({
           value: topic.id,
@@ -199,6 +221,55 @@ export default function FullMockDraftPage(props: {
     }
   };
 
+  const loadTopicsForSubject = async (subjectId: string) => {
+    try {
+      const { data } = await catalogApi.getSubject(subjectId);
+      mergeTopicNames(data.topics);
+      setReplaceTopics(
+        (data.topics || []).map((topic) => ({
+          value: topic.id,
+          label: topic.name,
+        }))
+      );
+    } catch {
+      setReplaceTopics([]);
+    }
+  };
+
+  const handleCrossSubjectToggle = async (enabled: boolean) => {
+    setReplaceAllowCrossSubject(enabled);
+    setReplaceSearch("");
+    setReplaceTopicId(undefined);
+    setReplaceDifficulty(undefined);
+    setReplaceSubjectId(undefined);
+    setReplacePagination((prev) => ({ ...prev, current: 1, total: 0 }));
+    setReplaceResults([]);
+
+    if (!enabled) {
+      if (replaceSlot) {
+        await loadTopicsForSubject(replaceSlot.subject.subjectId);
+      } else {
+        setReplaceTopics([]);
+      }
+      return;
+    }
+
+    setReplaceTopics([]);
+    try {
+      const response = await catalogApi.listSubjects();
+      const subjects = response.data || [];
+      setReplaceSubjects(
+        subjects.map((subject) => ({
+          value: subject.id,
+          label: subject.name,
+        }))
+      );
+      subjects.forEach((subject) => mergeTopicNames(subject.topics));
+    } catch {
+      setReplaceSubjects([]);
+    }
+  };
+
   const handleReplace = async (questionId: string) => {
     if (!replaceSlot) return;
     setReplacingId(questionId);
@@ -206,7 +277,8 @@ export default function FullMockDraftPage(props: {
       const response = await fullMockApi.replaceQuestion(
         params.id,
         replaceSlot.question.position,
-        questionId
+        questionId,
+        { allowCrossSubject: replaceAllowCrossSubject || undefined }
       );
       setDraft(response.data);
       message.success(response.message || "Question replaced");
@@ -575,9 +647,35 @@ export default function FullMockDraftPage(props: {
         destroyOnHidden
       >
         <p className="text-gray-500 mb-4">
-          Replacement must be the same subject. Topic may differ. Marks and
-          position stay with this slot.
+          {replaceAllowCrossSubject
+            ? "Choose another subject below. This slot still belongs to the current section."
+            : "Replacement must be the same subject. Topic may differ. Marks and position stay with this slot."}
         </p>
+        <Form layout="vertical" className="mb-0">
+          <Form.Item
+            label="Allow a different subject"
+            tooltip="Use this when another subject is counted inside this section (for example General Science inside General Awareness on SSC CGL). The section name, marks, and session timer do not change—only the question content does."
+            className="mb-3"
+          >
+            <Switch
+              checked={replaceAllowCrossSubject}
+              checkedChildren="Yes"
+              unCheckedChildren="No"
+              onChange={(checked) => {
+                void handleCrossSubjectToggle(checked);
+              }}
+            />
+          </Form.Item>
+        </Form>
+        {replaceAllowCrossSubject ? (
+          <Alert
+            type="warning"
+            showIcon
+            className="mb-4"
+            message="Section stays the same"
+            description={`${replaceSlot?.subject.name || "This section"} keeps this slot’s marks and timer. Filter by the other subject (and topic) below, then click Use this.`}
+          />
+        ) : null}
         <Space wrap className="mb-4">
           <Input.Search
             placeholder="Search question text"
@@ -588,12 +686,32 @@ export default function FullMockDraftPage(props: {
               setReplacePagination((prev) => ({ ...prev, current: 1 }));
             }}
           />
+          {replaceAllowCrossSubject ? (
+            <Select
+              allowClear
+              placeholder="Subject"
+              className="min-w-[180px]"
+              options={replaceSubjects}
+              value={replaceSubjectId}
+              onChange={(value) => {
+                setReplaceSubjectId(value);
+                setReplaceTopicId(undefined);
+                setReplacePagination((prev) => ({ ...prev, current: 1 }));
+                if (value) {
+                  void loadTopicsForSubject(value);
+                } else {
+                  setReplaceTopics([]);
+                }
+              }}
+            />
+          ) : null}
           <Select
             allowClear
             placeholder="Topic"
             className="min-w-[180px]"
             options={replaceTopics}
             value={replaceTopicId}
+            disabled={replaceAllowCrossSubject && !replaceSubjectId}
             onChange={(value) => {
               setReplaceTopicId(value);
               setReplacePagination((prev) => ({ ...prev, current: 1 }));

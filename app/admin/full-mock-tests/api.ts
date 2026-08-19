@@ -43,13 +43,14 @@ export const fullMockApi = {
   },
 
   searchQuestions(searchParams: {
-    subjectId: string;
+    subjectId?: string;
     draftId?: string;
     search?: string;
     topicId?: string;
     difficultyLevel?: string;
     page?: number;
     limit?: number;
+    allowCrossSubject?: boolean;
   }) {
     return ezPrepApiClient.get<ApiListResponse<SearchQuestionItem>>(
       `${BASE}/questions`,
@@ -57,10 +58,18 @@ export const fullMockApi = {
     );
   },
 
-  replaceQuestion(draftId: string, position: number, questionId: string) {
+  replaceQuestion(
+    draftId: string,
+    position: number,
+    questionId: string,
+    options?: { allowCrossSubject?: boolean }
+  ) {
     return ezPrepApiClient.patch<ApiItemResponse<DraftResponse>>(
       `${BASE}/drafts/${draftId}/questions/${position}`,
-      { questionId }
+      {
+        questionId,
+        ...(options?.allowCrossSubject ? { allowCrossSubject: true } : {}),
+      }
     );
   },
 

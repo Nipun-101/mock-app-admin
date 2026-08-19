@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { message } from "antd";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FullMockDraftPage from "./page";
@@ -112,7 +112,11 @@ function installFetchMock() {
     const method = (init?.method || "GET").toUpperCase();
 
     if (method === "GET" && url.includes("/full-mock-tests/questions")) {
-      return jsonResponse(searchResults);
+      const topic = url.includes("allowCrossSubject=true") ? "top-gs" : "top-1";
+      return jsonResponse({
+        ...searchResults,
+        data: searchResults.data.map((item) => ({ ...item, topic })),
+      });
     }
     if (method === "GET" && url.includes("/full-mock-tests/drafts/")) {
       return jsonResponse({ message: "ok", data: currentDraft });
@@ -132,7 +136,17 @@ function installFetchMock() {
     if (method === "PATCH" && url.includes("/questions/")) {
       return jsonResponse({ message: "Question replaced", data: currentDraft });
     }
-    if (url.includes("/subjects")) {
+    if (url.includes("/subjects/")) {
+      if (url.includes("sub-gs")) {
+        return jsonResponse({
+          message: "ok",
+          data: {
+            id: "sub-gs",
+            name: "General Science",
+            topics: [{ id: "top-gs", name: "Physics" }],
+          },
+        });
+      }
       return jsonResponse({
         message: "ok",
         data: {
@@ -140,6 +154,23 @@ function installFetchMock() {
           name: "Polity",
           topics: [{ id: "top-1", name: "Parliament" }],
         },
+      });
+    }
+    if (url.includes("/subjects")) {
+      return jsonResponse({
+        message: "ok",
+        data: [
+          {
+            id: "sub-1",
+            name: "Polity",
+            topics: [{ id: "top-1", name: "Parliament" }],
+          },
+          {
+            id: "sub-gs",
+            name: "General Science",
+            topics: [{ id: "top-gs", name: "Physics" }],
+          },
+        ],
       });
     }
     return jsonResponse({ message: `unmocked ${method} ${url}` }, false);
@@ -204,6 +235,27 @@ describe("FullMockDraftPage", () => {
     expect(await screen.findByText("Replacement question about VP")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Use this" }));
     await waitFor(() => expect(message.success).toHaveBeenCalled());
+  });
+
+  it("searches across subjects when the replace opt-in is enabled", async () => {
+    await renderReady();
+    fireEvent.click(screen.getAllByRole("button", { name: "Replace" })[0]);
+    expect(await screen.findByText(/Replace question #1/)).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("switch"));
+    expect(await screen.findByText(/Section stays the same/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some((call) =>
+          String(call[0]).includes("allowCrossSubject=true")
+        )
+      ).toBe(true)
+    );
+    const subjectField = screen.getByText("Subject").closest(".ant-select-selector");
+    expect(subjectField).toBeTruthy();
+    fireEvent.mouseDown(subjectField!);
+    fireEvent.click(await screen.findByText("General Science"));
+    expect(await screen.findByText("Physics")).toBeInTheDocument();
+    expect(screen.queryByText("top-gs")).not.toBeInTheDocument();
   });
 
   it("shows a view-published button for a published draft", async () => {

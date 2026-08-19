@@ -2,6 +2,7 @@
 
 import { Image } from "antd";
 import type { SafeQuestion, SafeQuestionOption } from "./types";
+import { MathpixContent } from "./MathpixContent";
 
 function OptionLabel({ index }: { index: number }) {
   return String.fromCharCode(65 + index);
@@ -14,8 +15,10 @@ function OptionRow({
   option: SafeQuestionOption;
   index: number;
 }) {
+  const optionText = option.en || option.ml || "";
+
   return (
-    <div className="flex items-start gap-2 text-sm">
+    <div className="flex items-center gap-2 text-sm leading-normal">
       <span className="font-medium shrink-0">
         <OptionLabel index={index} />.
       </span>
@@ -27,8 +30,10 @@ function OptionRow({
           height={80}
           className="object-contain"
         />
+      ) : optionText ? (
+        <MathpixContent text={optionText} inline />
       ) : (
-        <span>{option.en || option.ml || "-"}</span>
+        <span>-</span>
       )}
     </div>
   );
@@ -50,17 +55,17 @@ export function QuestionPreview({
     question.questionText?.ml?.imageUrl;
 
   if (snippetOnly) {
-    const snippet = text ? `${text.substring(0, 120)}${text.length > 120 ? "…" : ""}` : "";
+    const snippet = text
+      ? `${text.substring(0, 120)}${text.length > 120 ? "…" : ""}`
+      : "";
     return (
-      <div>
-        {snippet || (imageUrl ? "(image question)" : "-")}
-      </div>
+      <div>{snippet || (imageUrl ? "(image question)" : "-")}</div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {text ? <div>{text}</div> : null}
+    <div className="space-y-2 text-sm leading-normal">
+      {text ? <MathpixContent text={text} /> : null}
       {imageUrl ? (
         <Image
           src={imageUrl}

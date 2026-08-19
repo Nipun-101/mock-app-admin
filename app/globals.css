@@ -159,3 +159,40 @@
     justify-content: center;
   }
 }
+
+.mathpix-content {
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.mathpix-content p,
+.mathpix-content h1,
+.mathpix-content h2,
+.mathpix-content h3,
+.mathpix-content ul,
+.mathpix-content ol {
+  margin: 0;
+}
+
+.mathpix-content p + p {
+  margin-top: 0.35em;
+}
+
+.mathpix-content svg,
+.mathpix-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.mathpix-content mjx-container,
+.mathpix-content .MathJax {
+  display: inline-block !important;
+  margin: 0 0.15em !important;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.mathpix-content-inline,
+.mathpix-content-inline p {
+  display: inline;
+}
