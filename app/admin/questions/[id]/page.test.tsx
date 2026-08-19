@@ -4,10 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Question } from "@/app/services/ezprep-api";
 import EditQuestionPage from "./page";
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+const { push, searchParams } = vi.hoisted(() => ({
+  push: vi.fn(),
+  searchParams: new URLSearchParams(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
+  useSearchParams: () => searchParams,
 }));
 
 vi.mock("@/app/components/ImageUpload", () => ({
@@ -142,6 +146,7 @@ describe("EditQuestionPage", () => {
     getQuestion.mockReset();
     update.mockReset();
     push.mockReset();
+    Array.from(searchParams.keys()).forEach((key) => searchParams.delete(key));
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error
     );
@@ -180,6 +185,21 @@ describe("EditQuestionPage", () => {
     );
     expect(message.success).toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/admin/questions");
+  });
+
+  it("returns to the list page the editor came from", async () => {
+    searchParams.set("page", "30");
+    searchParams.set("limit", "20");
+    searchParams.set("subjectId", "sub-1");
+    update.mockResolvedValue({ message: "ok", data: question });
+    await renderReady();
+
+    fireEvent.click(screen.getByRole("button", { name: /update question/i }));
+
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    expect(push).toHaveBeenCalledWith(
+      "/admin/questions?page=30&limit=20&subjectId=sub-1"
+    );
   });
 
   it("blocks image-option submit when images are missing", async () => {

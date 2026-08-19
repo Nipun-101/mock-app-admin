@@ -4,12 +4,13 @@ import { Button, Card, Form, Input, Radio, message, Tooltip } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
 import { use, useState, useEffect } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
 import { PasteHint, PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
+import { questionsListHref } from "../questions-list-href";
 
 interface Option {
   id: string;
@@ -29,6 +30,7 @@ export default function EditQuestionPage(props: {
   const params = use(props.params);
   const [form] = Form.useForm();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
@@ -272,7 +274,7 @@ export default function EditQuestionPage(props: {
 
       await questionsApi.update(params.id, transformedValues as QuestionPayload);
       message.success('Question updated successfully');
-      router.push('/admin/questions');
+      router.push(questionsListHref(searchParams));
     } catch (error) {
       console.error('Error updating question:', error);
       message.error(formatEzPrepError(error, 'Failed to update question'));
