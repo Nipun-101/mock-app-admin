@@ -10,12 +10,33 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
+vi.mock("@/app/services/ezprep-api", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/app/services/ezprep-api")
+  >("@/app/services/ezprep-api");
+  return {
+    ...actual,
+    catalogApi: {
+      ...actual.catalogApi,
+      getSubject: vi.fn().mockResolvedValue({
+        message: "ok",
+        data: {
+          id: "sub-1",
+          name: "Polity",
+          topics: [{ id: "top-1", name: "Parliament" }],
+        },
+      }),
+    },
+  };
+});
+
 vi.mock("../api", async () => {
   const actual = await vi.importActual<typeof import("../api")>("../api");
   return {
     ...actual,
     fullMockApi: {
       listExams: vi.fn(),
+      listDrafts: vi.fn(),
       listPublished: vi.fn(),
       createDraft: vi.fn(),
       getDraft: vi.fn(),
@@ -79,6 +100,32 @@ const testItem: FullMockTestListItem = {
       questionEndIndex: 39,
     },
   ],
+  subjects: [
+    {
+      subjectId: "sub-1",
+      name: "Polity",
+      numberOfQuestions: 1,
+      marksPerQuestion: 2,
+      hasNegativeMarking: true,
+      negativeMarksPerQuestion: 0.66,
+      sessionTime: 30,
+      questions: [
+        {
+          _id: "q1",
+          position: 0,
+          marksPerQuestion: 2,
+          negativeMarking: 0.66,
+          questionText: {
+            en: { text: "Who elects the President?" },
+            ml: { text: null },
+          },
+          options: [{ id: "a", type: "text", en: "Parliament" }],
+          topic: "top-1",
+          difficultyLevel: "easy",
+        },
+      ],
+    },
+  ],
   marksPerQuestion: 2,
   negativeMarking: 0.66,
   passingScore: 70,
@@ -106,7 +153,7 @@ describe("PublishedFullMockPage", () => {
     await waitFor(() => expect(document.querySelector(".ant-spin")).toBeInTheDocument());
   });
 
-  it("renders published full mock details and subjects", async () => {
+  it("renders published full mock details, subjects, and questions", async () => {
     getPublished.mockResolvedValue({ message: "ok", data: testItem });
     renderPage();
 
@@ -114,12 +161,29 @@ describe("PublishedFullMockPage", () => {
     expect(screen.getByText("Session-wise")).toBeInTheDocument();
     expect(screen.getByText("UPSC Prelims")).toBeInTheDocument();
     expect(screen.getByText("Subjects (2)")).toBeInTheDocument();
-    expect(screen.getByText("Polity")).toBeInTheDocument();
-    expect(screen.getByText("-0.66")).toBeInTheDocument();
+    expect(screen.getAllByText("Polity").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("-0.66").length).toBeGreaterThan(0);
     expect(screen.getByText("None")).toBeInTheDocument();
-    expect(screen.getByText("30 mins")).toBeInTheDocument();
+    expect(screen.getAllByText("30 mins").length).toBeGreaterThan(0);
     expect(screen.getByText("Q1–Q20")).toBeInTheDocument();
+    expect(screen.getByText("Who elects the President?")).toBeInTheDocument();
     expect(getPublished).toHaveBeenCalledWith("id-1");
+  });
+
+  it("expands a question with mathpix preview", async () => {
+    getPublished.mockResolvedValue({ message: "ok", data: testItem });
+    renderPage();
+    expect(await screen.findByText("Who elects the President?")).toBeInTheDocument();
+
+    const expandButton = document.querySelector(
+      ".ant-table-row-expand-icon"
+    ) as HTMLElement | null;
+    expect(expandButton).toBeTruthy();
+    fireEvent.click(expandButton!);
+
+    await waitFor(() =>
+      expect(screen.getByText("Parliament")).toBeInTheDocument()
+    );
   });
 
   it("falls back when optional fields are missing", async () => {
@@ -139,6 +203,7 @@ describe("PublishedFullMockPage", () => {
         shuffleOptions: true,
         showResultsImmediately: false,
         subjectConfig: [],
+        subjects: undefined,
       },
     });
 

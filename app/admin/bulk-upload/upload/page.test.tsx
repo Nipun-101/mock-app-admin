@@ -87,7 +87,11 @@ async function renderReady() {
   ]);
   render(<BulkUploadFormPage />);
   expect(await screen.findByText("Click or drag a PDF file to upload")).toBeInTheDocument();
-  expect(uploadSubmitButton()).toBeInTheDocument();
+  // EditPageShell keeps the form mounted (invisible) while lookups load.
+  // Wait until submit is enabled so validation assertions are not raced.
+  await waitFor(() => {
+    expect(uploadSubmitButton()).not.toBeDisabled();
+  });
 }
 
 describe("BulkUploadFormPage", () => {
@@ -116,10 +120,14 @@ describe("BulkUploadFormPage", () => {
 
   it("requires a PDF, subject, topic, and exam", async () => {
     await renderReady();
-    fireEvent.submit(document.querySelector("form")!);
-    expect(await screen.findByText("Please select a subject")).toBeInTheDocument();
+    fireEvent.click(uploadSubmitButton());
+    expect(
+      await screen.findByText("Please select a subject")
+    ).toBeInTheDocument();
     expect(screen.getByText("Please select a topic")).toBeInTheDocument();
-    expect(screen.getByText("Please select at least one exam")).toBeInTheDocument();
+    expect(
+      screen.getByText("Please select at least one exam")
+    ).toBeInTheDocument();
     expect(document.body).toHaveTextContent("Please upload a PDF file");
   });
 

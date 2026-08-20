@@ -195,8 +195,12 @@ describe("FullMockDraftPage", () => {
     vi.spyOn(message, "success").mockImplementation(
       (() => undefined) as unknown as typeof message.success
     );
+    vi.spyOn(message, "info").mockImplementation(
+      (() => undefined) as unknown as typeof message.info
+    );
     vi.mocked(message.error).mockClear();
     vi.mocked(message.success).mockClear();
+    vi.mocked(message.info).mockClear();
   });
 
   afterEach(() => {
@@ -226,6 +230,21 @@ describe("FullMockDraftPage", () => {
     await waitFor(() =>
       expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests")
     );
+  });
+
+  it("keeps the draft when navigating back", async () => {
+    await renderReady();
+    fireEvent.click(
+      screen.getByRole("button", { name: /back to full mock tests/i })
+    );
+    expect(message.info).toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests");
+    expect(
+      fetchMock.mock.calls.some((call) => {
+        const init = call[1] as RequestInit | undefined;
+        return (init?.method || "").toUpperCase() === "DELETE";
+      })
+    ).toBe(false);
   });
 
   it("replaces a question from search results", async () => {

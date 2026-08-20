@@ -17,8 +17,10 @@ import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
 import { useRouter } from "next/navigation";
+import { showConfirmModal } from "@/components/ConfirmModal";
 import { formatEzPrepError, fullMockApi } from "./api";
 import type {
+  DraftListItem,
   FullMockExamListItem,
   FullMockTestListItem,
 } from "./types";
@@ -27,6 +29,12 @@ const { Title } = Typography;
 const { Search } = Input;
 const primaryButtonClass = "bg-blue-600 hover:bg-blue-700";
 
+const DRAFT_STATUS_COLORS: Record<string, string> = {
+  REVIEW: "blue",
+  GENERATING: "orange",
+  PUBLISHING: "orange",
+};
+
 export default function FullMockTestsPage() {
   const router = useRouter();
   const [exams, setExams] = useState<FullMockExamListItem[]>([]);
@@ -34,6 +42,16 @@ export default function FullMockTestsPage() {
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [examSearch, setExamSearch] = useState("");
   const [examPagination, setExamPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
+  const [draftExamId, setDraftExamId] = useState<string | undefined>();
+  const [drafts, setDrafts] = useState<DraftListItem[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
+  const [draftPagination, setDraftPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
@@ -71,6 +89,26 @@ export default function FullMockTestsPage() {
     }
   }, [examPagination.current, examPagination.pageSize, examSearch]);
 
+  const fetchDrafts = useCallback(async () => {
+    setDraftsLoading(true);
+    try {
+      const response = await fullMockApi.listDrafts({
+        examId: draftExamId,
+        page: draftPagination.current,
+        limit: draftPagination.pageSize,
+      });
+      setDrafts(response.data || []);
+      setDraftPagination((prev) => ({
+        ...prev,
+        total: response.pagination?.total ?? 0,
+      }));
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch drafts"));
+    } finally {
+      setDraftsLoading(false);
+    }
+  }, [draftExamId, draftPagination.current, draftPagination.pageSize]);
+
   const fetchPublished = useCallback(async () => {
     setPublishedLoading(true);
     try {
@@ -102,6 +140,10 @@ export default function FullMockTestsPage() {
   }, [fetchExams]);
 
   useEffect(() => {
+    void fetchDrafts();
+  }, [fetchDrafts]);
+
+  useEffect(() => {
     void fetchPublished();
   }, [fetchPublished]);
 
@@ -110,6 +152,7 @@ export default function FullMockTestsPage() {
       [
         ...examOptions.map((exam) => [exam.value, exam.label] as const),
         ...exams.map((exam) => [exam.id, exam.examName] as const),
+        ...drafts.map((item) => [item.examId, item.examName] as const),
         ...published
           .filter((item) => item.exam?.id)
           .map((item) => [item.exam!.id, item.exam!.name] as const),
@@ -142,6 +185,26 @@ export default function FullMockTestsPage() {
       message.error(formatEzPrepError(error, "Failed to generate draft"));
       setGeneratingId(null);
     }
+  };
+
+  const handleDiscardDraft = (draft: DraftListItem) => {
+    showConfirmModal({
+      title: "Discard Draft",
+      content:
+        "Discard this draft? Question usage is not incremented. This cannot be undone.",
+      onConfirm: async () => {
+        setDiscardingId(draft.id);
+        try {
+          const response = await fullMockApi.discardDraft(draft.id);
+          message.success(response.message || "Draft discarded");
+          await fetchDrafts();
+        } catch (error) {
+          message.error(formatEzPrepError(error, "Failed to discard draft"));
+        } finally {
+          setDiscardingId(null);
+        }
+      },
+    });
   };
 
   const examColumns = [
@@ -215,6 +278,82 @@ export default function FullMockTestsPage() {
         >
           Generate
         </Button>
+      ),
+    },
+  ];
+
+  const draftColumns = [
+    {
+      title: "Exam",
+      dataIndex: "examName",
+      key: "examName",
+      render: (name: string) => <Tag color="cyan">{name || "N/A"}</Tag>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => (
+        <Tag color={DRAFT_STATUS_COLORS[status] || "default"}>{status}</Tag>
+      ),
+    },
+    {
+      title: "Questions",
+      dataIndex: "totalQuestions",
+      key: "totalQuestions",
+    },
+    {
+      title: "Total Marks",
+      dataIndex: "totalMarks",
+      key: "totalMarks",
+      responsive: ["md", "lg", "xl", "xxl"] as Breakpoint[],
+      render: (value?: number) => value ?? "-",
+    },
+    {
+      title: "Duration",
+      dataIndex: "duration",
+      key: "duration",
+      responsive: ["md", "lg", "xl", "xxl"] as Breakpoint[],
+      render: (duration: number | undefined, record: DraftListItem) => {
+        if (record.isSessionWise) {
+          return <Tag color="purple">Session-wise</Tag>;
+        }
+        return duration != null ? `${duration} mins` : "-";
+      },
+    },
+    {
+      title: "Updated",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
+      responsive: ["lg", "xl", "xxl"] as Breakpoint[],
+      render: (value?: string) =>
+        value ? new Date(value).toLocaleString() : "-",
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (record: DraftListItem) => (
+        <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            onClick={() =>
+              router.push(`/admin/full-mock-tests/drafts/${record.id}`)
+            }
+          >
+            Edit
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            danger
+            loading={discardingId === record.id}
+            disabled={!!discardingId || record.status !== "REVIEW"}
+            onClick={() => handleDiscardDraft(record)}
+          >
+            Discard
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -299,7 +438,8 @@ export default function FullMockTestsPage() {
           <p className="text-gray-500 mb-4">
             Pick an exam blueprint. The server samples a full paper to match
             subject quotas, marks, and timers. You review and optionally replace
-            questions, then publish. Nothing is written to mock tests until
+            questions, then publish. Leaving review keeps the draft so you can
+            continue later. Nothing is written to published mock tests until
             publish.
           </p>
           <Search
@@ -323,6 +463,53 @@ export default function FullMockTestsPage() {
               total: examPagination.total,
               onChange: (page, pageSize) => {
                 setExamPagination((prev) => ({
+                  ...prev,
+                  current: page,
+                  pageSize: pageSize || prev.pageSize,
+                }));
+              },
+            }}
+          />
+        </Card>
+
+        <Card title="Drafts">
+          <p className="text-gray-500 mb-4">
+            Open drafts awaiting review. Edit to replace questions and publish,
+            or discard. Published mocks cannot be edited or discarded from here.
+          </p>
+          <Space className="mb-4" wrap>
+            <Select
+              placeholder="All exams"
+              className="min-w-[280px]"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={examFilterOptions}
+              onOpenChange={loadExamFilterOptions}
+              value={draftExamId}
+              onChange={(value) => {
+                setDraftExamId(value);
+                setDraftPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            />
+          </Space>
+          <Table
+            columns={draftColumns}
+            dataSource={drafts}
+            rowKey="id"
+            loading={draftsLoading}
+            scroll={{ x: true }}
+            locale={{
+              emptyText: draftExamId
+                ? "No open drafts for this exam"
+                : "No open drafts",
+            }}
+            pagination={{
+              current: draftPagination.current,
+              pageSize: draftPagination.pageSize,
+              total: draftPagination.total,
+              onChange: (page, pageSize) => {
+                setDraftPagination((prev) => ({
                   ...prev,
                   current: page,
                   pageSize: pageSize || prev.pageSize,

@@ -2,12 +2,22 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { message } from "antd";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import FullMockTestsPage from "./page";
-import type { FullMockExamListItem, FullMockTestListItem } from "./types";
+import type {
+  DraftListItem,
+  FullMockExamListItem,
+  FullMockTestListItem,
+} from "./types";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
+}));
+
+vi.mock("@/components/ConfirmModal", () => ({
+  showConfirmModal: ({ onConfirm }: { onConfirm: () => void | Promise<void> }) => {
+    void onConfirm();
+  },
 }));
 
 vi.mock("./api", async () => {
@@ -16,6 +26,7 @@ vi.mock("./api", async () => {
     ...actual,
     fullMockApi: {
       listExams: vi.fn(),
+      listDrafts: vi.fn(),
       listPublished: vi.fn(),
       createDraft: vi.fn(),
       getDraft: vi.fn(),
@@ -31,8 +42,10 @@ vi.mock("./api", async () => {
 import { fullMockApi } from "./api";
 
 const listExams = vi.mocked(fullMockApi.listExams);
+const listDrafts = vi.mocked(fullMockApi.listDrafts);
 const listPublished = vi.mocked(fullMockApi.listPublished);
 const createDraft = vi.mocked(fullMockApi.createDraft);
+const discardDraft = vi.mocked(fullMockApi.discardDraft);
 
 const exam: FullMockExamListItem = {
   id: "ex-1",
@@ -44,6 +57,19 @@ const exam: FullMockExamListItem = {
   examGroup: "UPSC",
   subjects: ["Polity", "History"],
   mode: "Mixed",
+};
+
+const draft: DraftListItem = {
+  id: "draft-1",
+  examId: "ex-1",
+  examName: "UPSC Prelims",
+  status: "REVIEW",
+  totalQuestions: 100,
+  totalMarks: 200,
+  duration: 120,
+  isSessionWise: false,
+  createdAt: "2026-08-01T00:00:00.000Z",
+  updatedAt: "2026-08-02T00:00:00.000Z",
 };
 
 const published: FullMockTestListItem = {
@@ -69,6 +95,7 @@ const pagination = { total: 1, page: 1, limit: 10, totalPages: 1 };
 
 async function renderReady() {
   listExams.mockResolvedValue({ message: "ok", data: [exam], pagination });
+  listDrafts.mockResolvedValue({ message: "ok", data: [draft], pagination });
   listPublished.mockResolvedValue({
     message: "ok",
     data: [published],
@@ -77,13 +104,16 @@ async function renderReady() {
   render(<FullMockTestsPage />);
   expect(await screen.findAllByText("UPSC Prelims")).not.toHaveLength(0);
   expect(await screen.findByText("UPSC Full Mock 1")).toBeInTheDocument();
+  expect(await screen.findByText("REVIEW")).toBeInTheDocument();
 }
 
 describe("FullMockTestsPage", () => {
   beforeEach(() => {
     listExams.mockReset();
+    listDrafts.mockReset();
     listPublished.mockReset();
     createDraft.mockReset();
+    discardDraft.mockReset();
     push.mockReset();
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error
@@ -95,11 +125,14 @@ describe("FullMockTestsPage", () => {
     vi.mocked(message.success).mockClear();
   });
 
-  it("lists exams and published full mocks", async () => {
+  it("lists exams, drafts, and published full mocks", async () => {
     await renderReady();
     expect(screen.getByText("Full Mock Tests")).toBeInTheDocument();
     expect(screen.getByText("Polity, History")).toBeInTheDocument();
     expect(screen.getByText("UPSC Full Mock 1")).toBeInTheDocument();
+    expect(screen.getByText("Drafts")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Discard" })).toBeInTheDocument();
   });
 
   it("searches exams", async () => {
@@ -144,14 +177,51 @@ describe("FullMockTestsPage", () => {
     await waitFor(() => expect(message.error).toHaveBeenCalled());
   });
 
+  it("navigates to edit a draft", async () => {
+    await renderReady();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(push).toHaveBeenCalledWith("/admin/full-mock-tests/drafts/draft-1");
+  });
+
+  it("discards a draft from the list", async () => {
+    discardDraft.mockResolvedValue({ message: "Draft discarded" });
+    listDrafts
+      .mockResolvedValueOnce({ message: "ok", data: [draft], pagination })
+      .mockResolvedValueOnce({
+        message: "ok",
+        data: [],
+        pagination: { ...pagination, total: 0 },
+      });
+    listExams.mockResolvedValue({ message: "ok", data: [exam], pagination });
+    listPublished.mockResolvedValue({
+      message: "ok",
+      data: [published],
+      pagination,
+    });
+    render(<FullMockTestsPage />);
+    expect(await screen.findByText("REVIEW")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+    await waitFor(() => expect(discardDraft).toHaveBeenCalledWith("draft-1"));
+    expect(message.success).toHaveBeenCalled();
+  });
+
   it("navigates to a published test", async () => {
     await renderReady();
     fireEvent.click(screen.getByRole("button", { name: "View" }));
     expect(push).toHaveBeenCalledWith("/admin/full-mock-tests/fm-1");
   });
 
-  it("shows empty published text", async () => {
-    listExams.mockResolvedValue({ message: "ok", data: [], pagination: { ...pagination, total: 0 } });
+  it("shows empty published and draft text", async () => {
+    listExams.mockResolvedValue({
+      message: "ok",
+      data: [],
+      pagination: { ...pagination, total: 0 },
+    });
+    listDrafts.mockResolvedValue({
+      message: "ok",
+      data: [],
+      pagination: { ...pagination, total: 0 },
+    });
     listPublished.mockResolvedValue({
       message: "ok",
       data: [],
@@ -159,10 +229,12 @@ describe("FullMockTestsPage", () => {
     });
     render(<FullMockTestsPage />);
     expect(await screen.findByText("No published full mocks yet")).toBeInTheDocument();
+    expect(screen.getByText("No open drafts")).toBeInTheDocument();
   });
 
-  it("surfaces exam and published fetch errors", async () => {
+  it("surfaces exam, draft, and published fetch errors", async () => {
     listExams.mockRejectedValue(new Error("nope"));
+    listDrafts.mockRejectedValue(new Error("nope"));
     listPublished.mockRejectedValue(new Error("nope"));
     render(<FullMockTestsPage />);
     await waitFor(() => expect(message.error).toHaveBeenCalled());

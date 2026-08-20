@@ -6,6 +6,7 @@ import type {
 } from "@/app/services/ezprep-api";
 import type {
   DraftResponse,
+  DraftListItem,
   FullMockExamListItem,
   FullMockTestListItem,
   PublishDraftPayload,
@@ -33,6 +34,17 @@ export const fullMockApi = {
     return ezPrepApiClient.post<ApiItemResponse<DraftResponse>>(
       `${BASE}/drafts`,
       { examId }
+    );
+  },
+
+  listDrafts(searchParams: {
+    examId?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    return ezPrepApiClient.get<ApiListResponse<DraftListItem>>(
+      `${BASE}/drafts`,
+      { searchParams }
     );
   },
 

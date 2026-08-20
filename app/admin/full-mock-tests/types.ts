@@ -90,6 +90,19 @@ export interface DraftResponse {
   updatedAt: string;
 }
 
+export interface DraftListItem {
+  id: string;
+  examId: string;
+  examName: string;
+  status: DraftStatus;
+  totalQuestions: number;
+  totalMarks?: number;
+  duration?: number;
+  isSessionWise: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SearchQuestionItem extends SafeQuestion {
   snippet?: string;
 }
@@ -145,4 +158,6 @@ export interface FullMockTestListItem {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Admin-only: safe questions grouped by subject (published detail). */
+  subjects?: DraftSubjectBlock[];
 }
