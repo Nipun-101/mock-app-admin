@@ -33,6 +33,7 @@ describe("fullMockApi", () => {
   it("covers exams, drafts, search, replace, publish, discard, and published tests", async () => {
     await fullMockApi.listExams({ page: 1, search: "upsc" });
     await fullMockApi.createDraft("e1");
+    await fullMockApi.listDrafts({ examId: "e1", page: 1 });
     await fullMockApi.getDraft("d1");
     await fullMockApi.searchQuestions({
       subjectId: "s1",
@@ -51,6 +52,9 @@ describe("fullMockApi", () => {
       searchParams: { page: 1, search: "upsc" },
     });
     expect(post).toHaveBeenCalledWith("/v1/full-mock-tests/drafts", { examId: "e1" });
+    expect(get).toHaveBeenCalledWith("/v1/full-mock-tests/drafts", {
+      searchParams: { examId: "e1", page: 1 },
+    });
     expect(get).toHaveBeenCalledWith("/v1/full-mock-tests/drafts/d1");
     expect(get).toHaveBeenCalledWith("/v1/full-mock-tests/questions", {
       searchParams: { subjectId: "s1", page: 1, allowCrossSubject: true },

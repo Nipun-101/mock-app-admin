@@ -477,7 +477,10 @@ export default function FullMockDraftPage(props: {
         <div className="flex items-center gap-4">
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => router.push("/admin/full-mock-tests")}
+            onClick={() => {
+              message.info("Draft kept — resume it anytime from the drafts list");
+              router.push("/admin/full-mock-tests");
+            }}
           >
             Back to Full Mock Tests
           </Button>

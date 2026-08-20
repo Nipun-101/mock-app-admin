@@ -1,12 +1,25 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Button, Card, Descriptions, Table, Tag, message } from "antd";
+import { Button, Card, Descriptions, Space, Table, Tag, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../api";
 import { PageLoader } from "@/app/components/PageLoader";
-import type { FullMockSubjectConfig, FullMockTestListItem } from "../types";
+import { QuestionPreview } from "../QuestionPreview";
+import type {
+  DraftQuestionItem,
+  DraftSubjectBlock,
+  FullMockSubjectConfig,
+  FullMockTestListItem,
+} from "../types";
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: "green",
+  medium: "orange",
+  hard: "red",
+};
 
 export default function PublishedFullMockPage(props: {
   params: Promise<{ id: string }>;
@@ -15,6 +28,9 @@ export default function PublishedFullMockPage(props: {
   const router = useRouter();
   const [test, setTest] = useState<FullMockTestListItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [topicNameById, setTopicNameById] = useState<Map<string, string>>(
+    new Map()
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -34,6 +50,38 @@ export default function PublishedFullMockPage(props: {
 
     void load();
   }, [params.id, router]);
+
+  useEffect(() => {
+    if (!test?.subjects?.length) return;
+
+    const mergeTopicNames = (
+      topics: Array<{ id: string; name: string }> | undefined
+    ) => {
+      if (!topics?.length) return;
+      setTopicNameById((prev) => {
+        const next = new Map(prev);
+        topics.forEach((topic) => {
+          next.set(topic.id, topic.name);
+        });
+        return next;
+      });
+    };
+
+    const loadTopicNames = async () => {
+      await Promise.all(
+        test.subjects!.map(async (block) => {
+          try {
+            const { data } = await catalogApi.getSubject(block.subjectId);
+            mergeTopicNames(data.topics);
+          } catch {
+            // Topic labels are display-only.
+          }
+        })
+      );
+    };
+
+    void loadTopicNames();
+  }, [test]);
 
   const subjectColumns = [
     {
@@ -71,6 +119,53 @@ export default function PublishedFullMockPage(props: {
       key: "range",
       render: (record: FullMockSubjectConfig) =>
         `Q${record.questionStartIndex + 1}–Q${record.questionEndIndex + 1}`,
+    },
+  ];
+
+  const questionColumns = (subject: DraftSubjectBlock) => [
+    {
+      title: "#",
+      dataIndex: "position",
+      key: "position",
+      width: 60,
+      render: (position: number) => position + 1,
+    },
+    {
+      title: "Question",
+      key: "question",
+      render: (record: DraftQuestionItem) => (
+        <QuestionPreview question={record} snippetOnly />
+      ),
+    },
+    {
+      title: "Topic",
+      dataIndex: "topic",
+      key: "topic",
+      render: (topicId?: string) =>
+        topicId ? (
+          <Tag color="purple">{topicNameById.get(topicId) || topicId}</Tag>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Difficulty",
+      dataIndex: "difficultyLevel",
+      key: "difficultyLevel",
+      render: (level?: string) =>
+        level ? (
+          <Tag color={DIFFICULTY_COLORS[level] || "default"}>{level}</Tag>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Marks",
+      key: "marks",
+      render: (record: DraftQuestionItem) =>
+        record.negativeMarking
+          ? `${record.marksPerQuestion} / -${record.negativeMarking}`
+          : record.marksPerQuestion,
     },
   ];
 
@@ -178,6 +273,44 @@ export default function PublishedFullMockPage(props: {
             pagination={false}
           />
         </Card>
+
+        {test.subjects?.map((subject) => (
+          <Card
+            key={subject.subjectId}
+            title={
+              <Space wrap>
+                <span>{subject.name}</span>
+                <Tag>{subject.questions.length} questions</Tag>
+                <Tag>
+                  {subject.marksPerQuestion} mark
+                  {subject.marksPerQuestion === 1 ? "" : "s"} / Q
+                </Tag>
+                {subject.hasNegativeMarking ? (
+                  <Tag color="red">-{subject.negativeMarksPerQuestion}</Tag>
+                ) : (
+                  <Tag>No negative</Tag>
+                )}
+                {subject.sessionTime != null ? (
+                  <Tag color="purple">{subject.sessionTime} min session</Tag>
+                ) : null}
+              </Space>
+            }
+          >
+            <Table
+              columns={questionColumns(subject)}
+              dataSource={subject.questions}
+              rowKey={(record: DraftQuestionItem) =>
+                `${record.position}-${record._id}`
+              }
+              pagination={false}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <QuestionPreview question={record} />
+                ),
+              }}
+            />
+          </Card>
+        ))}
       </div>
     </div>
   );
