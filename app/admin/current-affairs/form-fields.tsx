@@ -154,7 +154,7 @@ export function CurrentAffairFormFields({
       <div className="overflow-x-auto">
         <PasteToImage target={["image"]} variant="zone" className="p-3">
           <ImageUpload
-            name={["image"]}
+            name={["image"]} 
             label="Image (optional)"
             onUploadingChange={onImageUploadingChange}
           />
