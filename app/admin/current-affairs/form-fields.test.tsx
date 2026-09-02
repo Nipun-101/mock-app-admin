@@ -25,11 +25,12 @@ function FieldsForm({ onFinish = vi.fn() }: { onFinish?: () => void }) {
 }
 
 describe("CurrentAffairFormFields", () => {
-  it("renders title, date, description, memory trick, and image upload", () => {
+  it("renders title, date, description bullets, memory trick, and image upload", () => {
     render(<FieldsForm />);
 
     expect(screen.getByPlaceholderText("Headline for this event")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Optional details about the event")).toBeInTheDocument();
+    expect(screen.getByText("No bullet points yet. Add one below.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Add bullet point/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Optional mnemonic")).toBeInTheDocument();
     expect(screen.getByTestId("image-upload")).toHaveTextContent("Image (optional)");
     expect(screen.getByText("Title")).toBeInTheDocument();
@@ -47,7 +48,7 @@ describe("CurrentAffairFormFields", () => {
     expect(onFinish).not.toHaveBeenCalled();
   });
 
-  it("submits when title and date are provided", async () => {
+  it("submits when title, date, and bullet points are provided", async () => {
     const onFinish = vi.fn();
     render(
       <Form initialValues={{ date: "2026-08-17" }} onFinish={onFinish}>
@@ -59,7 +60,8 @@ describe("CurrentAffairFormFields", () => {
     fireEvent.change(screen.getByPlaceholderText("Headline for this event"), {
       target: { value: "Budget day" },
     });
-    fireEvent.change(screen.getByPlaceholderText("Optional details about the event"), {
+    fireEvent.click(screen.getByRole("button", { name: /Add bullet point/i }));
+    fireEvent.change(await screen.findByPlaceholderText("Bullet point 1"), {
       target: { value: "Finance bill passed" },
     });
     fireEvent.change(screen.getByPlaceholderText("Optional mnemonic"), {
@@ -68,5 +70,10 @@ describe("CurrentAffairFormFields", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(onFinish).toHaveBeenCalled());
+    expect(onFinish.mock.calls[0][0]).toMatchObject({
+      title: "Budget day",
+      description: ["Finance bill passed"],
+      memoryTrick: "B for budget",
+    });
   });
 });

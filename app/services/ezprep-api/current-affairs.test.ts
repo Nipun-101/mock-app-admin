@@ -30,7 +30,7 @@ describe("currentAffairsApi", () => {
     await currentAffairsApi.create({
       title: "Budget",
       date: "2026-01-15",
-      description: "",
+      description: [],
     });
     await currentAffairsApi.update("ca1", { title: "Budget", description: undefined });
     await currentAffairsApi.delete("ca1");
@@ -42,6 +42,7 @@ describe("currentAffairsApi", () => {
     expect(post).toHaveBeenCalledWith("/v1/current-affairs", {
       title: "Budget",
       date: "2026-01-15",
+      description: [],
     });
     expect(patch.mock.calls[0][1]).toEqual({ title: "Budget" });
     expect(del).toHaveBeenCalledWith("/v1/current-affairs/ca1");

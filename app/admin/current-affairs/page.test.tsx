@@ -56,7 +56,7 @@ function makeAffair(overrides: Partial<CurrentAffair> = {}): CurrentAffair {
   return {
     id: "ca-1",
     title: "Monsoon arrives",
-    description: "Southwest monsoon hit Kerala",
+    description: ["Southwest monsoon hit Kerala"],
     memoryTrick: "M for monsoon",
     date: todayDateKey(),
     imageUrl: "https://cdn.example/rain.png",
@@ -209,7 +209,7 @@ describe("CurrentAffairsPage", () => {
       message: "ok",
       data: [
         makeAffair({
-          description: long,
+          description: [long],
           memoryTrick: undefined,
           imageUrl: undefined,
         }),

@@ -35,14 +35,14 @@ import {
   CurrentAffairFormFields,
   affairCardClassName,
   affairCardStyles,
+  normalizeCurrentAffairDescription,
 } from "./form-fields";
+import {
+  coerceDescriptionPoints,
+  formatDescriptionExcerpt,
+} from "./description";
 
 const { Title, Text } = Typography;
-
-function excerpt(text?: string, max = 80) {
-  if (!text) return "-";
-  return text.length > max ? `${text.slice(0, max)}…` : text;
-}
 
 function isImageMeta(value: unknown): value is CurrentAffairImage {
   return Boolean(toPlainImageMetadata(value));
@@ -76,7 +76,7 @@ export default function CurrentAffairsPage() {
       ellipsis: true,
       width: 280,
       responsive: ["lg", "xl", "xxl"] as Breakpoint[],
-      render: (text: string) => excerpt(text),
+      render: (points?: string[]) => formatDescriptionExcerpt(points),
     },
     {
       title: "Memory Trick",
@@ -84,7 +84,10 @@ export default function CurrentAffairsPage() {
       key: "memoryTrick",
       ellipsis: true,
       responsive: ["xl", "xxl"] as Breakpoint[],
-      render: (text?: string) => excerpt(text, 60),
+      render: (text?: string) => {
+        if (!text) return "-";
+        return text.length > 60 ? `${text.slice(0, 60)}…` : text;
+      },
     },
     {
       title: "Image",
@@ -179,7 +182,7 @@ export default function CurrentAffairsPage() {
 
   const handleSubmit = async (values: {
     title: string;
-    description?: string;
+    description?: string[];
     date?: unknown;
     memoryTrick?: string;
     image?: CurrentAffairImage;
@@ -198,7 +201,7 @@ export default function CurrentAffairsPage() {
     try {
       await currentAffairsApi.create({
         title: values.title,
-        description: values.description,
+        description: normalizeCurrentAffairDescription(values),
         date,
         memoryTrick: values.memoryTrick,
         image,
@@ -338,10 +341,14 @@ export default function CurrentAffairsPage() {
                         <h3 className="font-medium text-base leading-snug">
                           {item.title}
                         </h3>
-                        {item.description ? (
-                          <p className="text-sm text-neutral-500 mt-1 line-clamp-3">
-                            {item.description}
-                          </p>
+                        {coerceDescriptionPoints(item.description).length > 0 ? (
+                          <ul className="text-sm text-neutral-500 mt-1 list-disc pl-4 space-y-0.5 line-clamp-3">
+                            {coerceDescriptionPoints(item.description).map(
+                              (point) => (
+                                <li key={point}>{point}</li>
+                              )
+                            )}
+                          </ul>
                         ) : null}
                         {item.memoryTrick ? (
                           <p className="text-xs text-neutral-400 mt-1 line-clamp-2">
