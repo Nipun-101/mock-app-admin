@@ -3,6 +3,7 @@
 import { DatePicker, Form, Input } from "antd";
 import type { DatePickerProps } from "antd";
 import { ImageUpload } from "@/app/components/ImageUpload";
+import { PasteToImage } from "@/app/components/PasteToImage";
 import { dateKeyToDayjs, datePickerValueFromEvent } from "./date-key";
 
 export const affairCardClassName = "w-full shadow-sm";
@@ -78,11 +79,13 @@ export function CurrentAffairFormFields({
       </Form.Item>
 
       <div className="overflow-x-auto">
-        <ImageUpload
-          name={["image"]}
-          label="Image (optional)"
-          onUploadingChange={onImageUploadingChange}
-        />
+        <PasteToImage target={["image"]} variant="zone" className="p-3">
+          <ImageUpload
+            name={["image"]}
+            label="Image (optional)"
+            onUploadingChange={onImageUploadingChange}
+          />
+        </PasteToImage>
       </div>
     </>
   );

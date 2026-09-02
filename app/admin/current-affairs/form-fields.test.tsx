@@ -10,6 +10,10 @@ vi.mock("@/app/components/ImageUpload", () => ({
   toPlainImageMetadata: (value: unknown) => value,
 }));
 
+vi.mock("@/app/components/PasteToImage", () => ({
+  PasteToImage: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 function FieldsForm({ onFinish = vi.fn() }: { onFinish?: () => void }) {
   const [form] = Form.useForm();
   return (

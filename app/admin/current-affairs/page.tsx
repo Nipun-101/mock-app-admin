@@ -270,7 +270,7 @@ export default function CurrentAffairsPage() {
         >
           <CurrentAffairFormFields onImageUploadingChange={setImageUploading} />
 
-          <Form.Item className="mb-0">
+          <Form.Item className="mb-0 mt-4">
             <Button
               type="primary"
               htmlType="submit"
