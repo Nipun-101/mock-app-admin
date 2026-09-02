@@ -62,7 +62,7 @@ const update = vi.mocked(currentAffairsApi.update);
 const item: CurrentAffair = {
   id: "id-1",
   title: "Monsoon arrives",
-  description: "Southwest monsoon hit Kerala",
+  description: ["Southwest monsoon hit Kerala"],
   memoryTrick: "M for monsoon",
   date: "2026-08-17",
   image: { key: "k1", bucket: "b1" },

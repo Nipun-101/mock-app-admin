@@ -16,7 +16,9 @@ import {
   CurrentAffairFormFields,
   affairCardClassName,
   affairCardStyles,
+  normalizeCurrentAffairDescription,
 } from "../form-fields";
+import { coerceDescriptionPoints } from "../description";
 
 const { Title } = Typography;
 
@@ -33,6 +35,7 @@ export default function EditCurrentAffairPage(props: {
   const [imageUploading, setImageUploading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hadImage, setHadImage] = useState(false);
+  const [hadDescription, setHadDescription] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -41,12 +44,13 @@ export default function EditCurrentAffairPage(props: {
         const { data } = await currentAffairsApi.get(params.id);
         form.setFieldsValue({
           title: data.title,
-          description: data.description,
+          description: coerceDescriptionPoints(data.description),
           memoryTrick: data.memoryTrick,
           date: data.date,
           image: toPlainImageMetadata(data.image),
         });
         setHadImage(isImageMeta(data.image));
+        setHadDescription(coerceDescriptionPoints(data.description).length > 0);
       } catch (error) {
         message.error(
           formatEzPrepError(error, "Failed to fetch current affair")
@@ -61,7 +65,7 @@ export default function EditCurrentAffairPage(props: {
 
   const handleSubmit = async (values: {
     title: string;
-    description?: string;
+    description?: string[];
     date: string;
     memoryTrick?: string;
     image?: CurrentAffairImage;
@@ -74,9 +78,11 @@ export default function EditCurrentAffairPage(props: {
       const nextImage = isImageMeta(values.image)
         ? values.image
         : form.getFieldValue("image");
+      const normalizedDescription = normalizeCurrentAffairDescription(values);
       await currentAffairsApi.update(params.id, {
         title: values.title,
-        description: values.description,
+        description:
+          normalizedDescription ?? (hadDescription ? [] : undefined),
         date: toDateKey(values.date) ?? values.date,
         memoryTrick: values.memoryTrick,
         image: isImageMeta(nextImage)
@@ -127,7 +133,7 @@ export default function EditCurrentAffairPage(props: {
         >
           <CurrentAffairFormFields onImageUploadingChange={setImageUploading} />
 
-          <Form.Item className="mb-0">
+          <Form.Item className="mb-0 mt-4">
             <div className="flex flex-col-reverse sm:flex-row gap-2">
               <Button
                 size="large"
