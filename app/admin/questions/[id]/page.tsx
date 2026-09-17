@@ -2,7 +2,7 @@
 
 import { Button, Card, Form, Input, Radio, message, Tooltip } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useMemo } from "react";
 import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ImageUpload, toPlainImageMetadata } from "@/app/components/ImageUpload";
@@ -10,11 +10,71 @@ import { PasteHint, PasteToImage } from "@/app/components/PasteToImage";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { catalogApi, formatEzPrepError, questionsApi, refId, type QuestionImage, type QuestionPayload } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
+import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
+import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 import { questionsListHref } from "../questions-list-href";
 
 interface Option {
   id: string;
   label: string;
+}
+
+type PreviewImageUrls = {
+  en?: string | null;
+  ml?: string | null;
+  options: (string | null)[];
+};
+
+function imageUrlOf(image: unknown): string | null {
+  if (!image || typeof image !== "object") return null;
+  const url = (image as { url?: unknown }).url;
+  return typeof url === "string" && url ? url : null;
+}
+
+function buildPreviewQuestion(
+  id: string,
+  questionText: {
+    en?: { text?: string | null; image?: unknown };
+    ml?: { text?: string | null; image?: unknown };
+  } | undefined,
+  options: Array<{
+    id?: string;
+    en?: string | null;
+    ml?: string | null;
+    image?: unknown;
+  }> | undefined,
+  optionType: string | undefined,
+  optionSlots: Option[],
+  loadedImageUrls: PreviewImageUrls
+): SafeQuestion {
+  const type = optionType || "text";
+  return {
+    _id: id,
+    questionText: {
+      en: {
+        text: questionText?.en?.text ?? null,
+        imageUrl:
+          imageUrlOf(questionText?.en?.image) ?? loadedImageUrls.en ?? null,
+      },
+      ml: {
+        text: questionText?.ml?.text ?? null,
+        imageUrl:
+          imageUrlOf(questionText?.ml?.image) ?? loadedImageUrls.ml ?? null,
+      },
+    },
+    optionType: type,
+    options: optionSlots.map((slot, index) => {
+      const opt = options?.[index];
+      return {
+        id: slot.id,
+        type,
+        en: opt?.en ?? null,
+        ml: opt?.ml ?? null,
+        imageUrl:
+          imageUrlOf(opt?.image) ?? loadedImageUrls.options[index] ?? null,
+      };
+    }),
+  };
 }
 
 function normalizeExplanationImages(images: unknown): QuestionImage[] {
@@ -42,6 +102,33 @@ export default function EditQuestionPage(props: {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
+  const [loadedImageUrls, setLoadedImageUrls] = useState<PreviewImageUrls>({
+    options: [],
+  });
+
+  const watchedQuestionText = Form.useWatch("questionText", form);
+  const watchedOptions = Form.useWatch("options", form);
+  const watchedOptionType = Form.useWatch("optionType", form);
+
+  const previewQuestion = useMemo(
+    () =>
+      buildPreviewQuestion(
+        params.id,
+        watchedQuestionText,
+        watchedOptions,
+        watchedOptionType,
+        OPTIONS,
+        loadedImageUrls
+      ),
+    [
+      params.id,
+      watchedQuestionText,
+      watchedOptions,
+      watchedOptionType,
+      OPTIONS,
+      loadedImageUrls,
+    ]
+  );
 
   const fetchTopicsBySubject = async (subjectId: string) => {
     setTopicsLoading(true);
@@ -136,6 +223,12 @@ export default function EditQuestionPage(props: {
         id: opt?.id ?? String.fromCharCode(65 + index),
         label: String.fromCharCode(65 + index) // A, B, C, D
       })));
+
+      setLoadedImageUrls({
+        en: imageUrlOf(question.questionText?.en?.image),
+        ml: imageUrlOf(question.questionText?.ml?.image),
+        options: options.map((opt: any) => imageUrlOf(opt?.image)),
+      });
 
       // Set selected subject and fetch related topics
       const subjectId = refId(question.subject);
@@ -288,6 +381,12 @@ export default function EditQuestionPage(props: {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <Card title="Edit Question">
+          <div className="mb-6 rounded border border-gray-200 bg-gray-50 p-4">
+            <div className="mb-2 text-sm font-medium text-gray-500">
+              Rendered preview
+            </div>
+            <QuestionPreview question={previewQuestion} />
+          </div>
           <Form
             form={form}
             layout="vertical"
