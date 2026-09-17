@@ -163,6 +163,22 @@ describe("EditQuestionPage", () => {
     expect(screen.getByDisplayValue("Mumbai")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Delhi is the capital")).toBeInTheDocument();
     expect(screen.getByText("Edit Question")).toBeInTheDocument();
+    expect(screen.getByText("Rendered preview")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Capital of India?").length
+    ).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("A.")).toBeInTheDocument();
+    expect(screen.getAllByText("Mumbai").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("updates the rendered preview as question text changes", async () => {
+    await renderReady();
+
+    fireEvent.change(screen.getByPlaceholderText("Enter question text in English"), {
+      target: { value: "Solve $x^2$" },
+    });
+
+    expect(await screen.findByText("Solve $x^2$")).toBeInTheDocument();
   });
 
   it("updates the question and navigates back", async () => {
