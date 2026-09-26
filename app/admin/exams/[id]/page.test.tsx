@@ -114,6 +114,7 @@ function makeExam(overrides: Partial<Exam> = {}): Exam {
     ],
     isSessionWise: true,
     hasMultiLingualSupport: true,
+    trending: true,
     isActive: true,
     ...overrides,
   };
@@ -238,6 +239,7 @@ describe("EditExamPage", { timeout: 15000 }, () => {
     fireEvent.change(await screen.findByDisplayValue("SSC CGL Tier 1", {}, { timeout: 10000 }), {
       target: { value: "Updated" },
     });
+    clickSwitchByLabel("Trending");
     fireEvent.click(screen.getByRole("button", { name: /update exam/i }));
 
     await waitFor(() =>
@@ -249,6 +251,7 @@ describe("EditExamPage", { timeout: 15000 }, () => {
         duration: 60,
         isSessionWise: true,
         hasMultiLingualSupport: true,
+        trending: false,
         subjects: [
           {
             subject: "sub-1",

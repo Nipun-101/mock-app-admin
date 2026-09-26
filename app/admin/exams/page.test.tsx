@@ -140,6 +140,7 @@ function makeExam(overrides: Partial<Exam> = {}): Exam {
     ],
     isSessionWise: false,
     hasMultiLingualSupport: false,
+    trending: false,
     isActive: true,
     ...overrides,
   };
@@ -286,6 +287,7 @@ describe("ExamsPage", { timeout: 15000 }, () => {
         duration: undefined,
         isSessionWise: false,
         hasMultiLingualSupport: false,
+        trending: false,
         subjects: undefined,
       })
     );
@@ -425,6 +427,7 @@ describe("ExamsPage", { timeout: 15000 }, () => {
       target: { value: "0.5" },
     });
     clickSwitchByLabel("Exam Mode");
+    clickSwitchByLabel("Trending");
     fireEvent.change(await screen.findByPlaceholderText("e.g. 60"), {
       target: { value: "40" },
     });
@@ -435,6 +438,7 @@ describe("ExamsPage", { timeout: 15000 }, () => {
         expect.objectContaining({
           name: "New Exam",
           isSessionWise: true,
+          trending: true,
           subjects: [
             {
               subject: "sub-1",

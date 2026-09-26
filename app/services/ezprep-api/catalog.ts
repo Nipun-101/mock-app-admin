@@ -56,6 +56,7 @@ export interface Exam {
   subjects?: ExamSubjectConfig[];
   isSessionWise: boolean;
   hasMultiLingualSupport: boolean;
+  trending: boolean;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -257,6 +258,7 @@ export const catalogApi = {
     subjects?: ExamSubjectConfig[];
     isSessionWise?: boolean;
     hasMultiLingualSupport?: boolean;
+    trending?: boolean;
   }) {
     return ezPrepApiClient.post<ApiItemResponse<Exam>>(
       "/v1/exams",
@@ -275,6 +277,7 @@ export const catalogApi = {
       subjects?: ExamSubjectConfig[];
       isSessionWise?: boolean;
       hasMultiLingualSupport?: boolean;
+      trending?: boolean;
       isActive?: boolean;
     }
   ) {

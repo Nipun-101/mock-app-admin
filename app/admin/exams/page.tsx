@@ -236,6 +236,7 @@ export default function ExamsPage() {
         duration: examData.duration,
         isSessionWise: examData.isSessionWise,
         hasMultiLingualSupport: examData.hasMultiLingualSupport,
+        trending: examData.trending,
         subjects: normalizeExamSubjects(examData.subjects),
       });
       message.success('Exam created successfully');
@@ -280,7 +281,7 @@ export default function ExamsPage() {
           onFinishFailed={() => message.error('Please fill in all required fields')}
           scrollToFirstError
           className="max-w-4xl"
-          initialValues={{ isSessionWise: false, isExamSameAsGroup: false, hasMultiLingualSupport: false }}
+          initialValues={{ isSessionWise: false, isExamSameAsGroup: false, hasMultiLingualSupport: false, trending: false }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
@@ -391,6 +392,18 @@ export default function ExamsPage() {
               <Switch 
                 checkedChildren="Yes" 
                 unCheckedChildren="No" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Trending"
+              name="trending"
+              valuePropName="checked"
+              tooltip="Show this exam as trending"
+            >
+              <Switch
+                checkedChildren="Yes"
+                unCheckedChildren="No"
               />
             </Form.Item>
           </div>

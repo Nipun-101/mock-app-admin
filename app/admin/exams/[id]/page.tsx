@@ -115,6 +115,7 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
         duration: values.duration,
         isSessionWise: values.isSessionWise,
         hasMultiLingualSupport: values.hasMultiLingualSupport,
+        trending: values.trending,
         subjects: normalizeExamSubjects(values.subjects),
       });
       message.success('Exam updated successfully');
@@ -213,6 +214,18 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
               <Switch 
                 checkedChildren="Yes" 
                 unCheckedChildren="No" 
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Trending"
+              name="trending"
+              valuePropName="checked"
+              tooltip="Show this exam as trending"
+            >
+              <Switch
+                checkedChildren="Yes"
+                unCheckedChildren="No"
               />
             </Form.Item>
           </div>
