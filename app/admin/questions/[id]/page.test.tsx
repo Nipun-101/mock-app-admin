@@ -116,6 +116,7 @@ async function renderReady(data: Question = question) {
       name: "UPSC",
       isSessionWise: false,
       hasMultiLingualSupport: false,
+      trending: false,
       isActive: true,
       category: "c1",
       examGroup: "g1",

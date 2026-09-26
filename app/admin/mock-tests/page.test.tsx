@@ -98,6 +98,7 @@ async function renderReady() {
       name: "UPSC",
       isSessionWise: false,
       hasMultiLingualSupport: false,
+      trending: false,
       isActive: true,
       category: "c1",
       examGroup: "g1",
