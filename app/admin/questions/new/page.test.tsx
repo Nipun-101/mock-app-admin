@@ -64,7 +64,7 @@ const subjects = {
   ],
 };
 
-const exams = [{ id: "ex-1", name: "UPSC", isSessionWise: false, hasMultiLingualSupport: false, isActive: true, category: "c1", examGroup: "g1" }];
+const exams = [{ id: "ex-1", name: "UPSC", isSessionWise: false, hasMultiLingualSupport: false, trending: false, isActive: true, category: "c1", examGroup: "g1" }];
 
 async function chooseOption(formLabel: string, optionText: string) {
   const label = screen.getByText(formLabel, { selector: "label" });

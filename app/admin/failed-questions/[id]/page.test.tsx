@@ -133,6 +133,7 @@ async function renderReady(item: FailedQuestion = detail) {
       name: "UPSC",
       isSessionWise: false,
       hasMultiLingualSupport: false,
+      trending: false,
       isActive: true,
       category: "c1",
       examGroup: "g1",
