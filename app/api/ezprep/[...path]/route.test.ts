@@ -66,6 +66,22 @@ describe("EzPrep proxy route", () => {
     expect(requestWithStatus).not.toHaveBeenCalled();
   });
 
+  it("forwards the instance configuration", async () => {
+    const response = await GET(
+      makeRequest("http://localhost/api/ezprep/v1/instance-config", {
+        cookies: { ezprep_admin_session: "tok" },
+      }),
+      ctx(["v1", "instance-config"])
+    );
+    expect(response.status).toBe(200);
+    expect(requestWithStatus).toHaveBeenCalledWith("/v1/instance-config", {
+      method: "GET",
+      body: undefined,
+      searchParams: {},
+      headers: { Authorization: "Bearer tok" },
+    });
+  });
+
   it("rejects unknown v1 roots", async () => {
     const response = await GET(
       makeRequest("http://localhost/api/ezprep/v1/secret"),

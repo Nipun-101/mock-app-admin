@@ -8,5 +8,6 @@ export * from "./files";
 export * from "./current-affairs";
 export * from "./admin-dashboard";
 export * from "./users";
+export * from "./instance-config";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";

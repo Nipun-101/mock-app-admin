@@ -20,14 +20,43 @@ import {
   TeamOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
 import { PageLoader } from "@/app/components/PageLoader";
-import logo from "@/assets/logo.png";
+import { instanceConfigApi } from "@/app/services/ezprep-api/instance-config";
+import { EzPrepApiError } from "@/app/services/ezprep-api/types";
+import {
+  applyInstanceDocumentBranding,
+  toInstanceBranding,
+  type InstanceBranding,
+} from "./instance-branding";
 
 const { Sider, Content } = Layout;
+
+function InstanceBrandMark({ branding }: { branding: InstanceBranding | null }) {
+  if (branding?.logoUrl) {
+    return (
+      // The logo host is chosen per deployment, so it cannot be listed in next/image remote patterns.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={branding.logoUrl}
+        alt={branding.name}
+        className="h-8 sm:h-10 w-auto max-w-[220px] object-contain object-left"
+      />
+    );
+  }
+
+  if (branding?.name) {
+    return (
+      <span className="truncate text-base font-semibold text-slate-900">
+        {branding.name}
+      </span>
+    );
+  }
+
+  return null;
+}
 
 export default function AdminLayout({
   children,
@@ -38,6 +67,8 @@ export default function AdminLayout({
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(true);
   const [sessionReady, setSessionReady] = useState(false);
+  const [branding, setBranding] = useState<InstanceBranding | null>(null);
+  const [brandingReady, setBrandingReady] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const closeSidebar = () => setCollapsed(true);
@@ -82,6 +113,41 @@ export default function AdminLayout({
       cancelled = true;
     };
   }, [router]);
+
+  useEffect(() => {
+    if (!sessionReady) return;
+
+    let cancelled = false;
+    const loadInstanceConfig = async () => {
+      try {
+        const response = await instanceConfigApi.get();
+        if (cancelled) return;
+        setBranding(toInstanceBranding(response.data));
+        setBrandingReady(true);
+      } catch (error) {
+        if (cancelled) return;
+        if (
+          error instanceof EzPrepApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          router.replace("/login");
+          return;
+        }
+        setBranding(null);
+        setBrandingReady(true);
+      }
+    };
+
+    void loadInstanceConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionReady, router]);
+
+  useEffect(() => {
+    if (!brandingReady) return;
+    return applyInstanceDocumentBranding(branding);
+  }, [branding, brandingReady]);
 
   const handleLogout = async () => {
     if (signingOut) {
@@ -188,15 +254,13 @@ export default function AdminLayout({
         <Link
           href="/admin"
           className="ml-3 sm:ml-4 flex-1 flex items-center min-w-0"
-          aria-label="Go to admin dashboard"
+          aria-label={
+            branding?.name
+              ? `Go to ${branding.name} dashboard`
+              : "Go to admin dashboard"
+          }
         >
-          <Image
-            src={logo}
-            alt="Mock Test Admin"
-            className="h-8 sm:h-10 w-auto max-w-full object-contain object-left"
-            style={{ width: "auto" }}
-            priority
-          />
+          <InstanceBrandMark branding={branding} />
         </Link>
         <Button
           size="small"
@@ -255,7 +319,7 @@ export default function AdminLayout({
       <Layout>
         <Content className="mt-16 p-4 md:p-6">
           <div className="w-full">
-            {sessionReady ? children : <PageLoader />}
+            {sessionReady && brandingReady ? children : <PageLoader />}
           </div>
         </Content>
       </Layout>

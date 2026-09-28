@@ -12,6 +12,7 @@ describe("ezprep-api public surface", () => {
     expect(api.currentAffairsApi).toBeDefined();
     expect(api.adminDashboardApi).toBeDefined();
     expect(api.usersApi).toBeDefined();
+    expect(api.instanceConfigApi).toBeDefined();
     expect(api.formatEzPrepError).toBeTypeOf("function");
     expect(api.buildEzPrepApiUrl).toBeTypeOf("function");
     expect(api.EZPREP_PROXY_PREFIX).toBe("/api/ezprep");
