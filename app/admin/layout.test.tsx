@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { usePathname, useRouter } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
+import { instanceConfigApi } from "@/app/services/ezprep-api/instance-config";
+import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import AdminLayout from "./layout";
 
 vi.mock("next/navigation", () => ({
@@ -9,23 +11,30 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(),
 }));
 
-vi.mock("next/image", () => ({
-  default: function MockImage({ alt }: { alt: string }) {
-    return <img alt={alt} src="/logo.png" />;
-  },
-}));
-
-vi.mock("@/assets/logo.png", () => ({
-  default: "/logo.png",
-}));
-
 vi.mock("@/lib/fetch-admin-session", () => ({
   fetchAdminSession: vi.fn(),
+}));
+
+vi.mock("@/app/services/ezprep-api/instance-config", () => ({
+  instanceConfigApi: {
+    get: vi.fn(),
+  },
 }));
 
 const replace = vi.fn();
 const refresh = vi.fn();
 const fetchMock = vi.fn();
+const getConfig = vi.mocked(instanceConfigApi.get);
+
+const savedConfig = {
+  id: "singleton",
+  schemaVersion: 1,
+  name: "ExamFlex",
+  logoUrl: "https://cdn.example.com/logo.png",
+  faviconUrl: "https://cdn.example.com/favicon.ico",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
 
 function mockSession(status: number) {
   vi.mocked(fetchAdminSession).mockResolvedValue({
@@ -45,6 +54,12 @@ describe("AdminLayout", () => {
     refresh.mockReset();
     fetchMock.mockReset();
     vi.mocked(fetchAdminSession).mockReset();
+    getConfig.mockReset();
+    getConfig.mockResolvedValue({
+      message: "Instance configuration has not been set",
+      data: null,
+    });
+    document.title = "Mock Test Admin";
     vi.mocked(useRouter).mockReturnValue({
       replace,
       refresh,
@@ -99,8 +114,73 @@ describe("AdminLayout", () => {
     await renderReadyLayout();
 
     expect(replace).not.toHaveBeenCalled();
-    expect(screen.getByAltText("Mock Test Admin")).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Go to admin dashboard" })
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(getConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not load configuration before the session is accepted", async () => {
+    mockSession(401);
+    render(<AdminLayout>Secret page</AdminLayout>);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    expect(getConfig).not.toHaveBeenCalled();
+  });
+
+  it("shows the saved logo and title", async () => {
+    mockSession(200);
+    getConfig.mockResolvedValue({
+      message: "ok",
+      data: savedConfig,
+    });
+
+    render(<AdminLayout>Secret page</AdminLayout>);
+
+    const logo = await screen.findByRole("img", { name: "ExamFlex" });
+    expect(logo).toHaveAttribute("src", "https://cdn.example.com/logo.png");
+    expect(
+      screen.getByRole("link", { name: "Go to ExamFlex dashboard" })
+    ).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe("ExamFlex"));
+  });
+
+  it("shows the name when no logo has been saved", async () => {
+    mockSession(200);
+    getConfig.mockResolvedValue({
+      message: "ok",
+      data: { ...savedConfig, logoUrl: null, faviconUrl: null },
+    });
+
+    render(<AdminLayout>Secret page</AdminLayout>);
+
+    expect(await screen.findByText("ExamFlex")).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("returns to login when loading configuration is unauthorized", async () => {
+    mockSession(200);
+    getConfig.mockRejectedValue(
+      new EzPrepApiError("unauthorized", 401, "/v1/instance-config", null)
+    );
+
+    render(<AdminLayout>Secret page</AdminLayout>);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    expect(screen.queryByText("Secret page")).not.toBeInTheDocument();
+  });
+
+  it("opens the admin without branding when configuration cannot be loaded", async () => {
+    mockSession(200);
+    getConfig.mockRejectedValue(new Error("offline"));
+
+    render(<AdminLayout>Secret page</AdminLayout>);
+
+    expect(await screen.findByText("Secret page")).toBeInTheDocument();
+    expect(document.querySelector("img")).toBeNull();
+    expect(document.title).toBe("Mock Test Admin");
   });
 
   it("signs out and returns to login when logout succeeds", async () => {
