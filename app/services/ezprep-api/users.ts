@@ -23,6 +23,18 @@ export interface AppUserTargetExam {
   name: string;
 }
 
+export interface AttemptStatusCounts {
+  /** SUBMITTED or EXPIRED attempts. */
+  finished: number;
+  /** Started, in progress, or paused attempts. */
+  open: number;
+}
+
+export interface AppUserTestActivity {
+  fullExam: AttemptStatusCounts;
+  topicWise: AttemptStatusCounts;
+}
+
 /**
  * Learner directory row. `role` is always `"user"` — admins are excluded
  * by the API and again in the UI before render.
@@ -43,7 +55,9 @@ export interface AppUser {
   membershipTier?: "none" | "bronze" | "silver" | "gold" | "platinum";
   badgesEarnedCount?: number;
   targetExam?: AppUserTargetExam;
+  /** Sum of every bucket in `testActivity`. */
   testsAttendedCount: number;
+  testActivity?: AppUserTestActivity;
   createdAt: string;
   updatedAt: string;
 }
