@@ -7,9 +7,12 @@ import {
   formatLocation,
   getInitials,
   isLearnerUser,
+  attendedTotal,
   maskEmail,
   maskPhoneNumber,
-  testsAttendedLabel,
+  normalizeTestActivity,
+  quantityLabel,
+  safeCount,
 } from "./helpers";
 
 describe("isLearnerUser", () => {
@@ -80,13 +83,56 @@ describe("formatJoinedDate", () => {
   });
 });
 
-describe("testsAttendedLabel", () => {
+describe("safeCount", () => {
+  it("truncates and never goes negative", () => {
+    expect(safeCount(0)).toBe(0);
+    expect(safeCount(1.9)).toBe(1);
+    expect(safeCount(-3)).toBe(0);
+    expect(safeCount(Number.NaN)).toBe(0);
+    expect(safeCount("4")).toBe(0);
+  });
+});
+
+describe("normalizeTestActivity", () => {
+  it("fills missing buckets and clamps bad numbers", () => {
+    expect(normalizeTestActivity(undefined)).toEqual({
+      fullExam: { finished: 0, open: 0 },
+      topicWise: { finished: 0, open: 0 },
+    });
+    expect(
+      normalizeTestActivity({
+        fullExam: { finished: -1, open: Number.NaN },
+        topicWise: { finished: 2.2 },
+      })
+    ).toEqual({
+      fullExam: { finished: 0, open: 0 },
+      topicWise: { finished: 2, open: 0 },
+    });
+  });
+});
+
+describe("attendedTotal", () => {
+  it("adds finished and open attempts", () => {
+    expect(attendedTotal({ finished: 3, open: 1 })).toBe(4);
+    expect(attendedTotal({ finished: -2, open: 1 })).toBe(1);
+  });
+});
+
+describe("quantityLabel", () => {
   it("pluralizes and never goes negative", () => {
-    expect(testsAttendedLabel(0)).toBe("0 tests attended");
-    expect(testsAttendedLabel(1)).toBe("1 test attended");
-    expect(testsAttendedLabel(4)).toBe("4 tests attended");
-    expect(testsAttendedLabel(-3)).toBe("0 tests attended");
-    expect(testsAttendedLabel(Number.NaN)).toBe("0 tests attended");
+    expect(quantityLabel(0, "full mock attended", "full mocks attended")).toBe(
+      "0 full mocks attended"
+    );
+    expect(quantityLabel(1, "full mock attended", "full mocks attended")).toBe(
+      "1 full mock attended"
+    );
+    expect(quantityLabel(4, "topic test attempted", "topic tests attempted")).toBe(
+      "4 topic tests attempted"
+    );
+    expect(quantityLabel(-3, "finished", "finished")).toBe("0 finished");
+    expect(quantityLabel(Number.NaN, "in progress", "in progress")).toBe(
+      "0 in progress"
+    );
   });
 });
 

@@ -122,14 +122,15 @@ describe("BulkUploadFormPage", () => {
   it("requires a PDF, subject, topic, and exam", async () => {
     await renderReady();
     fireEvent.click(uploadSubmitButton());
-    expect(
-      await screen.findByText("Please select a subject")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Please select a topic")).toBeInTheDocument();
-    expect(
-      screen.getByText("Please select at least one exam")
-    ).toBeInTheDocument();
-    expect(document.body).toHaveTextContent("Please upload a PDF file");
+
+    // Ant Design fades error text in, so it can stay hidden from getByText
+    // until the collapse motion finishes. textContent still includes it.
+    await waitFor(() => {
+      expect(document.body).toHaveTextContent("Please select a subject");
+      expect(document.body).toHaveTextContent("Please select a topic");
+      expect(document.body).toHaveTextContent("Please select at least one exam");
+      expect(document.body).toHaveTextContent("Please upload a PDF file");
+    });
   });
 
   it("rejects a non-PDF file", async () => {

@@ -3,31 +3,81 @@
 import { Avatar, Tag, Tooltip } from "antd";
 import {
   EnvironmentOutlined,
-  ExperimentOutlined,
   MailOutlined,
   PhoneOutlined,
   ReadOutlined,
 } from "@ant-design/icons";
-import type { AppUser } from "@/app/services/ezprep-api/users";
+import type { AttemptStatusCounts, AppUser } from "@/app/services/ezprep-api/users";
 import { planAccent, planStyle, tierStyle } from "./constants";
 import {
+  attendedTotal,
   avatarColor,
   formatJoinedDate,
   formatLocation,
   getInitials,
   maskEmail,
   maskPhoneNumber,
-  testsAttendedLabel,
+  normalizeTestActivity,
+  quantityLabel,
 } from "./helpers";
+
+function ActivityTile({
+  title,
+  attendedNoun,
+  counts,
+  accent,
+}: {
+  title: string;
+  attendedNoun: { singular: string; plural: string };
+  counts: AttemptStatusCounts;
+  accent: string;
+}) {
+  const attended = attendedTotal(counts);
+
+  return (
+    <div
+      className="min-w-0 rounded-xl bg-neutral-50 px-3 py-2.5"
+      aria-label={`${quantityLabel(attended, attendedNoun.singular, attendedNoun.plural)}, ${quantityLabel(counts.finished, "finished", "finished")}, ${quantityLabel(counts.open, "in progress", "in progress")}`}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          {title}
+        </span>
+        <span
+          className="text-lg font-semibold tabular-nums leading-none"
+          style={{ color: accent }}
+        >
+          {attended}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-col gap-0.5 text-xs text-neutral-500 sm:flex-row sm:flex-wrap sm:gap-x-3">
+        <span>
+          <span className="font-medium tabular-nums text-emerald-700">
+            {counts.finished}
+          </span>{" "}
+          finished
+        </span>
+        <Tooltip title="Started, in progress, or paused">
+          <span>
+            <span className="font-medium tabular-nums text-amber-700">
+              {counts.open}
+            </span>{" "}
+            in progress
+          </span>
+        </Tooltip>
+      </div>
+    </div>
+  );
+}
 
 export function UserCard({ user }: { user: AppUser }) {
   const plan = planStyle(user.subscription?.plan);
   const tier = tierStyle(user.membershipTier);
   const accent = planAccent(user.subscription?.plan);
   const location = formatLocation(user.location);
-  const testsCount = Number.isFinite(user.testsAttendedCount)
-    ? Math.max(0, user.testsAttendedCount)
-    : 0;
+  const activity = normalizeTestActivity(user.testActivity);
+  const finishedTotal = activity.fullExam.finished + activity.topicWise.finished;
+  const openTotal = activity.fullExam.open + activity.topicWise.open;
   const email = maskEmail(user.email);
   const phoneNumber = maskPhoneNumber(user.phoneNumber);
 
@@ -40,7 +90,7 @@ export function UserCard({ user }: { user: AppUser }) {
     >
       <div className="h-1.5 w-full" style={{ background: accent }} />
       <div
-        className="absolute inset-x-0 top-1.5 h-24 pointer-events-none"
+        className="pointer-events-none absolute inset-x-0 top-1.5 h-24"
         style={{
           background: `linear-gradient(180deg, ${accent}14 0%, #ffffff 100%)`,
         }}
@@ -61,7 +111,7 @@ export function UserCard({ user }: { user: AppUser }) {
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="m-0 text-base font-semibold text-neutral-900 truncate">
+              <h3 className="m-0 truncate text-base font-semibold text-neutral-900">
                 {user.name || "Unnamed learner"}
               </h3>
               <Tag
@@ -71,12 +121,12 @@ export function UserCard({ user }: { user: AppUser }) {
                 {user.isActive ? "Active" : "Inactive"}
               </Tag>
             </div>
-            <p className="mt-1 mb-0 flex items-center gap-1.5 text-sm text-neutral-500 truncate">
+            <p className="mb-0 mt-1 flex items-center gap-1.5 truncate text-sm text-neutral-500">
               <MailOutlined className="shrink-0" />
               <span className="truncate">{email || "No email"}</span>
             </p>
             {phoneNumber ? (
-              <p className="mt-0.5 mb-0 flex items-center gap-1.5 text-sm text-neutral-500 truncate">
+              <p className="mb-0 mt-0.5 flex items-center gap-1.5 truncate text-sm text-neutral-500">
                 <PhoneOutlined className="shrink-0" />
                 <span className="truncate">{phoneNumber}</span>
               </p>
@@ -107,32 +157,40 @@ export function UserCard({ user }: { user: AppUser }) {
         </div>
 
         {location ? (
-          <p className="mt-3 mb-0 flex items-center gap-1.5 text-xs text-neutral-500">
+          <p className="mb-0 mt-3 flex items-center gap-1.5 text-xs text-neutral-500">
             <EnvironmentOutlined />
             {location}
           </p>
         ) : null}
 
-        <div className="mt-4 flex items-end justify-between gap-3 border-t border-neutral-100 pt-3">
-          <div className="flex items-center gap-2 text-neutral-800">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: `${accent}18`, color: accent }}
-            >
-              <ExperimentOutlined />
-            </span>
-            <div>
-              <div className="text-xl font-semibold leading-none">
-                {testsCount}
-              </div>
-              <div className="mt-1 text-[11px] uppercase tracking-wide text-neutral-400">
-                {testsAttendedLabel(testsCount).replace(/^\d+\s/, "")}
-              </div>
-            </div>
-          </div>
-          <div className="text-right text-xs text-neutral-400">
-            Joined {formatJoinedDate(user.createdAt)}
-          </div>
+        <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+          <ActivityTile
+            title="Full mocks"
+            attendedNoun={{
+              singular: "full mock attended",
+              plural: "full mocks attended",
+            }}
+            counts={activity.fullExam}
+            accent={accent}
+          />
+          <ActivityTile
+            title="Topic tests"
+            attendedNoun={{
+              singular: "topic test attempted",
+              plural: "topic tests attempted",
+            }}
+            counts={activity.topicWise}
+            accent={accent}
+          />
+        </div>
+
+        <div className="mt-3 flex flex-col gap-1 border-t border-neutral-100 pt-3 text-xs text-neutral-400 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+          <span>
+            {quantityLabel(finishedTotal, "finished", "finished")}
+            {" · "}
+            {quantityLabel(openTotal, "in progress", "in progress")}
+          </span>
+          <span className="shrink-0">Joined {formatJoinedDate(user.createdAt)}</span>
         </div>
       </div>
     </article>

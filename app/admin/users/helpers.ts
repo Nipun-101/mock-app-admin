@@ -1,4 +1,10 @@
-import { APP_USER_ROLE, ADMIN_ROLE, type AppUser } from "@/app/services/ezprep-api/users";
+import {
+  APP_USER_ROLE,
+  ADMIN_ROLE,
+  type AppUser,
+  type AttemptStatusCounts,
+  type AppUserTestActivity,
+} from "@/app/services/ezprep-api/users";
 
 export function isLearnerUser(user: { role?: string } | null | undefined): boolean {
   if (!user || typeof user.role !== "string") {
@@ -75,9 +81,46 @@ export function formatJoinedDate(value?: string): string {
   });
 }
 
-export function testsAttendedLabel(count: number): string {
-  const safe = Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0;
-  return safe === 1 ? "1 test attended" : `${safe} tests attended`;
+export function safeCount(value: unknown): number {
+  const n = typeof value === "number" ? value : Number.NaN;
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  return Math.max(0, Math.trunc(n));
+}
+
+export function normalizeStatusCounts(
+  counts?: Partial<AttemptStatusCounts> | null
+): AttemptStatusCounts {
+  return {
+    finished: safeCount(counts?.finished),
+    open: safeCount(counts?.open),
+  };
+}
+
+export function normalizeTestActivity(
+  activity?: Partial<{
+    fullExam?: Partial<AttemptStatusCounts> | null;
+    topicWise?: Partial<AttemptStatusCounts> | null;
+  }> | null
+): AppUserTestActivity {
+  return {
+    fullExam: normalizeStatusCounts(activity?.fullExam),
+    topicWise: normalizeStatusCounts(activity?.topicWise),
+  };
+}
+
+export function attendedTotal(counts: AttemptStatusCounts): number {
+  return safeCount(counts.finished) + safeCount(counts.open);
+}
+
+export function quantityLabel(
+  count: number,
+  singular: string,
+  plural: string
+): string {
+  const safe = safeCount(count);
+  return `${safe} ${safe === 1 ? singular : plural}`;
 }
 
 /**
