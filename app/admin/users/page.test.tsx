@@ -63,6 +63,10 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("Anita Sharma")).toBeInTheDocument();
     expect(screen.getByText("Users")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Anita Sharma/ })).toHaveAttribute(
+      "href",
+      "/admin/users/u1"
+    );
     expect(screen.getByText(/Showing 1 of 1 learner/)).toBeInTheDocument();
     expect(list).toHaveBeenCalledWith({
       page: 1,

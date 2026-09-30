@@ -50,6 +50,11 @@ describe("UserCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("4 finished · 2 in progress")).toBeInTheDocument();
     expect(screen.getByText(/Joined/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Anita Sharma/ })).toHaveAttribute(
+      "href",
+      "/admin/users/u1"
+    );
+    expect(screen.getByText("View details")).toBeInTheDocument();
   });
 
   it("handles inactive users and missing optional fields", () => {
@@ -85,6 +90,8 @@ describe("UserCard", () => {
   it("falls back to the user name when id is missing for avatar color", () => {
     render(<UserCard user={makeUser({ id: "" })} />);
     expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.queryByText("View details")).not.toBeInTheDocument();
   });
 
   it("uses a singular attended label for a single full mock", () => {
