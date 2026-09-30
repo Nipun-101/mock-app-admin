@@ -77,7 +77,7 @@ export default function UsersPage() {
             Users
           </Title>
           <Text type="secondary">
-            Learners using the app actively.
+            Learners using the app. Open a card to review profile and recent scores.
           </Text>
         </div>
         <Space.Compact className="w-full sm:w-80">

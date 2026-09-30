@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Avatar, Tag, Tooltip } from "antd";
 import {
   EnvironmentOutlined,
@@ -81,7 +82,7 @@ export function UserCard({ user }: { user: AppUser }) {
   const email = maskEmail(user.email);
   const phoneNumber = maskPhoneNumber(user.phoneNumber);
 
-  return (
+  const card = (
     <article
       className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
       style={{ opacity: user.isActive ? 1 : 0.78 }}
@@ -190,9 +191,28 @@ export function UserCard({ user }: { user: AppUser }) {
             {" · "}
             {quantityLabel(openTotal, "in progress", "in progress")}
           </span>
-          <span className="shrink-0">Joined {formatJoinedDate(user.createdAt)}</span>
+          <span className="flex shrink-0 items-center gap-3">
+            <span>Joined {formatJoinedDate(user.createdAt)}</span>
+            {user.id ? (
+              <span className="font-medium text-[#1677ff]">View details</span>
+            ) : null}
+          </span>
         </div>
       </div>
     </article>
+  );
+
+  if (!user.id) {
+    return card;
+  }
+
+  return (
+    <Link
+      href={`/admin/users/${user.id}`}
+      className="block rounded-2xl text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-[#1677ff] focus-visible:ring-offset-2"
+      data-testid="user-card-link"
+    >
+      {card}
+    </Link>
   );
 }

@@ -40,4 +40,18 @@ describe("usersApi", () => {
       searchParams: {},
     });
   });
+
+  it("loads one learner from the admin detail endpoint", async () => {
+    await usersApi.get("507f1f77bcf86cd799439011");
+
+    expect(get).toHaveBeenCalledWith(
+      "/v1/admin/users/507f1f77bcf86cd799439011"
+    );
+    expect(get.mock.calls.at(-1)?.[0]).not.toBe("/v1/users/507f1f77bcf86cd799439011");
+  });
+
+  it("encodes the learner id", async () => {
+    await usersApi.get("learner/id");
+    expect(get).toHaveBeenCalledWith("/v1/admin/users/learner%2Fid");
+  });
 });
