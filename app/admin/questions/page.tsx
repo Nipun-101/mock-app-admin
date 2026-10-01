@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { Table, Button, Space, message, Pagination, Tag } from "antd";
+import { Table, Button, Space, message, Pagination, Tag, Tooltip, Alert } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
+import { CloseOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
@@ -16,6 +17,15 @@ import {
 } from "@/app/services/ezprep-api";
 import { PageLoader } from "@/app/components/PageLoader";
 import { questionsEditHref } from "./questions-list-href";
+import { CreateSprintFromSelectionModal } from "./CreateSprintFromSelectionModal";
+import {
+  isSprintSelectionSize,
+  setQuestionsSelected,
+  setQuestionSelected,
+  snapshotQuestion,
+  sprintSelectionHint,
+  type SelectedSprintQuestion,
+} from "./sprint-selection";
 
 function parsePositiveInt(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value || "", 10);
@@ -39,6 +49,12 @@ function QuestionsPageContent() {
   const selectedSubject = searchParams.get("subjectId");
   const selectedExam = searchParams.get("examId");
   const selectedTopic = searchParams.get("topicId");
+  const [selectedQuestions, setSelectedQuestions] = useState<
+    Map<string, SelectedSprintQuestion>
+  >(new Map());
+  const [sprintModalOpen, setSprintModalOpen] = useState(false);
+  const selectedCount = selectedQuestions.size;
+  const canCreateSprint = isSprintSelectionSize(selectedCount);
 
   const updateQuery = (updates: Record<string, string | number | null | undefined>) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -288,18 +304,74 @@ function QuestionsPageContent() {
             }))}
           />
         </div>
-        <Link href="/admin/questions/new">
-          <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
-            Add Question
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {selectedCount > 0 ? (
+            <>
+              <Tooltip title={sprintSelectionHint(selectedCount)}>
+                <span className="inline-block">
+                  <Button
+                    disabled={!canCreateSprint}
+                    className={
+                      canCreateSprint
+                        ? "!bg-[#eb2f96] hover:!bg-[#c41d7f] !text-white !border-[#eb2f96]"
+                        : undefined
+                    }
+                    onClick={() => setSprintModalOpen(true)}
+                  >
+                    + Sprint Test
+                  </Button>
+                </span>
+              </Tooltip>
+              <Tooltip title="Clear selection">
+                <Button
+                  aria-label={`Clear selection (${selectedCount})`}
+                  icon={<CloseOutlined />}
+                  onClick={() => setSelectedQuestions(new Map())}
+                >
+                  ({selectedCount})
+                </Button>
+              </Tooltip>
+            </>
+          ) : null}
+          <Link href="/admin/questions/new">
+            <Button type="primary" className="bg-blue-600 hover:bg-blue-700">
+              Add Question
+            </Button>
+          </Link>
+        </div>
       </div>
+      {selectedCount > 0 && !canCreateSprint ? (
+        <Alert
+          className="mb-4"
+          type={selectedCount < 10 ? "info" : "warning"}
+          showIcon
+          message={sprintSelectionHint(selectedCount)}
+        />
+      ) : null}
       <Table
         columns={columns}
         dataSource={questions}
         rowKey="id"
         loading={tableLoading || loading}
         pagination={false}
+        rowSelection={{
+          selectedRowKeys: [...selectedQuestions.keys()],
+          preserveSelectedRowKeys: true,
+          onSelect: (record, checked) => {
+            setSelectedQuestions((current) =>
+              setQuestionSelected(current, snapshotQuestion(record), checked)
+            );
+          },
+          onSelectAll: (checked, _selectedRows, changeRows) => {
+            setSelectedQuestions((current) =>
+              setQuestionsSelected(
+                current,
+                changeRows.map((row) => snapshotQuestion(row)),
+                checked
+              )
+            );
+          },
+        }}
       />
       <div className="mt-4 flex justify-end">
         <Pagination
@@ -313,6 +385,16 @@ function QuestionsPageContent() {
           }
         />
       </div>
+      <CreateSprintFromSelectionModal
+        open={sprintModalOpen}
+        questions={[...selectedQuestions.values()]}
+        exams={exams.map((exam) => ({ id: exam._id, name: exam.name }))}
+        onClose={() => setSprintModalOpen(false)}
+        onCreated={() => {
+          setSelectedQuestions(new Map());
+          setSprintModalOpen(false);
+        }}
+      />
     </div>
   );
 }

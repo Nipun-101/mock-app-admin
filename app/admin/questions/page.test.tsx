@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import QuestionsPage from "./page";
 
@@ -73,5 +73,18 @@ describe("QuestionsPage", () => {
       "href",
       "/admin/questions/q-1?page=5&limit=10"
     );
+  });
+
+  it("shows a disabled sprint button until the selection is an allowed size", async () => {
+    render(<QuestionsPage />);
+    expect(await screen.findByText("Capital of India?")).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole("checkbox");
+    fireEvent.click(checkboxes[checkboxes.length - 1]);
+
+    const button = screen.getByRole("button", { name: "+ Sprint Test" });
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/Select at least 10 questions/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /clear selection \(1\)/i }));
+    expect(screen.queryByRole("button", { name: "+ Sprint Test" })).not.toBeInTheDocument();
   });
 });
