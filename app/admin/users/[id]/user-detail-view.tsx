@@ -428,6 +428,20 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
                   {activity.topicWise.finished} finished · {activity.topicWise.open} in progress
                 </p>
               </div>
+              <div className="rounded-xl bg-neutral-50 px-3 py-2.5" aria-label="Sprint test activity">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                  Sprint tests
+                </div>
+                <p className="mb-0 mt-1 text-sm text-neutral-700">
+                  {quantityLabel(
+                    activity.sprint.finished + activity.sprint.open,
+                    "attended",
+                    "attended"
+                  )}
+                  {" · "}
+                  {activity.sprint.finished} finished · {activity.sprint.open} in progress
+                </p>
+              </div>
             </div>
           ) : null}
         </div>
@@ -445,7 +459,7 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
           noun={{ singular: "test", plural: "tests" }}
           performance={analysis.overall}
         />
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
           <div className="space-y-4">
             <PerformanceCard
               title="Topic tests"
@@ -474,6 +488,21 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
               attempts={detail.recentFullExamAttempts}
               finishedCount={analysis.fullExam.finishedCount}
               testId="full-exam-attempts"
+            />
+          </div>
+          <div className="space-y-4">
+            <PerformanceCard
+              title="Sprint tests"
+              noun={{ singular: "sprint test", plural: "sprint tests" }}
+              performance={analysis.sprint}
+            />
+            <AttemptSection
+              title="Each sprint test"
+              description="Score on each of the last 5 finished sprint tests, newest first."
+              emptyLabel="This learner has not finished a sprint test."
+              attempts={detail.recentSprintAttempts}
+              finishedCount={analysis.sprint.finishedCount}
+              testId="sprint-attempts"
             />
           </div>
         </div>

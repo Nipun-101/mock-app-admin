@@ -22,6 +22,7 @@ describe("adminDashboardApi", () => {
     await adminDashboardApi.getFailedQuestions();
     await adminDashboardApi.getMockTests();
     await adminDashboardApi.getFullMockTests();
+    await adminDashboardApi.getSprintTests();
     await adminDashboardApi.getAttempts();
     await adminDashboardApi.getExams();
     await adminDashboardApi.getSubjects();
@@ -35,6 +36,7 @@ describe("adminDashboardApi", () => {
       "/v1/admin/dashboard/failed-questions",
       "/v1/admin/dashboard/mock-tests",
       "/v1/admin/dashboard/full-mock-tests",
+      "/v1/admin/dashboard/sprint-tests",
       "/v1/admin/dashboard/attempts",
       "/v1/admin/dashboard/exams",
       "/v1/admin/dashboard/subjects",

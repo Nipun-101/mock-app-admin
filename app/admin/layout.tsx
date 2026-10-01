@@ -16,6 +16,7 @@ import {
   UploadOutlined,
   CloseCircleOutlined,
   FileProtectOutlined,
+  ThunderboltOutlined,
   ReadOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
@@ -204,6 +205,11 @@ export default function AdminLayout({
       label: <Link href="/admin/full-mock-tests">Full Mock Tests</Link>,
     },
     {
+      key: "/admin/sprint-tests",
+      icon: <ThunderboltOutlined />,
+      label: <Link href="/admin/sprint-tests">Sprint Tests</Link>,
+    },
+    {
       key: "/admin/current-affairs",
       icon: <ReadOutlined />,
       label: <Link href="/admin/current-affairs">Current Affairs</Link>,
@@ -307,7 +313,9 @@ export default function AdminLayout({
                 ? "/admin/failed-questions"
                 : pathname.startsWith("/admin/full-mock-tests")
                   ? "/admin/full-mock-tests"
-                  : pathname.startsWith("/admin/current-affairs")
+                  : pathname.startsWith("/admin/sprint-tests")
+                    ? "/admin/sprint-tests"
+                    : pathname.startsWith("/admin/current-affairs")
                     ? "/admin/current-affairs"
                     : pathname,
           ]}

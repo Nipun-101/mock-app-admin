@@ -33,6 +33,7 @@ export interface AttemptStatusCounts {
 export interface AppUserTestActivity {
   fullExam: AttemptStatusCounts;
   topicWise: AttemptStatusCounts;
+  sprint: AttemptStatusCounts;
 }
 
 /**
@@ -100,7 +101,7 @@ export interface FinishedAttempt {
   id: string;
   mockTestId: string;
   title: string;
-  paperType: "TOPIC_WISE" | "FULL_EXAM";
+  paperType: "TOPIC_WISE" | "FULL_EXAM" | "SPRINT";
   status: "SUBMITTED" | "EXPIRED";
   score: number;
   totalMarks: number;
@@ -140,6 +141,7 @@ export interface PaperPerformance {
 export interface UserPerformanceAnalysis {
   topicWise: PaperPerformance;
   fullExam: PaperPerformance;
+  sprint: PaperPerformance;
   overall: PaperPerformance;
 }
 
@@ -147,6 +149,7 @@ export interface AppUserDetail {
   profile: AppUserDetailProfile;
   recentTopicWiseAttempts: FinishedAttempt[];
   recentFullExamAttempts: FinishedAttempt[];
+  recentSprintAttempts: FinishedAttempt[];
   analysis: UserPerformanceAnalysis;
 }
 

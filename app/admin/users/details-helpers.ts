@@ -283,8 +283,13 @@ function normalizeAttempt(
     return null;
   }
 
-  const paperType = raw.paperType === "FULL_EXAM" ? "FULL_EXAM" : "TOPIC_WISE";
-  if (expectedPaperType && paperType !== expectedPaperType) {
+  const paperType =
+    raw.paperType === "FULL_EXAM" ||
+    raw.paperType === "SPRINT" ||
+    raw.paperType === "TOPIC_WISE"
+      ? raw.paperType
+      : null;
+  if (!paperType || (expectedPaperType && paperType !== expectedPaperType)) {
     return null;
   }
 
@@ -382,7 +387,9 @@ function normalizeProfile(
       testActivity.fullExam.finished +
       testActivity.fullExam.open +
       testActivity.topicWise.finished +
-      testActivity.topicWise.open,
+      testActivity.topicWise.open +
+      testActivity.sprint.finished +
+      testActivity.sprint.open,
     createdAt: optionalText(profile.createdAt) ?? "",
     updatedAt: optionalText(profile.updatedAt) ?? "",
     bio: optionalText(profile.bio) ?? undefined,
@@ -419,9 +426,14 @@ export function normalizeUserDetail(
       input.recentFullExamAttempts,
       "FULL_EXAM"
     ),
+    recentSprintAttempts: normalizeAttempts(
+      input.recentSprintAttempts,
+      "SPRINT"
+    ),
     analysis: {
       topicWise: normalizePaper(analysis?.topicWise),
       fullExam: normalizePaper(analysis?.fullExam),
+      sprint: normalizePaper(analysis?.sprint),
       overall: normalizePaper(analysis?.overall),
     },
   };

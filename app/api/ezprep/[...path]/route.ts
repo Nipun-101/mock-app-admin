@@ -13,6 +13,7 @@ const ALLOWED_V1_ROOTS = new Set([
   "questions",
   "mock-tests",
   "full-mock-tests",
+  "sprint-tests",
   "imports",
   "files",
   "current-affairs",

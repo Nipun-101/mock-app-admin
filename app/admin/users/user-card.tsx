@@ -77,8 +77,12 @@ export function UserCard({ user }: { user: AppUser }) {
   const accent = planAccent(user.subscription?.plan);
   const location = formatLocation(user.location);
   const activity = normalizeTestActivity(user.testActivity);
-  const finishedTotal = activity.fullExam.finished + activity.topicWise.finished;
-  const openTotal = activity.fullExam.open + activity.topicWise.open;
+  const finishedTotal =
+    activity.fullExam.finished +
+    activity.topicWise.finished +
+    activity.sprint.finished;
+  const openTotal =
+    activity.fullExam.open + activity.topicWise.open + activity.sprint.open;
   const email = maskEmail(user.email);
   const phoneNumber = maskPhoneNumber(user.phoneNumber);
 
@@ -181,6 +185,15 @@ export function UserCard({ user }: { user: AppUser }) {
               plural: "topic tests attempted",
             }}
             counts={activity.topicWise}
+            accent={accent}
+          />
+          <ActivityTile
+            title="Sprint tests"
+            attendedNoun={{
+              singular: "sprint test attended",
+              plural: "sprint tests attended",
+            }}
+            counts={activity.sprint}
             accent={accent}
           />
         </div>

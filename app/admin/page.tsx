@@ -7,6 +7,7 @@ import {
   CloseCircleOutlined,
   ExperimentOutlined,
   FileProtectOutlined,
+  ThunderboltOutlined,
   FormOutlined,
   PlayCircleOutlined,
   QuestionCircleOutlined,
@@ -27,6 +28,7 @@ type MetricKey =
   | "failed-questions"
   | "mock-tests"
   | "full-mock-tests"
+  | "sprint-tests"
   | "attempts"
   | "exams"
   | "subjects"
@@ -96,6 +98,16 @@ const USAGE_CARDS: DashboardCard[] = [
     shadow: "0 10px 24px rgba(250, 140, 22, 0.16)",
   },
   {
+    key: "sprint-tests",
+    label: "Sprint tests",
+    countKey: "sprintTests",
+    description: "Published short mixed papers plus draft pipeline status.",
+    icon: <ThunderboltOutlined />,
+    accent: "#eb2f96",
+    tint: "linear-gradient(180deg, #fff0f6 0%, #ffffff 72%)",
+    shadow: "0 10px 24px rgba(235, 47, 150, 0.16)",
+  },
+  {
     key: "attempts",
     label: "Attempts",
     countKey: "attempts",
@@ -156,6 +168,7 @@ const DETAIL_FETCHERS: Record<MetricKey, () => Promise<{ data: unknown }>> = {
   "failed-questions": () => adminDashboardApi.getFailedQuestions(),
   "mock-tests": () => adminDashboardApi.getMockTests(),
   "full-mock-tests": () => adminDashboardApi.getFullMockTests(),
+  "sprint-tests": () => adminDashboardApi.getSprintTests(),
   attempts: () => adminDashboardApi.getAttempts(),
   exams: () => adminDashboardApi.getExams(),
   subjects: () => adminDashboardApi.getSubjects(),
@@ -282,7 +295,7 @@ function DetailTables({ metric, data }: { metric: MetricKey; data: unknown }) {
     );
   }
 
-  if (metric === "full-mock-tests") {
+  if (metric === "full-mock-tests" || metric === "sprint-tests") {
     return (
       <>
         <Table

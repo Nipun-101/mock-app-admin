@@ -102,11 +102,13 @@ export function normalizeTestActivity(
   activity?: Partial<{
     fullExam?: Partial<AttemptStatusCounts> | null;
     topicWise?: Partial<AttemptStatusCounts> | null;
+    sprint?: Partial<AttemptStatusCounts> | null;
   }> | null
 ): AppUserTestActivity {
   return {
     fullExam: normalizeStatusCounts(activity?.fullExam),
     topicWise: normalizeStatusCounts(activity?.topicWise),
+    sprint: normalizeStatusCounts(activity?.sprint),
   };
 }
 
