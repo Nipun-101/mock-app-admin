@@ -17,6 +17,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
       getFailedQuestions: vi.fn(),
       getMockTests: vi.fn(),
       getFullMockTests: vi.fn(),
+      getSprintTests: vi.fn(),
       getAttempts: vi.fn(),
       getExams: vi.fn(),
       getSubjects: vi.fn(),
@@ -34,6 +35,7 @@ const getQuestions = vi.mocked(adminDashboardApi.getQuestions);
 const getFailedQuestions = vi.mocked(adminDashboardApi.getFailedQuestions);
 const getMockTests = vi.mocked(adminDashboardApi.getMockTests);
 const getFullMockTests = vi.mocked(adminDashboardApi.getFullMockTests);
+const getSprintTests = vi.mocked(adminDashboardApi.getSprintTests);
 const getAttempts = vi.mocked(adminDashboardApi.getAttempts);
 const getExams = vi.mocked(adminDashboardApi.getExams);
 const getSubjects = vi.mocked(adminDashboardApi.getSubjects);
@@ -46,6 +48,7 @@ const summary: AdminDashboardSummary = {
   failedQuestions: 3,
   mockTests: 5,
   fullMockTests: 2,
+  sprintTests: 4,
   attempts: 40,
   exams: 8,
   subjects: 6,
@@ -75,6 +78,7 @@ describe("AdminDashboardPage", () => {
     getFailedQuestions.mockReset();
     getMockTests.mockReset();
     getFullMockTests.mockReset();
+    getSprintTests.mockReset();
     getAttempts.mockReset();
     getExams.mockReset();
     getSubjects.mockReset();
@@ -204,6 +208,14 @@ describe("AdminDashboardPage", () => {
         draftsByStatus: [{ name: "REVIEW", count: 1 }],
       },
     });
+    getSprintTests.mockResolvedValue({
+      message: "ok",
+      data: {
+        totalPublished: 4,
+        byExam: [{ name: "CGL", count: 4 }],
+        draftsByStatus: [{ name: "REVIEW", count: 2 }],
+      },
+    });
 
     await renderLoadedDashboard();
 
@@ -220,6 +232,11 @@ describe("AdminDashboardPage", () => {
     expect(await screen.findByText("Drafts by status")).toBeInTheDocument();
     expect(screen.getByText("REVIEW")).toBeInTheDocument();
     expect(screen.getByText("SSC")).toBeInTheDocument();
+    fireEvent.click(document.querySelector(".ant-modal-close")!);
+
+    await openCard("Sprint tests");
+    expect(await screen.findByText("CGL")).toBeInTheDocument();
+    expect(screen.getByText("Drafts by status")).toBeInTheDocument();
   });
 
   it("opens attempts, exams, subjects, topics, and tags details", async () => {

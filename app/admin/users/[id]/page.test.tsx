@@ -82,6 +82,7 @@ function makeDetail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
       testActivity: {
         fullExam: { finished: 2, open: 1 },
         topicWise: { finished: 1, open: 0 },
+        sprint: { finished: 0, open: 0 },
       },
       study: { studyTime: "morning", weeklyStudyGoalHours: 12 },
       createdAt: "2026-01-15T00:00:00.000Z",
@@ -156,6 +157,7 @@ function makeDetail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
         submittedAt: "2026-04-02T02:00:00.000Z",
       },
     ],
+    recentSprintAttempts: [],
     analysis: {
       topicWise: {
         ...emptyPaper,
@@ -189,6 +191,7 @@ function makeDetail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
         gradedCount: 1,
         trend: "insufficient",
       },
+      sprint: emptyPaper,
       overall: {
         ...emptyPaper,
         finishedCount: 3,
@@ -277,6 +280,7 @@ describe("UserDetailPage", () => {
         analysis: {
           topicWise: emptyPaper,
           fullExam: emptyPaper,
+          sprint: emptyPaper,
           overall: emptyPaper,
         },
       }),

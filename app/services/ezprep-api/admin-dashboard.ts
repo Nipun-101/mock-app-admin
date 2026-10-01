@@ -7,6 +7,7 @@ export interface AdminDashboardSummary {
   failedQuestions: number;
   mockTests: number;
   fullMockTests: number;
+  sprintTests: number;
   attempts: number;
   exams: number;
   subjects: number;
@@ -53,6 +54,12 @@ export interface AdminDashboardMockTests {
 }
 
 export interface AdminDashboardFullMockTests {
+  totalPublished: number;
+  byExam: NamedCount[];
+  draftsByStatus: NamedCount[];
+}
+
+export interface AdminDashboardSprintTests {
   totalPublished: number;
   byExam: NamedCount[];
   draftsByStatus: NamedCount[];
@@ -146,6 +153,11 @@ export const adminDashboardApi = {
   getFullMockTests() {
     return ezPrepApiClient.get<ApiItemResponse<AdminDashboardFullMockTests>>(
       `${PREFIX}/full-mock-tests`
+    );
+  },
+  getSprintTests() {
+    return ezPrepApiClient.get<ApiItemResponse<AdminDashboardSprintTests>>(
+      `${PREFIX}/sprint-tests`
     );
   },
   getAttempts() {

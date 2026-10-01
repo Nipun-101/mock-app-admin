@@ -98,15 +98,18 @@ describe("normalizeTestActivity", () => {
     expect(normalizeTestActivity(undefined)).toEqual({
       fullExam: { finished: 0, open: 0 },
       topicWise: { finished: 0, open: 0 },
+      sprint: { finished: 0, open: 0 },
     });
     expect(
       normalizeTestActivity({
         fullExam: { finished: -1, open: Number.NaN },
         topicWise: { finished: 2.2 },
+        sprint: { finished: 3, open: 1 },
       })
     ).toEqual({
       fullExam: { finished: 0, open: 0 },
       topicWise: { finished: 2, open: 0 },
+      sprint: { finished: 3, open: 1 },
     });
   });
 });

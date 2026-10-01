@@ -70,9 +70,11 @@ function detail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
     },
     recentTopicWiseAttempts: [attempt()],
     recentFullExamAttempts: [],
+    recentSprintAttempts: [],
     analysis: {
       topicWise: { ...emptyPaper, finishedCount: 1, score: 40, totalMarks: 100, percentage: 40 },
       fullExam: emptyPaper,
+      sprint: emptyPaper,
       overall: { ...emptyPaper, finishedCount: 1, score: 40, totalMarks: 100, percentage: 40 },
     },
     ...overrides,
@@ -212,6 +214,22 @@ describe("normalizeUserDetail", () => {
         score: 3,
       }),
     ]);
+  });
+
+  it("keeps sprint attempts out of the topic-wise list", () => {
+    const normalized = normalizeUserDetail(
+      detail({
+        recentTopicWiseAttempts: [
+          attempt({ id: "sprint", paperType: "SPRINT" }),
+          attempt({ id: "topic" }),
+        ],
+        recentSprintAttempts: [attempt({ id: "sprint-ok", paperType: "SPRINT" })],
+      })
+    );
+
+    expect(normalized?.recentTopicWiseAttempts.map((row) => row.id)).toEqual(["topic"]);
+    expect(normalized?.recentSprintAttempts.map((row) => row.paperType)).toEqual(["SPRINT"]);
+    expect(normalized?.analysis.sprint.finishedCount).toBe(0);
   });
 
   it("does not carry secrets through from a loose payload", () => {

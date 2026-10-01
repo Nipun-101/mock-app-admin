@@ -19,6 +19,7 @@ function makeUser(overrides: Partial<AppUser> = {}): AppUser {
     testActivity: {
       fullExam: { finished: 3, open: 1 },
       topicWise: { finished: 1, open: 1 },
+      sprint: { finished: 0, open: 0 },
     },
     createdAt: "2026-01-15T00:00:00.000Z",
     updatedAt: "2026-01-16T00:00:00.000Z",
@@ -71,6 +72,7 @@ describe("UserCard", () => {
           testActivity: {
             fullExam: { finished: Number.NaN, open: -1 },
             topicWise: { finished: 0, open: 0 },
+            sprint: { finished: 0, open: 0 },
           },
           avatarUrl: "https://cdn.example/a.png",
         })}
@@ -102,6 +104,7 @@ describe("UserCard", () => {
           testActivity: {
             fullExam: { finished: 1, open: 0 },
             topicWise: { finished: 0, open: 0 },
+            sprint: { finished: 0, open: 0 },
           },
         })}
       />
