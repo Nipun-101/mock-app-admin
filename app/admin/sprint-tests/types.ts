@@ -111,6 +111,7 @@ export interface CreateSprintDraftPayload {
   allowRetake?: boolean;
   shuffleOptions?: boolean;
   showResultsImmediately?: boolean;
+  questionIds?: string[];
 }
 
 export interface PublishSprintDraftPayload {
