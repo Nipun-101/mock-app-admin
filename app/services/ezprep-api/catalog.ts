@@ -44,6 +44,11 @@ export interface ExamSubjectConfig {
   sessionTime?: number;
 }
 
+export interface PerformanceBand {
+  key: "needs_improvement" | "good" | "very_good" | "excellent";
+  minPercent: number;
+}
+
 export interface Exam {
   id: string;
   name: string;
@@ -57,6 +62,7 @@ export interface Exam {
   isSessionWise: boolean;
   hasMultiLingualSupport: boolean;
   trending: boolean;
+  performanceBands?: PerformanceBand[];
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -259,6 +265,7 @@ export const catalogApi = {
     isSessionWise?: boolean;
     hasMultiLingualSupport?: boolean;
     trending?: boolean;
+    performanceBands?: PerformanceBand[];
   }) {
     return ezPrepApiClient.post<ApiItemResponse<Exam>>(
       "/v1/exams",
@@ -278,6 +285,7 @@ export const catalogApi = {
       isSessionWise?: boolean;
       hasMultiLingualSupport?: boolean;
       trending?: boolean;
+      performanceBands?: PerformanceBand[];
       isActive?: boolean;
     }
   ) {

@@ -12,6 +12,8 @@ import {
   type ExamSubjectConfig,
 } from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
+import { ResultMessageFields } from "../ResultMessageFields";
+import { buildPerformanceBands, cutoffsFromBands } from "../performance-bands";
 
 function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfig[] | undefined {
   if (!subjects?.length) return undefined;
@@ -45,6 +47,7 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
           ...data,
           category: refId(data.category),
           examGroup: refId(data.examGroup),
+          ...cutoffsFromBands(data.performanceBands),
         });
       } catch (error) {
         message.error(formatEzPrepError(error, "Failed to fetch exam"));
@@ -116,6 +119,7 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
         isSessionWise: values.isSessionWise,
         hasMultiLingualSupport: values.hasMultiLingualSupport,
         trending: values.trending,
+        performanceBands: buildPerformanceBands(values),
         subjects: normalizeExamSubjects(values.subjects),
       });
       message.success('Exam updated successfully');
@@ -229,6 +233,8 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
               />
             </Form.Item>
           </div>
+
+          <ResultMessageFields />
 
           <Divider orientation="left">Subjects Configuration</Divider>
 

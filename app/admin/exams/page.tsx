@@ -14,6 +14,8 @@ import {
   type Exam,
   type ExamSubjectConfig,
 } from "@/app/services/ezprep-api";
+import { ResultMessageFields } from "./ResultMessageFields";
+import { buildPerformanceBands, DEFAULT_PERFORMANCE_BANDS } from "./performance-bands";
 
 function normalizeExamSubjects(subjects?: ExamSubjectConfig[]): ExamSubjectConfig[] | undefined {
   if (!subjects?.length) return undefined;
@@ -237,6 +239,7 @@ export default function ExamsPage() {
         isSessionWise: examData.isSessionWise,
         hasMultiLingualSupport: examData.hasMultiLingualSupport,
         trending: examData.trending,
+        performanceBands: buildPerformanceBands(examData),
         subjects: normalizeExamSubjects(examData.subjects),
       });
       message.success('Exam created successfully');
@@ -281,7 +284,15 @@ export default function ExamsPage() {
           onFinishFailed={() => message.error('Please fill in all required fields')}
           scrollToFirstError
           className="max-w-4xl"
-          initialValues={{ isSessionWise: false, isExamSameAsGroup: false, hasMultiLingualSupport: false, trending: false }}
+          initialValues={{
+            isSessionWise: false,
+            isExamSameAsGroup: false,
+            hasMultiLingualSupport: false,
+            trending: false,
+            resultGood: DEFAULT_PERFORMANCE_BANDS[1].minPercent,
+            resultVeryGood: DEFAULT_PERFORMANCE_BANDS[2].minPercent,
+            resultExcellent: DEFAULT_PERFORMANCE_BANDS[3].minPercent,
+          }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Form.Item
@@ -407,6 +418,8 @@ export default function ExamsPage() {
               />
             </Form.Item>
           </div>
+
+          <ResultMessageFields />
 
           <Divider orientation="left">Subjects Configuration</Divider>
 
