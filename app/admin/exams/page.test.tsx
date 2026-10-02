@@ -288,6 +288,12 @@ describe("ExamsPage", { timeout: 15000 }, () => {
         isSessionWise: false,
         hasMultiLingualSupport: false,
         trending: false,
+        performanceBands: [
+          { key: "needs_improvement", minPercent: 0 },
+          { key: "good", minPercent: 40 },
+          { key: "very_good", minPercent: 70 },
+          { key: "excellent", minPercent: 85 },
+        ],
         subjects: undefined,
       })
     );
