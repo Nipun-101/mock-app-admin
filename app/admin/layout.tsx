@@ -19,6 +19,7 @@ import {
   ThunderboltOutlined,
   ReadOutlined,
   TeamOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -180,6 +181,11 @@ export default function AdminLayout({
       label: <Link href="/admin/users">Users</Link>,
     },
     {
+      key: "/admin/products",
+      icon: <ShoppingOutlined />,
+      label: <Link href="/admin/products">Products</Link>,
+    },
+    {
       key: "/admin/questions",
       icon: <QuestionCircleOutlined />,
       label: <Link href="/admin/questions">Questions</Link>,
@@ -305,6 +311,8 @@ export default function AdminLayout({
               ? "/admin"
               : pathname.startsWith("/admin/users")
                 ? "/admin/users"
+                : pathname.startsWith("/admin/products")
+                ? "/admin/products"
                 : pathname.startsWith("/admin/questions")
                 ? "/admin/questions"
                 : pathname.startsWith("/admin/bulk-upload")

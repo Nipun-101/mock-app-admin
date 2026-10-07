@@ -9,5 +9,8 @@ export * from "./current-affairs";
 export * from "./admin-dashboard";
 export * from "./users";
 export * from "./instance-config";
+export * from "./commerce-money";
+export * from "./products";
+export * from "./offers";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";
