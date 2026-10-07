@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EzPrepApiError, type AppUserDetail } from "@/app/services/ezprep-api";
 import UserDetailPage from "./page";
 
-const { get } = vi.hoisted(() => ({
+const { get, listForUser } = vi.hoisted(() => ({
   get: vi.fn(),
+  listForUser: vi.fn(),
 }));
 
 vi.mock("@/app/services/ezprep-api", async () => {
@@ -17,6 +18,25 @@ vi.mock("@/app/services/ezprep-api", async () => {
     usersApi: {
       get,
     },
+    entitlementsApi: {
+      listForUser,
+      grant: vi.fn(),
+      revoke: vi.fn(),
+    },
+  };
+});
+
+vi.mock("../../products/grant-options", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../products/grant-options")
+  >("../../products/grant-options");
+  return {
+    ...actual,
+    loadGrantScopeOptions: vi.fn(async () => ({
+      EXAM_GROUP: [],
+      EXAM: [],
+      MOCK_TEST: [],
+    })),
   };
 });
 
@@ -219,6 +239,8 @@ function renderPage(id = "u1") {
 describe("UserDetailPage", () => {
   beforeEach(() => {
     get.mockReset();
+    listForUser.mockReset();
+    listForUser.mockResolvedValue({ message: "ok", data: [] });
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error
     );
@@ -348,6 +370,17 @@ describe("UserDetailPage", () => {
 
     expect(await screen.findByText("Anita Sharma")).toBeInTheDocument();
     expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows entitlements section and legacy plan labeling", async () => {
+    get.mockResolvedValue({ message: "ok", data: makeDetail() });
+
+    renderPage();
+
+    expect(await screen.findByTestId("entitlements-section")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entitlements" })).toBeInTheDocument();
+    expect(screen.getByText("Legacy plan (not used for access)")).toBeInTheDocument();
+    expect(listForUser).toHaveBeenCalledWith("u1", { includeInactive: true });
   });
 
   it("ignores a stale response after a newer fetch", async () => {

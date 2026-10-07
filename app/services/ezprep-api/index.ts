@@ -12,5 +12,6 @@ export * from "./instance-config";
 export * from "./commerce-money";
 export * from "./products";
 export * from "./offers";
+export * from "./entitlements";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";

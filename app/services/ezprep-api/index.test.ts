@@ -15,6 +15,7 @@ describe("ezprep-api public surface", () => {
     expect(api.instanceConfigApi).toBeDefined();
     expect(api.productsApi).toBeDefined();
     expect(api.offersApi).toBeDefined();
+    expect(api.entitlementsApi).toBeDefined();
     expect(api.rupeesToPaise).toBeTypeOf("function");
     expect(api.paiseToRupees).toBeTypeOf("function");
     expect(api.formatEzPrepError).toBeTypeOf("function");
