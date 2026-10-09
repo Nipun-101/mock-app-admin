@@ -206,6 +206,40 @@ describe("EzPrep proxy route", () => {
     expect(response.status).toBe(502);
   });
 
+  it("streams an invoice PDF instead of wrapping it as JSON", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([37, 80, 68, 70]), {
+        status: 200,
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": 'attachment; filename="invoice.pdf"',
+        },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      makeRequest("http://localhost/api/ezprep/v1/admin/invoices/inv1/pdf", {
+        cookies: { ezprep_admin_session: "tok" },
+      }),
+      ctx(["v1", "admin", "invoices", "inv1", "pdf"])
+    );
+
+    expect(requestWithStatus).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("application/pdf");
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { method?: string; headers?: Record<string, string> },
+    ];
+    expect(String(url)).toBe(
+      "http://localhost:3000/api/v1/admin/invoices/inv1/pdf"
+    );
+    expect(init.method).toBe("GET");
+    expect(init.headers?.Authorization).toBe("Bearer tok");
+    vi.unstubAllGlobals();
+  });
+
   it("rejects encoded traversal and empty segments", async () => {
     expect(
       (await GET(makeRequest("http://localhost/api/ezprep/v1/%2e%2e"), ctx(["v1", "%2e%2e"])))

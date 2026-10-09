@@ -20,6 +20,7 @@ import {
   ReadOutlined,
   TeamOutlined,
   ShoppingOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -186,6 +187,11 @@ export default function AdminLayout({
       label: <Link href="/admin/products">Products</Link>,
     },
     {
+      key: "/admin/orders",
+      icon: <FileTextOutlined />,
+      label: <Link href="/admin/orders">Orders</Link>,
+    },
+    {
       key: "/admin/questions",
       icon: <QuestionCircleOutlined />,
       label: <Link href="/admin/questions">Questions</Link>,
@@ -313,6 +319,8 @@ export default function AdminLayout({
                 ? "/admin/users"
                 : pathname.startsWith("/admin/products")
                 ? "/admin/products"
+                : pathname.startsWith("/admin/orders")
+                ? "/admin/orders"
                 : pathname.startsWith("/admin/questions")
                 ? "/admin/questions"
                 : pathname.startsWith("/admin/bulk-upload")

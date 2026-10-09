@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildEzPrepApiUrl } from "@/app/services/ezprep-api/config";
 import { ezPrepApiServerClient } from "@/app/services/ezprep-api/server";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
@@ -120,6 +121,10 @@ async function proxyToEzPrep(request: NextRequest, pathSegments: string[]) {
     request.nextUrl.searchParams.entries()
   );
 
+  if (request.method === "GET" && path.endsWith("/pdf")) {
+    return proxyPdf(request, path, searchParams);
+  }
+
   let body: unknown;
   try {
     body = await readRequestBody(request);
@@ -158,6 +163,49 @@ async function proxyToEzPrep(request: NextRequest, pathSegments: string[]) {
       { status: 502 }
     );
   }
+}
+
+async function proxyPdf(
+  request: NextRequest,
+  path: string,
+  searchParams: Record<string, string>
+) {
+  const url = new URL(buildEzPrepApiUrl(path));
+  for (const [key, value] of Object.entries(searchParams)) {
+    url.searchParams.set(key, value);
+  }
+
+  const headers: Record<string, string> = {};
+  const authorization = resolveAdminAuthorization(request);
+  if (authorization) {
+    headers.Authorization = authorization;
+  }
+
+  const upstream = await fetch(url, { method: "GET", headers });
+  if (!upstream.ok) {
+    const text = await upstream.text();
+    let data: unknown = { message: text || "Invoice PDF is not available" };
+    try {
+      data = text ? JSON.parse(text) : data;
+    } catch {
+      data = { message: text || "Invoice PDF is not available" };
+    }
+    return NextResponse.json(
+      typeof data === "object" && data !== null ? data : { message: text },
+      { status: upstream.status }
+    );
+  }
+
+  const body = await upstream.arrayBuffer();
+  return new NextResponse(body, {
+    status: upstream.status,
+    headers: {
+      "Content-Type": upstream.headers.get("content-type") || "application/pdf",
+      "Content-Disposition":
+        upstream.headers.get("content-disposition") ||
+        'attachment; filename="invoice.pdf"',
+    },
+  });
 }
 
 type RouteContext = { params: Promise<{ path: string[] }> };

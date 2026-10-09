@@ -13,5 +13,6 @@ export * from "./commerce-money";
 export * from "./products";
 export * from "./offers";
 export * from "./entitlements";
+export * from "./orders";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";
