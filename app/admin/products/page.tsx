@@ -7,6 +7,7 @@ import {
   Input,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from "antd";
@@ -26,7 +27,7 @@ import { ProductGrantsFields } from "./ProductGrantsFields";
 import {
   emptyGrantFormRow,
   expandGrantFormRowsToApi,
-  formatGrantLabels,
+  listGrantLabels,
   type GrantFormRow,
 } from "./grant-form";
 import {
@@ -36,6 +37,35 @@ import {
 } from "./grant-options";
 
 const { Title } = Typography;
+const MAX_VISIBLE_GRANTS = 2;
+
+function renderGrantTags(
+  grants: Product["grants"],
+  scopeOptions: GrantScopeOptions
+) {
+  const labels = listGrantLabels(grants, scopeOptions);
+  if (!labels.length) return "-";
+
+  const visible = labels.slice(0, MAX_VISIBLE_GRANTS);
+  const hidden = labels.slice(MAX_VISIBLE_GRANTS);
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 min-w-0 max-w-full">
+      {visible.map((name, index) => (
+        <Tooltip key={`${name}-${index}`} title={name}>
+          <Tag color="blue" className="!m-0 max-w-full overflow-hidden">
+            <span className="block max-w-full truncate">{name}</span>
+          </Tag>
+        </Tooltip>
+      ))}
+      {hidden.length > 0 && (
+        <Tooltip title={hidden.map((name) => name).join(", ")}>
+          <Tag className="cursor-default shrink-0">+{hidden.length}</Tag>
+        </Tooltip>
+      )}
+    </div>
+  );
+}
 
 const STATUS_COLORS: Record<ProductStatus, string> = {
   DRAFT: "default",
@@ -164,16 +194,21 @@ export default function ProductsPage() {
       title: "Code",
       dataIndex: "code",
       key: "code",
+      width: 150,
+      ellipsis: true,
     },
     {
       title: "Name",
       dataIndex: "name",
       key: "name",
+      width: 180,
+      ellipsis: true,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
+      width: 112,
       render: (status: ProductStatus) => (
         <Tag color={STATUS_COLORS[status]}>{status}</Tag>
       ),
@@ -182,22 +217,23 @@ export default function ProductsPage() {
       title: "Version",
       dataIndex: "version",
       key: "version",
+      width: 88,
       responsive: ["sm", "md", "lg", "xl", "xxl"] as Breakpoint[],
     },
     {
       title: "Grants",
       dataIndex: "grants",
       key: "grants",
-      responsive: ["md", "lg", "xl", "xxl"] as Breakpoint[],
-      ellipsis: true,
+      width: 420,
       render: (grants: Product["grants"]) =>
-        formatGrantLabels(grants, scopeOptions),
+        renderGrantTags(grants, scopeOptions),
     },
     {
       title: "Actions",
       key: "actions",
+      width: 148,
       render: (_: unknown, record: Product) => (
-        <>
+        <div className="whitespace-nowrap">
           <Button
             type="link"
             size="small"
@@ -213,7 +249,7 @@ export default function ProductsPage() {
           >
             Delete
           </Button>
-        </>
+        </div>
       ),
     },
   ];
@@ -320,7 +356,7 @@ export default function ProductsPage() {
           dataSource={products}
           rowKey="id"
           loading={tableLoading}
-          scroll={{ x: true }}
+          tableLayout="fixed"
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

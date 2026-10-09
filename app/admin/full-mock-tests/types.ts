@@ -114,6 +114,7 @@ export interface PublishDraftPayload {
   shuffleOptions?: boolean;
   showResultsImmediately?: boolean;
   passingScore?: number;
+  accessMode?: "FREE" | "ENTITLED";
 }
 
 export interface PublishDraftResult {

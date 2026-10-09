@@ -161,6 +161,11 @@ describe("ProductsPage", { timeout: 20000 }, () => {
           name: "Bank Pack",
           status: "PUBLISHED",
           version: 2,
+          grants: [
+            { scopeType: "EXAM_GROUP", scopeId: "g1" },
+            { scopeType: "EXAM", scopeId: "e1" },
+            { scopeType: "MOCK_TEST", scopeId: "m1" },
+          ],
         }),
       ],
       pagination: { total: 2, page: 1, limit: 10, totalPages: 1 },
@@ -172,6 +177,10 @@ describe("ProductsPage", { timeout: 20000 }, () => {
     expect(screen.getAllByText("Bank Pack").length).toBeGreaterThan(0);
     expect(screen.getByText("Add New Product")).toBeInTheDocument();
     expect(screen.getByText("Total 2 products")).toBeInTheDocument();
+    expect(screen.getAllByText("SSC Group").length).toBeGreaterThan(0);
+    expect(screen.getByText("SSC CGL")).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(screen.queryByText("Mock 1")).not.toBeInTheDocument();
   });
 
   it("requires name, code, and grants on create", async () => {
@@ -227,6 +236,40 @@ describe("ProductsPage", { timeout: 20000 }, () => {
     expect(message.success).toHaveBeenCalledWith(
       "Product created successfully"
     );
+  });
+
+  it("clears grant targets when the scope type changes", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ProductsPage />);
+    await findEmpty();
+
+    await chooseSelectOption("Scope type", "Exam Group");
+    await chooseSelectOption("Select one or more targets", "SSC Group");
+
+    const selectedType = document.querySelector(
+      ".ant-select-selection-item[title='Exam Group']"
+    );
+    const selector = selectedType
+      ?.closest(".ant-select")
+      ?.querySelector(".ant-select-selector");
+    expect(selector).toBeTruthy();
+    fireEvent.mouseDown(selector!);
+    fireEvent.click(
+      await screen.findByText("Exam", {
+        selector: ".ant-select-item-option-content",
+      })
+    );
+
+    expect(await screen.findByText("Select one or more targets")).toBeInTheDocument();
+    expect(
+      document.querySelector(".ant-select-selection-item-content")?.textContent
+    ).not.toBe("SSC Group");
+    expect(
+      errorSpy.mock.calls.some((call) =>
+        call.some((part) => String(part).includes("circular references"))
+      )
+    ).toBe(false);
+    errorSpy.mockRestore();
   });
 
   it("surfaces API errors via formatEzPrepError", async () => {

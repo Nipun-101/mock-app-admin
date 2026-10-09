@@ -93,23 +93,29 @@ export function usedScopeTypes(
 }
 
 /**
- * Human-readable grant labels for tables.
+ * Human-readable grant labels.
  * Prefer resolved catalog/mock names; fall back to scopeType when unknown.
  */
+export function listGrantLabels(
+  grants: ProductGrant[] | undefined | null,
+  scopeOptions: GrantScopeOptions
+): string[] {
+  if (!grants?.length) return [];
+
+  return grants.map((grant) => {
+    const label = scopeOptions[grant.scopeType]?.find(
+      (option) => option.value === grant.scopeId
+    )?.label;
+    const trimmed = typeof label === "string" ? label.trim() : "";
+    return trimmed || grant.scopeType;
+  });
+}
+
 export function formatGrantLabels(
   grants: ProductGrant[] | undefined | null,
   scopeOptions: GrantScopeOptions
 ): string {
-  if (!grants?.length) return "-";
-
-  return grants
-    .map((grant) => {
-      const label = scopeOptions[grant.scopeType]?.find(
-        (option) => option.value === grant.scopeId
-      )?.label;
-      const trimmed = typeof label === "string" ? label.trim() : "";
-      if (trimmed) return trimmed;
-      return grant.scopeType;
-    })
-    .join(", ");
+  const labels = listGrantLabels(grants, scopeOptions);
+  if (!labels.length) return "-";
+  return labels.join(", ");
 }

@@ -21,6 +21,7 @@ import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, sprintTestsApi } from "./api";
 import type { SprintDraftListItem, SprintTest } from "./types";
+import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { SPRINT_SIZE_OPTIONS } from "./types";
 
 const { Title } = Typography;
@@ -96,6 +97,7 @@ export default function SprintTestsPage() {
     allowRetake?: boolean;
     shuffleOptions?: boolean;
     showResultsImmediately?: boolean;
+    accessMode?: "FREE" | "ENTITLED";
   }) => {
     setCreating(true);
     try {
@@ -159,6 +161,7 @@ export default function SprintTestsPage() {
               allowRetake: true,
               shuffleOptions: false,
               showResultsImmediately: true,
+              accessMode: "FREE",
             }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,6 +228,7 @@ export default function SprintTestsPage() {
               >
                 <Switch />
               </Form.Item>
+              <AccessModeSwitch />
             </div>
             <Button
               type="primary"

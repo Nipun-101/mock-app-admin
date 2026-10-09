@@ -9,6 +9,7 @@ import { showConfirmModal } from '@/components/ConfirmModal';
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError, mockTestsApi } from "@/app/services/ezprep-api";
 import { setFormValue } from "@/app/lib/form-store";
+import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -264,6 +265,7 @@ export default function MockTestsPage() {
               allowRetake: true,
               shuffleOptions: false,
               showResultsImmediately: true,
+              accessMode: "FREE",
               generationMode: "STATIC"
             }}
           >
@@ -469,6 +471,7 @@ export default function MockTestsPage() {
               >
                 <Switch />
               </Form.Item>
+              <AccessModeSwitch />
             </div>
 
             <Form.Item>

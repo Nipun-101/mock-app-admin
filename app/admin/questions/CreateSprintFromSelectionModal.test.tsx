@@ -90,6 +90,7 @@ describe("CreateSprintFromSelectionModal", () => {
           totalQuestions: 10,
           durationInMinutes: 15,
           questionIds: questions().map((question) => question.id),
+          accessMode: "FREE",
         })
       );
     });

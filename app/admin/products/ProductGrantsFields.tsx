@@ -20,7 +20,79 @@ type Props = {
   disabled?: boolean;
 };
 
+type ScopeTypeOption = {
+  value: EntitlementScopeType;
+  label: string;
+  disabled?: boolean;
+};
+
+function uniqueIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(value.filter((id): id is string => typeof id === "string"))
+  );
+}
+
+/**
+ * One form value for the whole row. Changing the scope type replaces the row,
+ * including an empty target list, so a nested setFieldValue is unnecessary.
+ */
+function GrantRowControl({
+  value,
+  onChange,
+  scopeTypeOptions,
+  scopeOptions,
+  disabled,
+}: {
+  value?: GrantFormRow;
+  onChange?: (next: GrantFormRow) => void;
+  scopeTypeOptions: ScopeTypeOption[];
+  scopeOptions: GrantScopeOptions;
+  disabled?: boolean;
+}) {
+  const scopeType = value?.scopeType;
+  const targetOptions = scopeType ? scopeOptions[scopeType] || [] : [];
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+      <Select
+        className="min-w-[160px]"
+        placeholder="Scope type"
+        size="large"
+        options={scopeTypeOptions}
+        disabled={disabled}
+        value={scopeType}
+        onChange={(nextType: EntitlementScopeType) => {
+          onChange?.({ scopeType: nextType, scopeIds: [] });
+        }}
+      />
+      <Select
+        className="min-w-[280px] flex-1"
+        mode="multiple"
+        allowClear
+        placeholder={
+          scopeType ? "Select one or more targets" : "Select scope type first"
+        }
+        size="large"
+        options={targetOptions}
+        disabled={disabled || !scopeType}
+        optionFilterProp="label"
+        maxTagCount="responsive"
+        value={value?.scopeIds ?? []}
+        onChange={(nextIds: string[]) => {
+          onChange?.({
+            scopeType,
+            scopeIds: uniqueIds(nextIds),
+          });
+        }}
+      />
+    </div>
+  );
+}
+
 export function ProductGrantsFields({ scopeOptions, disabled }: Props) {
+  const allRows = (Form.useWatch("grants") || []) as GrantFormRow[];
+
   return (
     <Form.List
       name="grants"
@@ -51,141 +123,78 @@ export function ProductGrantsFields({ scopeOptions, disabled }: Props) {
       ]}
     >
       {(fields, { add, remove }, { errors }) => (
-        <Form.Item noStyle shouldUpdate>
-          {({ getFieldValue, setFieldValue }) => {
-            const allRows = (getFieldValue("grants") || []) as GrantFormRow[];
+        <div className="space-y-3">
+          <div className="font-medium">Grants</div>
+          <div className="text-sm text-slate-500">
+            One row per scope type. Pick multiple targets in the same row.
+          </div>
+          {fields.map(({ key, name, ...restField }) => {
+            const used = usedScopeTypes(allRows, name);
+            const scopeTypeOptions = SCOPE_TYPE_OPTIONS.map((option) => ({
+              ...option,
+              disabled: used.has(option.value),
+            }));
 
             return (
-              <div className="space-y-3">
-                <div className="font-medium">Grants</div>
-                <div className="text-sm text-slate-500">
-                  One row per scope type. Pick multiple targets in the same
-                  row.
-                </div>
-                {fields.map(({ key, name, ...restField }) => {
-                  const used = usedScopeTypes(allRows, name);
-                  const scopeTypeOptions = SCOPE_TYPE_OPTIONS.map((option) => ({
-                    ...option,
-                    disabled: used.has(option.value),
-                  }));
-
-                  return (
-                    <Space
-                      key={key}
-                      align="start"
-                      className="flex w-full flex-wrap"
-                      wrap
-                    >
-                      <Form.Item
-                        {...restField}
-                        name={[name, "scopeType"]}
-                        rules={[
-                          { required: true, message: "Select scope type" },
-                        ]}
-                        className="mb-0 min-w-[160px]"
-                      >
-                        <Select
-                          placeholder="Scope type"
-                          size="large"
-                          options={scopeTypeOptions}
-                          disabled={disabled}
-                          onChange={() => {
-                            // Defer clearing the dependent field — calling
-                            // setFieldValue synchronously inside onChange
-                            // triggers Ant Design's circular-reference warning.
-                            queueMicrotask(() => {
-                              setFieldValue(
-                                ["grants", name, "scopeIds"],
-                                []
-                              );
-                            });
-                          }}
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        noStyle
-                        shouldUpdate={(prev, next) =>
-                          prev.grants?.[name]?.scopeType !==
-                          next.grants?.[name]?.scopeType
-                        }
-                      >
-                        {() => {
-                          const scopeType = getFieldValue([
-                            "grants",
-                            name,
-                            "scopeType",
-                          ]) as EntitlementScopeType | undefined;
-                          const options = scopeType
-                            ? scopeOptions[scopeType] || []
-                            : [];
-                          return (
-                            <Form.Item
-                              {...restField}
-                              name={[name, "scopeIds"]}
-                              rules={[
-                                {
-                                  validator: async (_, value: string[]) => {
-                                    if (!value || value.length < 1) {
-                                      return Promise.reject(
-                                        new Error("Select at least one target")
-                                      );
-                                    }
-                                  },
-                                },
-                              ]}
-                              className="mb-0 min-w-[280px] flex-1"
-                              getValueFromEvent={(value: string[]) => {
-                                if (!Array.isArray(value)) return [];
-                                return Array.from(new Set(value));
-                              }}
-                            >
-                              <Select
-                                mode="multiple"
-                                allowClear
-                                placeholder={
-                                  scopeType
-                                    ? "Select one or more targets"
-                                    : "Select scope type first"
-                                }
-                                size="large"
-                                options={options}
-                                disabled={disabled || !scopeType}
-                                optionFilterProp="label"
-                                maxTagCount="responsive"
-                              />
-                            </Form.Item>
+              <Space
+                key={key}
+                align="start"
+                className="flex w-full flex-wrap"
+                wrap
+              >
+                <Form.Item
+                  {...restField}
+                  name={name}
+                  className="mb-0 min-w-0 flex-1"
+                  rules={[
+                    {
+                      validator: async (_, row: GrantFormRow | undefined) => {
+                        if (!row?.scopeType) {
+                          return Promise.reject(
+                            new Error("Select scope type")
                           );
-                        }}
-                      </Form.Item>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<MinusCircleOutlined />}
-                        onClick={() => remove(name)}
-                        disabled={disabled || fields.length <= 1}
-                        aria-label="Remove grant"
-                      />
-                    </Space>
-                  );
-                })}
-                <Form.Item className="mb-0">
-                  <Button
-                    type="dashed"
-                    onClick={() => add(emptyGrantFormRow())}
-                    icon={<PlusOutlined />}
-                    disabled={
-                      disabled ||
-                      usedScopeTypes(allRows).size >= SCOPE_TYPE_OPTIONS.length
-                    }
-                  >
-                    Add grant
-                  </Button>
-                  <Form.ErrorList errors={errors} />
+                        }
+                        if (!row.scopeIds || row.scopeIds.length < 1) {
+                          return Promise.reject(
+                            new Error("Select at least one target")
+                          );
+                        }
+                      },
+                    },
+                  ]}
+                >
+                  <GrantRowControl
+                    scopeTypeOptions={scopeTypeOptions}
+                    scopeOptions={scopeOptions}
+                    disabled={disabled}
+                  />
                 </Form.Item>
-              </div>
+                <Button
+                  type="text"
+                  danger
+                  icon={<MinusCircleOutlined />}
+                  onClick={() => remove(name)}
+                  disabled={disabled || fields.length <= 1}
+                  aria-label="Remove grant"
+                />
+              </Space>
             );
-          }}
-        </Form.Item>
+          })}
+          <Form.Item className="mb-0">
+            <Button
+              type="dashed"
+              onClick={() => add(emptyGrantFormRow())}
+              icon={<PlusOutlined />}
+              disabled={
+                disabled ||
+                usedScopeTypes(allRows).size >= SCOPE_TYPE_OPTIONS.length
+              }
+            >
+              Add grant
+            </Button>
+            <Form.ErrorList errors={errors} />
+          </Form.Item>
+        </div>
       )}
     </Form.List>
   );
