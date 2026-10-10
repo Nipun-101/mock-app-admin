@@ -55,7 +55,26 @@ export interface AdminOrderRefund {
   reason: string;
   provider: string;
   providerRefundId?: string;
+  initiatedBySource?: "ADMIN" | "SYSTEM" | "PROVIDER";
+  partial?: boolean;
 }
+
+export interface AdminDuplicatePayment {
+  id: string;
+  providerPaymentId?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  refundStatus: RefundStatus | null;
+}
+
+export type AdminOrderFlag =
+  | "needsReview"
+  | "unprovisioned"
+  | "uninvoiced"
+  | "lateCapture"
+  | "redundantPurchase"
+  | "duplicate";
 
 export interface AdminOrderTax {
   grossAmount: number;
@@ -80,8 +99,12 @@ export interface AdminOrderDetail extends AdminOrder {
   tax?: AdminOrderTax;
   billing?: { name?: string; state?: string; stateCode?: string };
   payment: AdminOrderPayment | null;
+  duplicatePayments?: AdminDuplicatePayment[];
   invoice: AdminOrderInvoice | null;
   refund: AdminOrderRefund | null;
+  provisionedAt?: string | null;
+  lateCaptureAt?: string | null;
+  redundantPurchase?: boolean;
 }
 
 export interface RefundOrderResult {
@@ -95,6 +118,7 @@ export const ordersApi = {
     limit?: number;
     status?: OrderStatus;
     search?: string;
+    flag?: AdminOrderFlag;
   }) {
     return ezPrepApiClient.get<ApiListResponse<AdminOrder>>("/v1/admin/orders", {
       searchParams,
@@ -104,6 +128,13 @@ export const ordersApi = {
   get(id: string) {
     return ezPrepApiClient.get<ApiItemResponse<AdminOrderDetail>>(
       `/v1/admin/orders/${id}`
+    );
+  },
+
+  repair(id: string) {
+    return ezPrepApiClient.post<ApiItemResponse<AdminOrderDetail>>(
+      `/v1/admin/orders/${id}/repair`,
+      {}
     );
   },
 

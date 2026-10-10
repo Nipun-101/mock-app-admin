@@ -32,7 +32,9 @@ export default function OrderDetailPage(props: {
   const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [reason, setReason] = useState("");
+  const [orderNumberConfirm, setOrderNumberConfirm] = useState("");
   const [refunding, setRefunding] = useState(false);
+  const [repairing, setRepairing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,8 +54,7 @@ export default function OrderDetailPage(props: {
 
   const confirmRefund = () => {
     const trimmed = reason.trim();
-    if (!trimmed) {
-      message.error("Enter a refund reason");
+    if (!order || !trimmed || orderNumberConfirm !== order.orderNumber) {
       return;
     }
     showConfirmModal({
@@ -79,6 +80,28 @@ export default function OrderDetailPage(props: {
       },
     });
   };
+
+  const retryProvisioning = () => {
+    void (async () => {
+      setRepairing(true);
+      try {
+        const result = await ordersApi.repair(params.id);
+        setOrder(result.data);
+        message.success(result.message || "Order repaired successfully");
+      } catch (error) {
+        message.error(formatEzPrepError(error, "Failed to retry provisioning"));
+      } finally {
+        setRepairing(false);
+      }
+    })();
+  };
+
+  const refundReady =
+    Boolean(reason.trim()) && orderNumberConfirm === order?.orderNumber;
+  const showRepair =
+    order != null &&
+    order.status === "PAID" &&
+    (order.provisionedAt === null || !order.invoice);
 
   return (
     <EditPageShell loading={loading}>
@@ -149,8 +172,43 @@ export default function OrderDetailPage(props: {
                   </Text>
                 </div>
               ) : null}
+              {order.lateCaptureAt ? (
+                <div>
+                  <Text type="secondary">Late capture </Text>
+                  <Text>{new Date(order.lateCaptureAt).toLocaleString("en-IN")}</Text>
+                </div>
+              ) : null}
+              {order.redundantPurchase ? (
+                <div>
+                  <Tag color="gold">Redundant purchase</Tag>
+                </div>
+              ) : null}
+              {order.refund?.initiatedBySource === "PROVIDER" ? (
+                <div>
+                  <Tag color="orange">External refund</Tag>
+                </div>
+              ) : null}
             </Space>
           </Card>
+
+          {showRepair ? (
+            <Button type="primary" loading={repairing} onClick={retryProvisioning}>
+              Retry provisioning
+            </Button>
+          ) : null}
+
+          {(order.duplicatePayments ?? []).length > 0 ? (
+            <Card title="Duplicate payments" className="shadow-sm">
+              <ul className="space-y-2 text-sm">
+                {(order.duplicatePayments ?? []).map((payment) => (
+                  <li key={payment.id}>
+                    {payment.providerPaymentId || payment.id} · {payment.status} · refund{" "}
+                    {payment.refundStatus ?? "none"}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
 
           {order.tax ? <TaxBlock order={order} /> : null}
 
@@ -164,10 +222,16 @@ export default function OrderDetailPage(props: {
                   placeholder="Reason for this full refund"
                   onChange={(event) => setReason(event.target.value)}
                 />
+                <Input
+                  value={orderNumberConfirm}
+                  placeholder="Type the order number"
+                  onChange={(event) => setOrderNumberConfirm(event.target.value)}
+                />
                 <Button
                   danger
                   type="primary"
                   loading={refunding}
+                  disabled={!refundReady}
                   onClick={confirmRefund}
                 >
                   Refund

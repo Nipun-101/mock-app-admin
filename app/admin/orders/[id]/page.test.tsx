@@ -28,6 +28,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
       get: vi.fn(),
       list: vi.fn(),
       refund: vi.fn(),
+      repair: vi.fn(),
     },
   };
 });
@@ -36,6 +37,7 @@ import { ordersApi } from "@/app/services/ezprep-api";
 
 const getOrder = vi.mocked(ordersApi.get);
 const refundOrder = vi.mocked(ordersApi.refund);
+const repairOrder = vi.mocked(ordersApi.repair);
 
 const paidOrder: AdminOrderDetail = {
   id: "order1",
@@ -86,6 +88,7 @@ describe("OrderDetailPage", () => {
   beforeEach(() => {
     getOrder.mockReset();
     refundOrder.mockReset();
+    repairOrder.mockReset();
     push.mockReset();
     vi.mocked(showConfirmModal).mockClear();
     getOrder.mockResolvedValue({ message: "ok", data: paidOrder });
@@ -124,6 +127,9 @@ describe("OrderDetailPage", () => {
     expect(screen.getByRole("button", { name: "Refund" })).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Reason for this full refund"), {
       target: { value: "customer request" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Type the order number"), {
+      target: { value: "ORD-1001" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Refund" }));
 
@@ -229,10 +235,86 @@ describe("OrderDetailPage", () => {
     fireEvent.change(await screen.findByPlaceholderText("Reason for this full refund"), {
       target: { value: "again" },
     });
+    fireEvent.change(screen.getByPlaceholderText("Type the order number"), {
+      target: { value: "ORD-1001" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Refund" }));
 
     await waitFor(() => {
       expect(message.error).toHaveBeenCalledWith("Order is already refunded");
     });
+  });
+
+  it("keeps refund disabled until the order number matches", async () => {
+    renderPage();
+    const button = await screen.findByRole("button", { name: "Refund" });
+    expect(button).toBeDisabled();
+    fireEvent.change(screen.getByPlaceholderText("Reason for this full refund"), {
+      target: { value: "customer request" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Type the order number"), {
+      target: { value: "ORD-9999" },
+    });
+    expect(button).toBeDisabled();
+    fireEvent.change(screen.getByPlaceholderText("Type the order number"), {
+      target: { value: "ORD-1001" },
+    });
+    expect(button).toBeEnabled();
+  });
+
+  it("retries provisioning when the paid order has no invoice", async () => {
+    getOrder.mockResolvedValue({
+      message: "ok",
+      data: { ...paidOrder, invoice: null, provisionedAt: null },
+    });
+    repairOrder.mockResolvedValue({
+      message: "Order repaired successfully",
+      data: paidOrder,
+    });
+
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Retry provisioning" }));
+
+    await waitFor(() => {
+      expect(repairOrder).toHaveBeenCalledWith("order1");
+    });
+    expect(message.success).toHaveBeenCalledWith("Order repaired successfully");
+  });
+
+  it("shows late capture, a redundant purchase, an external refund, and duplicate payments", async () => {
+    getOrder.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...paidOrder,
+        lateCaptureAt: "2026-10-11T03:30:00.000Z",
+        redundantPurchase: true,
+        refund: {
+          id: "rf1",
+          status: "COMPLETED",
+          amount: 99900,
+          reason: "provider_dashboard",
+          provider: "razorpay",
+          initiatedBySource: "PROVIDER",
+        },
+        duplicatePayments: [
+          {
+            id: "dup1",
+            providerPaymentId: "pay_dup",
+            amount: 99900,
+            currency: "INR",
+            status: "REFUNDED",
+            refundStatus: "COMPLETED",
+          },
+        ],
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Redundant purchase")).toBeInTheDocument();
+    expect(screen.getByText("External refund")).toBeInTheDocument();
+    expect(screen.getByText("Late capture")).toBeInTheDocument();
+    expect(screen.getByText(/pay_dup/)).toBeInTheDocument();
+    expect(screen.getByText(/refund COMPLETED/)).toBeInTheDocument();
   });
 });

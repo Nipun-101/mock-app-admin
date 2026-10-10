@@ -3,12 +3,13 @@
 import { Button, Card, Input, Table, Tag, Typography, message } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   formatEzPrepError,
   formatPaiseAsRupees,
   ordersApi,
   type AdminOrder,
+  type AdminOrderFlag,
   type OrderStatus,
 } from "@/app/services/ezprep-api";
 
@@ -35,12 +36,32 @@ const STATUS_FILTER_OPTIONS = [
   { value: "CREATED", label: "Created" },
 ];
 
+const FLAG_FILTER_OPTIONS: Array<{ value: AdminOrderFlag | ""; label: string }> = [
+  { value: "", label: "All flags" },
+  { value: "needsReview", label: "Needs review" },
+  { value: "unprovisioned", label: "Unprovisioned" },
+  { value: "uninvoiced", label: "Uninvoiced" },
+  { value: "lateCapture", label: "Late capture" },
+  { value: "redundantPurchase", label: "Redundant purchase" },
+  { value: "duplicate", label: "Duplicate payment" },
+];
+
+function flagFromQuery(value: string | null): AdminOrderFlag | "" {
+  return FLAG_FILTER_OPTIONS.some((option) => option.value === value && value !== "")
+    ? (value as AdminOrderFlag)
+    : "";
+}
+
 export default function OrdersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [tableLoading, setTableLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
+  const [flagFilter, setFlagFilter] = useState<AdminOrderFlag | "">(
+    flagFromQuery(searchParams.get("flag"))
+  );
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -55,6 +76,7 @@ export default function OrdersPage() {
         limit: pagination.pageSize,
         status: statusFilter || undefined,
         search: search || undefined,
+        flag: flagFilter || undefined,
       });
       setOrders(response.data || []);
       setPagination((prev) => ({
@@ -66,7 +88,7 @@ export default function OrdersPage() {
     } finally {
       setTableLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, search, statusFilter]);
+  }, [pagination.current, pagination.pageSize, search, statusFilter, flagFilter]);
 
   useEffect(() => {
     void fetchOrders();
@@ -82,9 +104,20 @@ export default function OrdersPage() {
             <Input.Search
               allowClear
               placeholder="Search order number"
+              defaultValue={search}
               className="w-48 sm:w-64"
               onSearch={(value) => {
                 setSearch(value);
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            />
+            <Select
+              aria-label="Order flag"
+              className="w-48"
+              value={flagFilter}
+              options={FLAG_FILTER_OPTIONS}
+              onChange={(value: AdminOrderFlag | "") => {
+                setFlagFilter(value);
                 setPagination((prev) => ({ ...prev, current: 1 }));
               }}
             />

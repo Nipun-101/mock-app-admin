@@ -101,11 +101,16 @@ async function ezPrepBrowserRequest<T>(
 
   if (canReuseInFlight) {
     inFlightGets.set(url, request);
-    void request.finally(() => {
-      if (inFlightGets.get(url) === request) {
-        inFlightGets.delete(url);
-      }
-    });
+    // `.finally()` returns a new promise that rejects with the same reason.
+    // Swallow that copy so a caller who already handles `request` does not
+    // also see an unhandled rejection from the in-flight cleanup.
+    void request
+      .finally(() => {
+        if (inFlightGets.get(url) === request) {
+          inFlightGets.delete(url);
+        }
+      })
+      .catch(() => undefined);
   }
 
   return request;
