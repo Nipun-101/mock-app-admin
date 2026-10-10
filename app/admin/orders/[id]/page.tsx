@@ -11,6 +11,7 @@ import {
   formatPaiseAsRupees,
   ordersApi,
   type AdminOrderDetail,
+  type AdminOrderTax,
   type OrderStatus,
 } from "@/app/services/ezprep-api";
 
@@ -151,6 +152,8 @@ export default function OrderDetailPage(props: {
             </Space>
           </Card>
 
+          {order.tax ? <TaxBlock order={order} /> : null}
+
           {order.status === "PAID" && order.refund?.status !== "INITIATED" ? (
             <Card title="Refund" className="shadow-sm">
               <Space direction="vertical" className="w-full max-w-xl">
@@ -176,4 +179,43 @@ export default function OrderDetailPage(props: {
       ) : null}
     </EditPageShell>
   );
+}
+
+function TaxBlock({ order }: { order: AdminOrderDetail }) {
+  const tax = order.tax;
+  if (!tax) return null;
+  const buyerCode = tax.buyerStateCode || order.billing?.stateCode;
+  const buyerName = order.billing?.state;
+  const buyer =
+    buyerName && buyerCode
+      ? `${buyerName} (${buyerCode})`
+      : buyerCode || buyerName || "—";
+  return (
+    <Card title="GST" className="shadow-sm">
+      <Space direction="vertical" size="small">
+        <TaxLine label="Taxable" value={formatPaiseAsRupees(tax.taxableAmount)} />
+        <TaxLine label="CGST" value={formatPaiseAsRupees(tax.cgst)} />
+        <TaxLine label="SGST" value={formatPaiseAsRupees(tax.sgst)} />
+        <TaxLine label="IGST" value={formatPaiseAsRupees(tax.igst)} />
+        <TaxLine label="Rate" value={`${tax.taxRate}%`} />
+        <TaxLine label="Supply type" value={supplyTypeLabel(tax)} />
+        <TaxLine label="Buyer state" value={buyer} />
+      </Space>
+    </Card>
+  );
+}
+
+function TaxLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <Text type="secondary">{label} </Text>
+      <Text>{value}</Text>
+    </div>
+  );
+}
+
+function supplyTypeLabel(tax: AdminOrderTax): string {
+  const supplyType =
+    tax.supplyType ?? (tax.igst > 0 ? "INTER_STATE" : "INTRA_STATE");
+  return supplyType === "INTER_STATE" ? "Inter-state" : "Intra-state";
 }

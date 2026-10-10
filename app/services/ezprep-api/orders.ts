@@ -57,6 +57,19 @@ export interface AdminOrderRefund {
   providerRefundId?: string;
 }
 
+export interface AdminOrderTax {
+  grossAmount: number;
+  taxableAmount: number;
+  taxAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  taxRate: number;
+  supplyType?: "INTRA_STATE" | "INTER_STATE";
+  sellerStateCode?: string;
+  buyerStateCode?: string;
+}
+
 export interface AdminOrderDetail extends AdminOrder {
   items: Array<{
     productName: string;
@@ -64,7 +77,8 @@ export interface AdminOrderDetail extends AdminOrder {
     amount: number;
   }>;
   providerOrderId?: string;
-  billing?: { name?: string };
+  tax?: AdminOrderTax;
+  billing?: { name?: string; state?: string; stateCode?: string };
   payment: AdminOrderPayment | null;
   invoice: AdminOrderInvoice | null;
   refund: AdminOrderRefund | null;

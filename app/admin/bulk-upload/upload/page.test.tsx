@@ -88,10 +88,13 @@ async function renderReady() {
   ]);
   render(<BulkUploadFormPage />);
   expect(await screen.findByText("Click or drag a PDF file to upload")).toBeInTheDocument();
-  // EditPageShell keeps the form mounted (invisible) while lookups load.
-  // Wait until submit is enabled so validation assertions are not raced.
+  // EditPageShell keeps the form mounted while lookups load. The submit
+  // button's disabled flag clears one render before Ant Design drops its
+  // internal loading latch, and a click in that gap is cancelled.
   await waitFor(() => {
-    expect(uploadSubmitButton()).not.toBeDisabled();
+    const button = uploadSubmitButton();
+    expect(button).not.toBeDisabled();
+    expect(button.classList.contains("ant-btn-loading")).toBe(false);
   });
 }
 
@@ -121,7 +124,7 @@ describe("BulkUploadFormPage", () => {
 
   it("requires a PDF, subject, topic, and exam", async () => {
     await renderReady();
-    fireEvent.click(uploadSubmitButton());
+    fireEvent.submit(uploadSubmitButton().form!);
 
     // Ant Design fades error text in, so it can stay hidden from getByText
     // until the collapse motion finishes. textContent still includes it.

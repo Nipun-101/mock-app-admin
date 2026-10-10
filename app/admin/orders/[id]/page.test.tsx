@@ -165,6 +165,59 @@ describe("OrderDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Refund" })).not.toBeInTheDocument();
   });
 
+  it("shows the GST breakdown, including a fallback supply type", async () => {
+    getOrder.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...paidOrder,
+        billing: { name: "Ada Lovelace", state: "Kerala", stateCode: "32" },
+        tax: {
+          grossAmount: 99900,
+          taxableAmount: 84662,
+          taxAmount: 15238,
+          cgst: 7619,
+          sgst: 7619,
+          igst: 0,
+          taxRate: 18,
+          supplyType: "INTRA_STATE",
+          sellerStateCode: "32",
+          buyerStateCode: "32",
+        },
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Intra-state")).toBeInTheDocument();
+    expect(screen.getByText("Kerala (32)")).toBeInTheDocument();
+    expect(screen.getByText("18%")).toBeInTheDocument();
+    expect(screen.getByText("₹846.62")).toBeInTheDocument();
+    expect(screen.getAllByText("₹76.19")).toHaveLength(2);
+  });
+
+  it("labels an old order without supplyType from the IGST amount", async () => {
+    getOrder.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...paidOrder,
+        tax: {
+          grossAmount: 99900,
+          taxableAmount: 84661,
+          taxAmount: 15239,
+          cgst: 0,
+          sgst: 0,
+          igst: 15239,
+          taxRate: 18,
+        },
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Inter-state")).toBeInTheDocument();
+    expect(screen.getByText("₹152.39")).toBeInTheDocument();
+  });
+
   it("shows an API error", async () => {
     refundOrder.mockRejectedValue(
       new EzPrepApiError("Order is already refunded", 409, "/v1/admin/orders/order1/refunds", {
