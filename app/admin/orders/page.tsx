@@ -127,7 +127,12 @@ export default function OrdersPage() {
               dataIndex: "amount",
               render: (amount: number) => formatPaiseAsRupees(amount),
             },
-            { title: "User", dataIndex: "userId" },
+            {
+              title: "User",
+              key: "user",
+              render: (_value: unknown, row: AdminOrder) =>
+                row.user?.name?.trim() || "Unknown user",
+            },
             {
               title: "Created",
               dataIndex: "createdAt",

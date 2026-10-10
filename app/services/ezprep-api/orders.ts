@@ -12,10 +12,19 @@ export type OrderStatus =
 
 export type RefundStatus = "INITIATED" | "COMPLETED" | "FAILED";
 
+export interface AdminOrderUser {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  username?: string;
+}
+
 export interface AdminOrder {
   id: string;
   orderNumber: string;
   userId: string;
+  user: AdminOrderUser | null;
   status: OrderStatus;
   amount: number;
   currency: string;

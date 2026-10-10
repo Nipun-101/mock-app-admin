@@ -41,6 +41,13 @@ const paidOrder: AdminOrderDetail = {
   id: "order1",
   orderNumber: "ORD-1001",
   userId: "user1",
+  user: {
+    id: "user1",
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    phoneNumber: "+919876543210",
+    username: "ada",
+  },
   status: "PAID",
   amount: 99900,
   currency: "INR",
@@ -109,7 +116,12 @@ describe("OrderDetailPage", () => {
     });
 
     renderPage();
-    expect(await screen.findByRole("button", { name: "Refund" })).toBeInTheDocument();
+    expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+919876543210")).toBeInTheDocument();
+    expect(screen.getByText("ada")).toBeInTheDocument();
+    expect(screen.queryByText("user1")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refund" })).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Reason for this full refund"), {
       target: { value: "customer request" },
     });
@@ -128,6 +140,29 @@ describe("OrderDetailPage", () => {
       });
     });
     expect(message.success).toHaveBeenCalledWith("Order refunded");
+  });
+
+  it("hides the refund form while a refund is still initiated", async () => {
+    getOrder.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...paidOrder,
+        refund: {
+          id: "rf1",
+          status: "INITIATED",
+          amount: 99900,
+          reason: "testing",
+          provider: "razorpay",
+          providerRefundId: "rfnd_TmAYE2JW0SAI1e",
+        },
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/INITIATED/)).toBeInTheDocument();
+    expect(screen.getByText(/rfnd_TmAYE2JW0SAI1e/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Refund" })).not.toBeInTheDocument();
   });
 
   it("shows an API error", async () => {

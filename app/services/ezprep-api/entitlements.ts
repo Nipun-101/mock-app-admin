@@ -27,6 +27,8 @@ export interface Entitlement {
   sourceType: EntitlementSourceType;
   sourceId?: string;
   productId?: string;
+  productName?: string;
+  productCode?: string;
   productVersion?: number;
   orderId?: string;
   provisioningKey: string;

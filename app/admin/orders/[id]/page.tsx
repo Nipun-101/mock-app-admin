@@ -101,9 +101,23 @@ export default function OrderDetailPage(props: {
                 <Text>{formatPaiseAsRupees(order.amount)}</Text>
               </div>
               <div>
-                <Text type="secondary">User </Text>
-                <Text>{order.userId}</Text>
+                <Text type="secondary">Name </Text>
+                <Text>{order.user?.name?.trim() || "Unknown user"}</Text>
               </div>
+              <div>
+                <Text type="secondary">Email </Text>
+                <Text>{order.user?.email || "—"}</Text>
+              </div>
+              <div>
+                <Text type="secondary">Phone </Text>
+                <Text>{order.user?.phoneNumber || "—"}</Text>
+              </div>
+              {order.user?.username ? (
+                <div>
+                  <Text type="secondary">Username </Text>
+                  <Text>{order.user.username}</Text>
+                </div>
+              ) : null}
               <div>
                 <Text type="secondary">Payment </Text>
                 <Text>
@@ -137,7 +151,7 @@ export default function OrderDetailPage(props: {
             </Space>
           </Card>
 
-          {order.status === "PAID" ? (
+          {order.status === "PAID" && order.refund?.status !== "INITIATED" ? (
             <Card title="Refund" className="shadow-sm">
               <Space direction="vertical" className="w-full max-w-xl">
                 <Input.TextArea

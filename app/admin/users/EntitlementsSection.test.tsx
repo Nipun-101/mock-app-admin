@@ -102,6 +102,28 @@ describe("EntitlementsSection", () => {
     vi.mocked(message.success).mockClear();
   });
 
+  it("shows the product name instead of the product id", async () => {
+    listForUser.mockResolvedValue({
+      message: "ok",
+      data: [
+        {
+          ...entitlement,
+          sourceType: "PAYMENT",
+          productId: "6ac950d99d9c6cd25448a012",
+          productName: "RRB NTPC P1",
+          productCode: "RRB-NTPC-P1",
+          productVersion: 1,
+        },
+      ],
+    });
+
+    render(<EntitlementsSection userId="u1" />);
+
+    expect(await screen.findByText("RRB NTPC P1")).toBeInTheDocument();
+    expect(screen.getByText("RRB-NTPC-P1 · v1")).toBeInTheDocument();
+    expect(screen.queryByText("6ac950d99d9c6cd25448a012")).not.toBeInTheDocument();
+  });
+
   it("renders entitlements from the API", async () => {
     listForUser.mockResolvedValue({ message: "ok", data: [entitlement] });
 
@@ -110,6 +132,7 @@ describe("EntitlementsSection", () => {
     expect(await screen.findByText("SSC CGL")).toBeInTheDocument();
     expect(screen.getByText("ACTIVE")).toBeInTheDocument();
     expect(screen.getByText("ADMIN_GRANT")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(listForUser).toHaveBeenCalledWith("u1", { includeInactive: true });
   });
 

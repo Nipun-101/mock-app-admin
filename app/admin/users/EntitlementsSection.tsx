@@ -235,9 +235,22 @@ export function EntitlementsSection({ userId }: { userId: string }) {
     },
     {
       title: "Product",
-      dataIndex: "productId",
-      key: "productId",
-      render: (value?: string) => value || "—",
+      key: "product",
+      render: (_: unknown, row: Entitlement) => {
+        if (!row.productName?.trim()) {
+          return <Text type="secondary">—</Text>;
+        }
+        return (
+          <div>
+            <div className="text-sm text-neutral-900">{row.productName}</div>
+            <Text type="secondary" className="text-xs">
+              {[row.productCode, row.productVersion != null ? `v${row.productVersion}` : ""]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </Text>
+          </div>
+        );
+      },
     },
     {
       title: "Actions",
