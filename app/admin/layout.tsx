@@ -22,6 +22,7 @@ import {
   ShoppingOutlined,
   FileTextOutlined,
   AlertOutlined,
+  AccountBookOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -211,6 +212,11 @@ export default function AdminLayout({
       label: <Link href="/admin/orders">Orders</Link>,
     },
     {
+      key: "/admin/accounting",
+      icon: <AccountBookOutlined />,
+      label: <Link href="/admin/accounting">Accounting</Link>,
+    },
+    {
       key: "/admin/commerce-health",
       icon: <AlertOutlined />,
       label: (
@@ -355,6 +361,8 @@ export default function AdminLayout({
                 ? "/admin/products"
                 : pathname.startsWith("/admin/orders")
                 ? "/admin/orders"
+                : pathname.startsWith("/admin/accounting")
+                ? "/admin/accounting"
                 : pathname.startsWith("/admin/commerce-health")
                 ? "/admin/commerce-health"
                 : pathname.startsWith("/admin/questions")
