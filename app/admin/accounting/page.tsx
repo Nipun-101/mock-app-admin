@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Col, Row, Typography, message } from "antd";
+import { Typography, message } from "antd";
 import {
   AuditOutlined,
   CheckCircleOutlined,
@@ -281,38 +281,36 @@ function sections(overview: AccountingOverview): AccountingSection[] {
 
 function AccountingCardView({ card: item }: { card: AccountingCard }) {
   return (
-    <Col xs={24} sm={12} lg={8} xl={6}>
-      <div
-        className="h-full min-h-[176px] rounded-2xl px-5 py-4 border border-solid"
-        style={{
-          background: item.tint,
-          borderColor: `${item.accent}33`,
-          borderTopWidth: 4,
-          borderTopColor: item.accent,
-          boxShadow: item.shadow,
-        }}
+    <div
+      className="h-full min-w-0 rounded-2xl border border-solid px-4 py-4 sm:min-h-[168px] sm:px-5"
+      style={{
+        background: item.tint,
+        borderColor: `${item.accent}33`,
+        borderTopWidth: 4,
+        borderTopColor: item.accent,
+        boxShadow: item.shadow,
+      }}
+    >
+      <span
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-base sm:h-10 sm:w-10 sm:text-lg"
+        style={{ color: item.accent, background: `${item.accent}18` }}
       >
-        <span
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg"
-          style={{ color: item.accent, background: `${item.accent}18` }}
-        >
-          {item.icon}
-        </span>
-        <p className="mt-3 mb-0 text-sm font-medium text-slate-600">{item.label}</p>
-        <p
-          className="mt-1 mb-2 text-3xl font-semibold leading-tight break-words"
-          style={{ color: item.accent }}
-        >
-          {item.value}
+        {item.icon}
+      </span>
+      <p className="mb-0 mt-3 text-sm font-medium text-slate-600">{item.label}</p>
+      <p
+        className="mb-2 mt-1 break-words text-2xl font-semibold leading-tight sm:text-3xl"
+        style={{ color: item.accent }}
+      >
+        {item.value}
+      </p>
+      <p className="mb-0 text-xs leading-5 text-slate-500">{item.description}</p>
+      {item.detail ? (
+        <p className="mb-0 mt-2 break-words text-xs font-medium leading-5" style={{ color: item.accent }}>
+          {item.detail}
         </p>
-        <p className="mb-0 text-xs leading-5 text-slate-500">{item.description}</p>
-        {item.detail ? (
-          <p className="mt-2 mb-0 text-xs font-medium leading-5" style={{ color: item.accent }}>
-            {item.detail}
-          </p>
-        ) : null}
-      </div>
-    </Col>
+      ) : null}
+    </div>
   );
 }
 
@@ -356,28 +354,28 @@ export default function AccountingPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-clip sm:space-y-8">
       <div>
-        <Title level={3} className="!mb-1">
+        <Title level={3} className="!mb-1 !text-xl sm:!text-2xl">
           Accounting
         </Title>
-        <Paragraph type="secondary" className="!mb-0">
+        <Paragraph type="secondary" className="!mb-0 break-words">
           Updated {formatUpdated(overview.computedAt)} · refreshes hourly
         </Paragraph>
       </div>
       {sections(overview).map((section) => (
-        <section key={section.title}>
-          <Title level={4} className="!mb-1">
+        <section key={section.title} className="min-w-0">
+          <Title level={4} className="!mb-1 !text-lg sm:!text-xl">
             {section.title}
           </Title>
-          <Paragraph type="secondary" className="!mb-4">
+          <Paragraph type="secondary" className="!mb-3 break-words sm:!mb-4">
             {section.intro}
           </Paragraph>
-          <Row gutter={[16, 16]}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {section.cards.map((item) => (
               <AccountingCardView key={item.key} card={item} />
             ))}
-          </Row>
+          </div>
         </section>
       ))}
     </div>

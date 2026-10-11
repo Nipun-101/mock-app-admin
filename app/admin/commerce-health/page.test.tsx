@@ -29,6 +29,12 @@ describe("CommerceHealthPage", () => {
     render(<CommerceHealthPage />);
     expect(await screen.findByText("ok")).toBeInTheDocument();
     expect(screen.getByText("Effective flags")).toBeInTheDocument();
+    expect(screen.getByText("Commerce enabled")).toBeInTheDocument();
+    expect(screen.getByText("Payment provider")).toBeInTheDocument();
+    expect(screen.getByText("Access enforcement mode")).toBeInTheDocument();
+    expect(screen.queryByText("commerceEnabled")).not.toBeInTheDocument();
+    expect(screen.queryByText("paymentProvider")).not.toBeInTheDocument();
+    expect(screen.getAllByText("On").length).toBeGreaterThan(0);
     expect(screen.getByText("Silent while paid")).toBeInTheDocument();
     expect(screen.getByText("No")).toBeInTheDocument();
   });
@@ -60,5 +66,18 @@ describe("CommerceHealthPage", () => {
     await waitFor(() => {
       expect(getHealth).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("shows the access enforcement warning when production commerce is still LEGACY", async () => {
+    const report = emptyHealthReport("degraded");
+    report.enforcementWarnings = [
+      "ACCESS_ENFORCEMENT_MODE=LEGACY while commerce is enabled in production. Paid papers stay open until this is ENFORCED.",
+    ];
+    getHealth.mockResolvedValue({ message: "ok", data: report });
+
+    render(<CommerceHealthPage />);
+
+    expect(await screen.findByText("Access enforcement")).toBeInTheDocument();
+    expect(screen.getByText(/Paid papers stay open until this is ENFORCED/)).toBeInTheDocument();
   });
 });

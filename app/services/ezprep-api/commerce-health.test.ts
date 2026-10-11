@@ -50,4 +50,17 @@ describe("commerceHealthApi", () => {
     });
     expect(cards.find((card) => card.key === "pendingPastWindow")?.flag).toBeUndefined();
   });
+
+  it("shows the production LEGACY warning on the access enforcement card", () => {
+    const report = emptyHealthReport("degraded");
+    report.enforcementWarnings = [
+      "ACCESS_ENFORCEMENT_MODE=LEGACY while commerce is enabled in production. Paid papers stay open until this is ENFORCED.",
+    ];
+    const card = healthCards(report).find((item) => item.key === "enforcementWarnings");
+    expect(card).toMatchObject({
+      title: "Access enforcement",
+      count: 1,
+      detail: report.enforcementWarnings[0],
+    });
+  });
 });

@@ -52,6 +52,7 @@ export interface CommerceHealthReport {
   };
   sellerStateMismatches: HealthSlice;
   indexWarnings: string[];
+  enforcementWarnings: string[];
 }
 
 export interface HealthCardModel {
@@ -114,6 +115,7 @@ export function emptyHealthReport(
     },
     sellerStateMismatches: emptySlice(),
     indexWarnings: [],
+    enforcementWarnings: [],
   };
 }
 
@@ -149,6 +151,14 @@ export function healthCards(report: CommerceHealthReport): HealthCardModel[] {
       oldestAt: null,
       orderNumbers: [],
       detail: report.indexWarnings.join(", "),
+    },
+    {
+      key: "enforcementWarnings",
+      title: "Access enforcement",
+      count: report.enforcementWarnings.length,
+      oldestAt: null,
+      orderNumbers: [],
+      detail: report.enforcementWarnings.join(" "),
     },
   ];
 }
