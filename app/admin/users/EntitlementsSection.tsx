@@ -298,7 +298,11 @@ export function EntitlementsSection({ userId }: { userId: string }) {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={false}
+        pagination={{
+          pageSize: 5,
+          showSizeChanger: false,
+          hideOnSinglePage: true,
+        }}
         locale={{ emptyText: "No entitlements for this learner." }}
         className="overflow-hidden rounded-2xl border border-neutral-200 bg-white"
       />

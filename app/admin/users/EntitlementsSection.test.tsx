@@ -124,6 +124,26 @@ describe("EntitlementsSection", () => {
     expect(screen.queryByText("6ac950d99d9c6cd25448a012")).not.toBeInTheDocument();
   });
 
+  it("shows five entitlements per page", async () => {
+    const rows = Array.from({ length: 6 }, (_, index) => ({
+      ...entitlement,
+      id: `ent-${index + 1}`,
+      scopeId: `scope-${index + 1}`,
+    }));
+    listForUser.mockResolvedValue({ message: "ok", data: rows });
+
+    render(<EntitlementsSection userId="u1" />);
+
+    expect(await screen.findByText("EXAM · scope-1")).toBeInTheDocument();
+    expect(screen.getByText("EXAM · scope-5")).toBeInTheDocument();
+    expect(screen.queryByText("EXAM · scope-6")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("listitem", { name: "Next Page" }));
+
+    expect(await screen.findByText("EXAM · scope-6")).toBeInTheDocument();
+    expect(screen.queryByText("EXAM · scope-1")).not.toBeInTheDocument();
+  });
+
   it("renders entitlements from the API", async () => {
     listForUser.mockResolvedValue({ message: "ok", data: [entitlement] });
 
