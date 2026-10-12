@@ -4,6 +4,7 @@ import { Button, Card, Input, Space, Tag, Typography, message } from "antd";
 import { use, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
+import { maskEmail, maskPhoneNumber } from "@/app/admin/users/helpers";
 import { EditPageShell } from "@/app/components/PageLoader";
 import { EZPREP_PROXY_PREFIX } from "@/app/services/ezprep-api/config";
 import {
@@ -98,6 +99,8 @@ export default function OrderDetailPage(props: {
 
   const refundReady =
     Boolean(reason.trim()) && orderNumberConfirm === order?.orderNumber;
+  const buyerEmail = maskEmail(order?.user?.email);
+  const buyerPhone = maskPhoneNumber(order?.user?.phoneNumber);
   const showRepair =
     order != null &&
     order.status === "PAID" &&
@@ -130,11 +133,11 @@ export default function OrderDetailPage(props: {
               </div>
               <div>
                 <Text type="secondary">Email </Text>
-                <Text>{order.user?.email || "—"}</Text>
+                <Text>{buyerEmail || "—"}</Text>
               </div>
               <div>
                 <Text type="secondary">Phone </Text>
-                <Text>{order.user?.phoneNumber || "—"}</Text>
+                <Text>{buyerPhone || "—"}</Text>
               </div>
               {order.user?.username ? (
                 <div>

@@ -1,3 +1,4 @@
+import { maskEmail, maskPhoneNumber } from "@/app/admin/users/helpers";
 import { ezPrepApiClient } from "./browser-client";
 import { ApiItemResponse, ApiListResponse } from "./envelope";
 
@@ -112,36 +113,68 @@ export interface RefundOrderResult {
   order: AdminOrderDetail;
 }
 
+/** Drops the full buyer email and phone before order data enters UI state. */
+export function redactOrderBuyer<T extends { user: AdminOrderUser | null }>(
+  order: T
+): T {
+  if (!order.user) {
+    return order;
+  }
+
+  return {
+    ...order,
+    user: {
+      ...order.user,
+      email: maskEmail(order.user.email),
+      phoneNumber: maskPhoneNumber(order.user.phoneNumber),
+    },
+  };
+}
+
 export const ordersApi = {
-  list(searchParams?: {
+  async list(searchParams?: {
     page?: number;
     limit?: number;
     status?: OrderStatus;
     search?: string;
     flag?: AdminOrderFlag;
   }) {
-    return ezPrepApiClient.get<ApiListResponse<AdminOrder>>("/v1/admin/orders", {
-      searchParams,
-    });
+    const response = await ezPrepApiClient.get<ApiListResponse<AdminOrder>>(
+      "/v1/admin/orders",
+      { searchParams }
+    );
+    return {
+      ...response,
+      data: response.data.map(redactOrderBuyer),
+    };
   },
 
-  get(id: string) {
-    return ezPrepApiClient.get<ApiItemResponse<AdminOrderDetail>>(
+  async get(id: string) {
+    const response = await ezPrepApiClient.get<ApiItemResponse<AdminOrderDetail>>(
       `/v1/admin/orders/${id}`
     );
+    return { ...response, data: redactOrderBuyer(response.data) };
   },
 
-  repair(id: string) {
-    return ezPrepApiClient.post<ApiItemResponse<AdminOrderDetail>>(
+  async repair(id: string) {
+    const response = await ezPrepApiClient.post<ApiItemResponse<AdminOrderDetail>>(
       `/v1/admin/orders/${id}/repair`,
       {}
     );
+    return { ...response, data: redactOrderBuyer(response.data) };
   },
 
-  refund(id: string, body: { reason: string }) {
-    return ezPrepApiClient.post<ApiItemResponse<RefundOrderResult>>(
+  async refund(id: string, body: { reason: string }) {
+    const response = await ezPrepApiClient.post<ApiItemResponse<RefundOrderResult>>(
       `/v1/admin/orders/${id}/refunds`,
       body
     );
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        order: redactOrderBuyer(response.data.order),
+      },
+    };
   },
 };
