@@ -112,6 +112,7 @@ export interface PublishDraftPayload {
   description?: string;
   allowRetake?: boolean;
   shuffleOptions?: boolean;
+  keepSubjectOrder?: boolean;
   showResultsImmediately?: boolean;
   passingScore?: number;
   accessMode?: "FREE" | "ENTITLED";

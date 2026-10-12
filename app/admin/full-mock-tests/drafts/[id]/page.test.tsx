@@ -222,6 +222,63 @@ describe("FullMockDraftPage", () => {
     await waitFor(() =>
       expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests/fm-9")
     );
+    const publishCall = fetchMock.mock.calls.find((call) => {
+      const init = call[1] as RequestInit | undefined;
+      return (
+        String(call[0]).includes("/publish") &&
+        (init?.method || "").toUpperCase() === "POST"
+      );
+    });
+    expect(publishCall).toBeTruthy();
+    expect(JSON.parse(String((publishCall![1] as RequestInit).body))).toMatchObject(
+      { keepSubjectOrder: false }
+    );
+  });
+
+  it("sends keepSubjectOrder when the mixed-paper switch is on", async () => {
+    await renderReady();
+    const field = screen.getByText("Keep subject order").closest(".ant-form-item");
+    expect(field).toBeTruthy();
+    fireEvent.click(within(field as HTMLElement).getByRole("switch"));
+    fireEvent.click(screen.getByRole("button", { name: /publish full mock/i }));
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests/fm-9")
+    );
+    const publishCall = fetchMock.mock.calls.find((call) => {
+      const init = call[1] as RequestInit | undefined;
+      return (
+        String(call[0]).includes("/publish") &&
+        (init?.method || "").toUpperCase() === "POST"
+      );
+    });
+    expect(JSON.parse(String((publishCall![1] as RequestInit).body))).toMatchObject(
+      { keepSubjectOrder: true }
+    );
+  });
+
+  it("hides keep subject order for session-wise drafts", async () => {
+    await renderReady({
+      ...reviewDraft,
+      examSnapshot: { ...reviewDraft.examSnapshot, isSessionWise: true },
+      subjects: reviewDraft.subjects.map((subject) => ({
+        ...subject,
+        sessionTime: 60,
+      })),
+    });
+    expect(screen.queryByText("Keep subject order")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /publish full mock/i }));
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests/fm-9")
+    );
+    const publishCall = fetchMock.mock.calls.find((call) => {
+      const init = call[1] as RequestInit | undefined;
+      return (
+        String(call[0]).includes("/publish") &&
+        (init?.method || "").toUpperCase() === "POST"
+      );
+    });
+    const body = JSON.parse(String((publishCall![1] as RequestInit).body));
+    expect(body.keepSubjectOrder).toBeUndefined();
     const publishCall = fetchMock.mock.calls.find((call) =>
       String(call[0]).includes("/publish")
     );

@@ -105,6 +105,7 @@ export default function FullMockDraftPage(props: {
         title: response.data.examSnapshot.name,
         allowRetake: true,
         shuffleOptions: false,
+        keepSubjectOrder: false,
         showResultsImmediately: true,
       });
     } catch (error) {
@@ -306,6 +307,9 @@ export default function FullMockDraftPage(props: {
         showResultsImmediately: values.showResultsImmediately,
         accessMode: values.accessMode ?? "FREE",
       };
+      if (draft && !draft.examSnapshot.isSessionWise) {
+        payload.keepSubjectOrder = !!values.keepSubjectOrder;
+      }
       if (values.passingScore != null) {
         payload.passingScore = values.passingScore;
       }
@@ -572,6 +576,7 @@ export default function FullMockDraftPage(props: {
               initialValues={{
                 allowRetake: true,
                 shuffleOptions: false,
+                keepSubjectOrder: false,
                 showResultsImmediately: true,
                 accessMode: "FREE",
               }}
@@ -587,6 +592,17 @@ export default function FullMockDraftPage(props: {
               <Form.Item label="Description" name="description">
                 <TextArea rows={3} placeholder="Optional description" />
               </Form.Item>
+              {!snapshot?.isSessionWise ? (
+                <Form.Item
+                  label="Keep subject order"
+                  name="keepSubjectOrder"
+                  valuePropName="checked"
+                  tooltip="Mixed papers only. This does not shuffle answer choices."
+                  extra="On: each subject stays together in exam order. Off: questions stay mixed across the paper."
+                >
+                  <Switch />
+                </Form.Item>
+              ) : null}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Form.Item
                   label="Allow Retake"
