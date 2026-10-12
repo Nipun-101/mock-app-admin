@@ -120,8 +120,10 @@ describe("OrderDetailPage", () => {
 
     renderPage();
     expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
-    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
-    expect(screen.getByText("+919876543210")).toBeInTheDocument();
+    expect(screen.getByText("a***@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+91**********")).toBeInTheDocument();
+    expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByText("+919876543210")).not.toBeInTheDocument();
     expect(screen.getByText("ada")).toBeInTheDocument();
     expect(screen.queryByText("user1")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refund" })).toBeInTheDocument();
