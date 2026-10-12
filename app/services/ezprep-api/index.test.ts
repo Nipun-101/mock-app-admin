@@ -13,6 +13,13 @@ describe("ezprep-api public surface", () => {
     expect(api.adminDashboardApi).toBeDefined();
     expect(api.usersApi).toBeDefined();
     expect(api.instanceConfigApi).toBeDefined();
+    expect(api.productsApi).toBeDefined();
+    expect(api.offersApi).toBeDefined();
+    expect(api.entitlementsApi).toBeDefined();
+    expect(api.ordersApi).toBeDefined();
+    expect(api.commerceHealthApi).toBeDefined();
+    expect(api.rupeesToPaise).toBeTypeOf("function");
+    expect(api.paiseToRupees).toBeTypeOf("function");
     expect(api.formatEzPrepError).toBeTypeOf("function");
     expect(api.buildEzPrepApiUrl).toBeTypeOf("function");
     expect(api.EZPREP_PROXY_PREFIX).toBe("/api/ezprep");

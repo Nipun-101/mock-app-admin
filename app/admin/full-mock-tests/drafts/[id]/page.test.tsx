@@ -230,9 +230,10 @@ describe("FullMockDraftPage", () => {
       );
     });
     expect(publishCall).toBeTruthy();
-    expect(JSON.parse(String((publishCall![1] as RequestInit).body))).toMatchObject(
-      { keepSubjectOrder: false }
-    );
+    expect(JSON.parse(String((publishCall![1] as RequestInit).body))).toMatchObject({
+      keepSubjectOrder: false,
+      accessMode: "FREE",
+    });
   });
 
   it("sends keepSubjectOrder when the mixed-paper switch is on", async () => {
@@ -279,6 +280,20 @@ describe("FullMockDraftPage", () => {
     });
     const body = JSON.parse(String((publishCall![1] as RequestInit).body));
     expect(body.keepSubjectOrder).toBeUndefined();
+  });
+
+  it("publishes a full mock as entitled when the switch is on", async () => {
+    await renderReady();
+    fireEvent.click(screen.getByRole("switch", { name: "Requires entitlement" }));
+    fireEvent.click(screen.getByRole("button", { name: /publish full mock/i }));
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith("/admin/full-mock-tests/fm-9")
+    );
+    const publishCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).includes("/publish")
+    );
+    const body = JSON.parse(String((publishCall?.[1] as RequestInit | undefined)?.body));
+    expect(body.accessMode).toBe("ENTITLED");
   });
 
   it("discards the draft after confirm", async () => {

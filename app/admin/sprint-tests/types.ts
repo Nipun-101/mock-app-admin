@@ -9,6 +9,7 @@ export interface SprintDraftSettings {
   allowRetake: boolean;
   shuffleOptions: boolean;
   showResultsImmediately: boolean;
+  accessMode?: "FREE" | "ENTITLED";
 }
 
 export interface SprintQuestionItem {
@@ -111,6 +112,7 @@ export interface CreateSprintDraftPayload {
   allowRetake?: boolean;
   shuffleOptions?: boolean;
   showResultsImmediately?: boolean;
+  accessMode?: "FREE" | "ENTITLED";
   questionIds?: string[];
 }
 
@@ -123,6 +125,7 @@ export interface PublishSprintDraftPayload {
   allowRetake?: boolean;
   shuffleOptions?: boolean;
   showResultsImmediately?: boolean;
+  accessMode?: "FREE" | "ENTITLED";
 }
 
 export const SPRINT_SIZE_OPTIONS = [10, 15, 20, 25, 30] as const;

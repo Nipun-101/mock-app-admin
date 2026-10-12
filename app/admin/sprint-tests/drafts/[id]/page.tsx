@@ -23,6 +23,7 @@ import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, sprintTestsApi } from "../../api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 import type {
@@ -103,6 +104,7 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
       allowRetake: draft.settings.allowRetake,
       shuffleOptions: draft.settings.shuffleOptions,
       showResultsImmediately: draft.settings.showResultsImmediately,
+      accessMode: draft.settings.accessMode ?? "FREE",
     });
   }, [draft, form, loading]);
 
@@ -279,6 +281,7 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
         allowRetake: values.allowRetake,
         shuffleOptions: values.shuffleOptions,
         showResultsImmediately: values.showResultsImmediately,
+        accessMode: values.accessMode ?? "FREE",
       });
       message.success(response.message || "Sprint test published");
       router.push(`/admin/sprint-tests/${response.data.mockTestId}`);
@@ -443,6 +446,7 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
                 >
                   <Switch />
                 </Form.Item>
+                <AccessModeSwitch />
               </div>
               <Space>
                 <Button

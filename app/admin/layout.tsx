@@ -19,6 +19,10 @@ import {
   ThunderboltOutlined,
   ReadOutlined,
   TeamOutlined,
+  ShoppingOutlined,
+  FileTextOutlined,
+  AlertOutlined,
+  AccountBookOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,6 +30,7 @@ import { useState, useEffect } from "react";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
 import { PageLoader } from "@/app/components/PageLoader";
 import { instanceConfigApi } from "@/app/services/ezprep-api/instance-config";
+import { commerceHealthApi } from "@/app/services/ezprep-api/commerce-health";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import {
   applyInstanceDocumentBranding,
@@ -71,6 +76,7 @@ export default function AdminLayout({
   const [branding, setBranding] = useState<InstanceBranding | null>(null);
   const [brandingReady, setBrandingReady] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [healthDegraded, setHealthDegraded] = useState(false);
 
   const closeSidebar = () => setCollapsed(true);
   const toggleSidebar = () => setCollapsed((open) => !open);
@@ -146,6 +152,22 @@ export default function AdminLayout({
   }, [sessionReady, router]);
 
   useEffect(() => {
+    if (!sessionReady) return;
+    let cancelled = false;
+    commerceHealthApi
+      .get()
+      .then((response) => {
+        if (!cancelled) setHealthDegraded(response.data.status === "degraded");
+      })
+      .catch(() => {
+        if (!cancelled) setHealthDegraded(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionReady]);
+
+  useEffect(() => {
     if (!brandingReady) return;
     return applyInstanceDocumentBranding(branding);
   }, [branding, brandingReady]);
@@ -178,6 +200,36 @@ export default function AdminLayout({
       key: "/admin/users",
       icon: <TeamOutlined />,
       label: <Link href="/admin/users">Users</Link>,
+    },
+    {
+      key: "/admin/products",
+      icon: <ShoppingOutlined />,
+      label: <Link href="/admin/products">Products</Link>,
+    },
+    {
+      key: "/admin/orders",
+      icon: <FileTextOutlined />,
+      label: <Link href="/admin/orders">Orders</Link>,
+    },
+    {
+      key: "/admin/accounting",
+      icon: <AccountBookOutlined />,
+      label: <Link href="/admin/accounting">Accounting</Link>,
+    },
+    {
+      key: "/admin/commerce-health",
+      icon: <AlertOutlined />,
+      label: (
+        <Link href="/admin/commerce-health" className="inline-flex items-center gap-2">
+          Commerce health
+          {healthDegraded ? (
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-red-500"
+              aria-label="Commerce degraded"
+            />
+          ) : null}
+        </Link>
+      ),
     },
     {
       key: "/admin/questions",
@@ -305,6 +357,14 @@ export default function AdminLayout({
               ? "/admin"
               : pathname.startsWith("/admin/users")
                 ? "/admin/users"
+                : pathname.startsWith("/admin/products")
+                ? "/admin/products"
+                : pathname.startsWith("/admin/orders")
+                ? "/admin/orders"
+                : pathname.startsWith("/admin/accounting")
+                ? "/admin/accounting"
+                : pathname.startsWith("/admin/commerce-health")
+                ? "/admin/commerce-health"
                 : pathname.startsWith("/admin/questions")
                 ? "/admin/questions"
                 : pathname.startsWith("/admin/bulk-upload")

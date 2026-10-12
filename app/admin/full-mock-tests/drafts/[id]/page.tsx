@@ -23,6 +23,7 @@ import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../../api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "../../QuestionPreview";
 import type {
   DraftQuestionItem,
@@ -304,6 +305,7 @@ export default function FullMockDraftPage(props: {
         allowRetake: values.allowRetake,
         shuffleOptions: values.shuffleOptions,
         showResultsImmediately: values.showResultsImmediately,
+        accessMode: values.accessMode ?? "FREE",
       };
       if (draft && !draft.examSnapshot.isSessionWise) {
         payload.keepSubjectOrder = !!values.keepSubjectOrder;
@@ -576,6 +578,7 @@ export default function FullMockDraftPage(props: {
                 shuffleOptions: false,
                 keepSubjectOrder: false,
                 showResultsImmediately: true,
+                accessMode: "FREE",
               }}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -622,6 +625,7 @@ export default function FullMockDraftPage(props: {
                 >
                   <Switch />
                 </Form.Item>
+                <AccessModeSwitch />
               </div>
               <Space>
                 <Button

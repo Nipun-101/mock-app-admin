@@ -22,6 +22,7 @@ import {
   getInitials,
   quantityLabel,
 } from "../helpers";
+import { EntitlementsSection } from "../EntitlementsSection";
 
 function percentTone(value: number | null): string {
   if (value == null) {
@@ -349,6 +350,9 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
             </Tag>
             {subscriptionStatus ? <Tag className="m-0">{subscriptionStatus}</Tag> : null}
             {profile.targetExam?.name ? <Tag className="m-0">{profile.targetExam.name}</Tag> : null}
+            <Tag className="m-0" color="default">
+              Legacy plan (not used for access)
+            </Tag>
           </div>
 
           <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -364,7 +368,7 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
             <Fact label="Weekly goal" value={weeklyGoal} />
             <Fact label="Badges" value={quantityLabel(profile.badgesEarnedCount ?? 0, "badge", "badges")} />
             <Fact
-              label="Subscription started"
+              label="Legacy subscription started"
               value={
                 profile.subscription?.startedAt
                   ? formatJoinedDate(profile.subscription.startedAt)
@@ -372,7 +376,7 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
               }
             />
             <Fact
-              label="Subscription expires"
+              label="Legacy subscription expires"
               value={
                 profile.subscription?.expiresAt
                   ? formatJoinedDate(profile.subscription.expiresAt)
@@ -380,14 +384,14 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
               }
             />
             <Fact
-              label="Trial ends"
+              label="Legacy trial ends"
               value={
                 profile.subscription?.trialEndsAt
                   ? formatJoinedDate(profile.subscription.trialEndsAt)
                   : null
               }
             />
-            <Fact label="Auto-renew" value={autoRenew} />
+            <Fact label="Legacy auto-renew" value={autoRenew} />
             <Fact label="Joined" value={formatJoinedDate(profile.createdAt)} />
             <Fact label="Updated" value={profile.updatedAt ? formatJoinedDate(profile.updatedAt) : null} />
           </dl>
@@ -446,6 +450,8 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
           ) : null}
         </div>
       </section>
+
+      {profile.id ? <EntitlementsSection userId={profile.id} /> : null}
 
       <section className="space-y-3" data-testid="performance-analysis">
         <div>

@@ -20,6 +20,7 @@ import {
   sharedExamIds,
   type SelectedSprintQuestion,
 } from "./sprint-selection";
+import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 
 const enabledButtonClass =
   "!bg-[#eb2f96] hover:!bg-[#c41d7f] !text-white !border-[#eb2f96]";
@@ -98,6 +99,7 @@ export function CreateSprintFromSelectionModal({
     allowRetake?: boolean;
     shuffleOptions?: boolean;
     showResultsImmediately?: boolean;
+    accessMode?: "FREE" | "ENTITLED";
   }) => {
     setCreating(true);
     try {
@@ -168,6 +170,7 @@ export function CreateSprintFromSelectionModal({
           allowRetake: true,
           shuffleOptions: false,
           showResultsImmediately: true,
+          accessMode: "FREE",
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -236,6 +239,7 @@ export function CreateSprintFromSelectionModal({
           >
             <Switch />
           </Form.Item>
+          <AccessModeSwitch />
         </div>
         <Button
           type="primary"

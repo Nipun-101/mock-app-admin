@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { usePathname, useRouter } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchAdminSession } from "@/lib/fetch-admin-session";
+import { commerceHealthApi } from "@/app/services/ezprep-api/commerce-health";
 import { instanceConfigApi } from "@/app/services/ezprep-api/instance-config";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 import AdminLayout from "./layout";
@@ -21,10 +22,17 @@ vi.mock("@/app/services/ezprep-api/instance-config", () => ({
   },
 }));
 
+vi.mock("@/app/services/ezprep-api/commerce-health", () => ({
+  commerceHealthApi: {
+    get: vi.fn(),
+  },
+}));
+
 const replace = vi.fn();
 const refresh = vi.fn();
 const fetchMock = vi.fn();
 const getConfig = vi.mocked(instanceConfigApi.get);
+const getHealth = vi.mocked(commerceHealthApi.get);
 
 const savedConfig = {
   id: "singleton",
@@ -58,6 +66,11 @@ describe("AdminLayout", () => {
     getConfig.mockResolvedValue({
       message: "Instance configuration has not been set",
       data: null,
+    });
+    getHealth.mockReset();
+    getHealth.mockResolvedValue({
+      message: "ok",
+      data: { status: "ok" } as Awaited<ReturnType<typeof commerceHealthApi.get>>["data"],
     });
     document.title = "Mock Test Admin";
     vi.mocked(useRouter).mockReturnValue({
@@ -240,6 +253,31 @@ describe("AdminLayout", () => {
     expect(
       await screen.findByRole("button", { name: "Open navigation" })
     ).toBeInTheDocument();
+  });
+
+  it("shows a red dot on Commerce health when status is degraded", async () => {
+    getHealth.mockResolvedValue({
+      message: "ok",
+      data: { status: "degraded" } as Awaited<ReturnType<typeof commerceHealthApi.get>>["data"],
+    });
+    await renderReadyLayout();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+
+    expect(await screen.findByLabelText("Commerce degraded")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Commerce health/ })).toHaveAttribute(
+      "href",
+      "/admin/commerce-health"
+    );
+  });
+
+  it("leaves the Commerce health dot off when status is ok", async () => {
+    await renderReadyLayout();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+
+    expect(await screen.findByRole("link", { name: "Commerce health" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Commerce degraded")).not.toBeInTheDocument();
   });
 
   it("closes the sidebar when the overlay is clicked", async () => {

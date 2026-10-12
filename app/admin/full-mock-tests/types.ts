@@ -115,6 +115,7 @@ export interface PublishDraftPayload {
   keepSubjectOrder?: boolean;
   showResultsImmediately?: boolean;
   passingScore?: number;
+  accessMode?: "FREE" | "ENTITLED";
 }
 
 export interface PublishDraftResult {

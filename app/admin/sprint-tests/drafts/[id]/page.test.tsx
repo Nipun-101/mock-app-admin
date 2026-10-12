@@ -148,6 +148,28 @@ describe("SprintDraftPage", () => {
     await waitFor(() => {
       expect(sprintTestsApi.publishDraft).toHaveBeenCalled();
     });
+    expect(sprintTestsApi.publishDraft).toHaveBeenCalledWith(
+      "draft-1",
+      expect.objectContaining({ accessMode: "FREE" })
+    );
     expect(router.push).toHaveBeenCalledWith("/admin/sprint-tests/sp-9");
+  });
+
+  it("publishes a sprint as entitled when the switch is on", async () => {
+    vi.mocked(sprintTestsApi.publishDraft).mockResolvedValue({
+      message: "published",
+      data: { mockTestId: "sp-9", draft },
+    });
+
+    render(<SprintDraftPage params={paramsPromise()} />);
+    fireEvent.click(await screen.findByRole("switch", { name: "Requires entitlement" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
+    await waitFor(() => {
+      expect(sprintTestsApi.publishDraft).toHaveBeenCalledWith(
+        "draft-1",
+        expect.objectContaining({ accessMode: "ENTITLED" })
+      );
+    });
   });
 });

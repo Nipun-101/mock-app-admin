@@ -164,9 +164,27 @@ describe("MockTestsPage", () => {
         subject: "sub-1",
         topic: "top-1",
         difficultyDistribution: { easy: 3, medium: 3, hard: 4 },
+        accessMode: "FREE",
       })
     );
     expect(message.success).toHaveBeenCalled();
+  });
+
+  it("saves a new mock test as entitled when the switch is on", async () => {
+    create.mockResolvedValue({ message: "ok", data: mockTest });
+    await renderReady();
+
+    await chooseOption("Total Questions", "10 Questions");
+    await chooseOption("Duration (Minutes)", "15 Minutes");
+    await chooseOption("Exam", "UPSC");
+    await chooseOption("Subject", "Polity");
+    await waitFor(() => expect(getSubject).toHaveBeenCalledWith("sub-1"));
+    await chooseOption("Topic", "Parliament");
+    fireEvent.click(screen.getByRole("switch", { name: "Requires entitlement" }));
+    fireEvent.click(screen.getByRole("button", { name: /create mock test/i }));
+
+    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(create.mock.calls[0][0].accessMode).toBe("ENTITLED");
   });
 
   it("navigates to the detail page", async () => {

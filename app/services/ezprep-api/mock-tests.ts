@@ -63,6 +63,7 @@ export type CreateMockTestPayload = {
   allowRetake?: boolean;
   shuffleOptions?: boolean;
   showResultsImmediately?: boolean;
+  accessMode?: "FREE" | "ENTITLED";
 };
 
 export const mockTestsApi = {

@@ -147,6 +147,7 @@ describe("SprintTestsPage", () => {
           examId: "e1",
           totalQuestions: 10,
           durationInMinutes: 15,
+          accessMode: "FREE",
         })
       );
     });
