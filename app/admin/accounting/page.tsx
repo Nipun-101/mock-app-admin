@@ -314,6 +314,7 @@ function AccountingCardView({ card: item }: { card: AccountingCard }) {
   );
 }
 
+// Accounting page for admin users to view the accounting overview
 export default function AccountingPage() {
   const [overview, setOverview] = useState<AccountingOverview | null>(null);
   const [loading, setLoading] = useState(true);
