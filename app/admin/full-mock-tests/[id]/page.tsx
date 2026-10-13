@@ -4,8 +4,8 @@ import { use, useEffect, useState } from "react";
 import { Button, Card, Descriptions, Space, Table, Tag, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../api";
+import { loadTopicNamesForQuestions } from "../topic-names";
 import { PageLoader } from "@/app/components/PageLoader";
 import { QuestionPreview } from "../QuestionPreview";
 import type {
@@ -54,33 +54,15 @@ export default function PublishedFullMockPage(props: {
   useEffect(() => {
     if (!test?.subjects?.length) return;
 
-    const mergeTopicNames = (
-      topics: Array<{ id: string; name: string }> | undefined
-    ) => {
-      if (!topics?.length) return;
-      setTopicNameById((prev) => {
-        const next = new Map(prev);
-        topics.forEach((topic) => {
-          next.set(topic.id, topic.name);
-        });
-        return next;
-      });
-    };
+    let cancelled = false;
+    void loadTopicNamesForQuestions(test.subjects).then((names) => {
+      if (cancelled) return;
+      setTopicNameById(names);
+    });
 
-    const loadTopicNames = async () => {
-      await Promise.all(
-        test.subjects!.map(async (block) => {
-          try {
-            const { data } = await catalogApi.getSubject(block.subjectId);
-            mergeTopicNames(data.topics);
-          } catch {
-            // Topic labels are display-only.
-          }
-        })
-      );
+    return () => {
+      cancelled = true;
     };
-
-    void loadTopicNames();
   }, [test]);
 
   const subjectColumns = [

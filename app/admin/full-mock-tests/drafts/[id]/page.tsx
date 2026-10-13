@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../../api";
+import { loadTopicNamesForQuestions } from "../../topic-names";
 import { PageLoader } from "@/app/components/PageLoader";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "../../QuestionPreview";
@@ -136,20 +137,19 @@ export default function FullMockDraftPage(props: {
   useEffect(() => {
     if (!draft) return;
 
-    const loadTopicNames = async () => {
-      await Promise.all(
-        draft.subjects.map(async (block) => {
-          try {
-            const { data } = await catalogApi.getSubject(block.subjectId);
-            mergeTopicNames(data.topics);
-          } catch {
-            // Topic labels are display-only.
-          }
-        })
-      );
-    };
+    let cancelled = false;
+    void loadTopicNamesForQuestions(draft.subjects).then((names) => {
+      if (cancelled) return;
+      setTopicNameById((prev) => {
+        const next = new Map(prev);
+        names.forEach((name, id) => next.set(id, name));
+        return next;
+      });
+    });
 
-    void loadTopicNames();
+    return () => {
+      cancelled = true;
+    };
   }, [draft]);
 
   const searchReplacementQuestions = useCallback(async () => {

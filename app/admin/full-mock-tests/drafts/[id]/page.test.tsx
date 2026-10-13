@@ -136,6 +136,12 @@ function installFetchMock() {
     if (method === "PATCH" && url.includes("/questions/")) {
       return jsonResponse({ message: "Question replaced", data: currentDraft });
     }
+    if (url.includes("/topics/")) {
+      return jsonResponse({
+        message: "ok",
+        data: { id: "top-orphan", name: "Chemistry" },
+      });
+    }
     if (url.includes("/subjects/")) {
       if (url.includes("sub-gs")) {
         return jsonResponse({
@@ -205,6 +211,48 @@ describe("FullMockDraftPage", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("shows the topic name for a cross-subject replacement", async () => {
+    await renderReady({
+      ...reviewDraft,
+      subjects: [
+        {
+          ...reviewDraft.subjects[0],
+          questions: [
+            {
+              ...reviewDraft.subjects[0].questions[0],
+              subject: "sub-gs",
+              topic: "top-gs",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(await screen.findByText("Physics")).toBeInTheDocument();
+    expect(screen.queryByText("top-gs")).not.toBeInTheDocument();
+  });
+
+  it("shows a topic name that is not linked on the section subject", async () => {
+    await renderReady({
+      ...reviewDraft,
+      subjects: [
+        {
+          ...reviewDraft.subjects[0],
+          questions: [
+            {
+              ...reviewDraft.subjects[0].questions[0],
+              subject: "sub-1",
+              topic: "top-orphan",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(await screen.findByText("Chemistry")).toBeInTheDocument();
+    expect(screen.queryByText("top-orphan")).not.toBeInTheDocument();
   });
 
   it("loads a reviewable draft", async () => {
