@@ -158,6 +158,20 @@ describe("normalizeUserDetail", () => {
       totalMarks: 100,
       percentage: 40,
     });
+    expect(normalized?.profile.access).toEqual({ paid: false, usableCount: 0 });
+  });
+
+  it("keeps a paid access summary and drops a blank expiry", () => {
+    const normalized = normalizeUserDetail(
+      detail({
+        profile: {
+          ...detail().profile,
+          access: { paid: true, usableCount: 2.8, expiresAt: "  " },
+        },
+      })
+    );
+
+    expect(normalized?.profile.access).toEqual({ paid: true, usableCount: 2 });
   });
 
   it("rejects admin payloads and missing profiles", () => {

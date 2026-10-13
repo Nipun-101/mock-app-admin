@@ -115,7 +115,7 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("Tags")).toBeInTheDocument();
   });
 
-  it("opens a users modal with plan breakdown", async () => {
+  it("opens a users modal with learner counts", async () => {
     getUsers.mockResolvedValue({
       message: "ok",
       data: {
@@ -124,7 +124,6 @@ describe("AdminDashboardPage", () => {
         inactiveLearners: 8,
         newLast7Days: 2,
         newLast30Days: 5,
-        byPlan: [{ plan: "premium", count: 7 }],
       },
     });
 
@@ -132,8 +131,7 @@ describe("AdminDashboardPage", () => {
     await openCard("Active learners");
 
     expect(await screen.findByText("Total learners")).toBeInTheDocument();
-    expect(screen.getByText("By plan")).toBeInTheDocument();
-    expect(screen.getByText("premium")).toBeInTheDocument();
+    expect(screen.queryByText("By plan")).not.toBeInTheDocument();
     expect(getUsers).toHaveBeenCalledTimes(1);
   });
 
@@ -146,7 +144,6 @@ describe("AdminDashboardPage", () => {
         inactiveLearners: 8,
         newLast7Days: 2,
         newLast30Days: 5,
-        byPlan: [],
       },
     });
 

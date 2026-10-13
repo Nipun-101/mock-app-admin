@@ -9,7 +9,7 @@ import {
   ReadOutlined,
 } from "@ant-design/icons";
 import type { AttemptStatusCounts, AppUser } from "@/app/services/ezprep-api/users";
-import { planAccent, planStyle, tierStyle } from "./constants";
+import { accessPresentation, badgeTierLabel, BADGE_TIER_TOOLTIP, tierStyle } from "./constants";
 import {
   attendedTotal,
   avatarColor,
@@ -72,9 +72,8 @@ function ActivityTile({
 }
 
 export function UserCard({ user }: { user: AppUser }) {
-  const plan = planStyle(user.subscription?.plan);
+  const access = accessPresentation(user.access);
   const tier = tierStyle(user.membershipTier);
-  const accent = planAccent(user.subscription?.plan);
   const location = formatLocation(user.location);
   const activity = normalizeTestActivity(user.testActivity);
   const finishedTotal =
@@ -93,11 +92,11 @@ export function UserCard({ user }: { user: AppUser }) {
       data-testid="user-card"
       data-user-id={user.id}
     >
-      <div className="h-1.5 w-full" style={{ background: accent }} />
+      <div className="h-1.5 w-full" style={{ background: access.accent }} />
       <div
         className="pointer-events-none absolute inset-x-0 top-1.5 h-24"
         style={{
-          background: `linear-gradient(180deg, ${accent}14 0%, #ffffff 100%)`,
+          background: `linear-gradient(180deg, ${access.accent}14 0%, #ffffff 100%)`,
         }}
       />
 
@@ -142,16 +141,18 @@ export function UserCard({ user }: { user: AppUser }) {
         <div className="mt-3 flex flex-wrap gap-1.5">
           <Tag
             className="m-0 border-0"
-            style={{ color: plan.color, background: plan.background }}
+            style={{ color: access.color, background: access.background }}
           >
-            {plan.label}
+            {access.label}
           </Tag>
-          <Tag
-            className="m-0 border-0"
-            style={{ color: tier.color, background: tier.background }}
-          >
-            {tier.label}
-          </Tag>
+          <Tooltip title={BADGE_TIER_TOOLTIP}>
+            <Tag
+              className="m-0 border-0"
+              style={{ color: tier.color, background: tier.background }}
+            >
+              {badgeTierLabel(user.membershipTier)}
+            </Tag>
+          </Tooltip>
           {user.targetExam?.name ? (
             <Tooltip title="Target exam">
               <Tag className="m-0" icon={<ReadOutlined />}>
@@ -176,7 +177,7 @@ export function UserCard({ user }: { user: AppUser }) {
               plural: "full mocks attended",
             }}
             counts={activity.fullExam}
-            accent={accent}
+            accent={access.accent}
           />
           <ActivityTile
             title="Topic tests"
@@ -185,7 +186,7 @@ export function UserCard({ user }: { user: AppUser }) {
               plural: "topic tests attempted",
             }}
             counts={activity.topicWise}
-            accent={accent}
+            accent={access.accent}
           />
           <ActivityTile
             title="Sprint tests"
@@ -194,7 +195,7 @@ export function UserCard({ user }: { user: AppUser }) {
               plural: "sprint tests attended",
             }}
             counts={activity.sprint}
-            accent={accent}
+            accent={access.accent}
           />
         </div>
 
