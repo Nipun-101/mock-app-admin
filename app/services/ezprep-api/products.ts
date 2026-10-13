@@ -58,6 +58,26 @@ export type DuplicateProductPayload = {
   code?: string;
 };
 
+export interface GrantTarget {
+  id: string;
+  label: string;
+}
+
+export const grantTargetsApi = {
+  search(searchParams: {
+    scopeType: EntitlementScopeType;
+    search?: string;
+    page?: number;
+    limit?: number;
+    ids?: string;
+  }) {
+    return ezPrepApiClient.get<ApiListResponse<GrantTarget>>(
+      "/v1/admin/grant-targets",
+      { searchParams }
+    );
+  },
+};
+
 export const productsApi = {
   list(searchParams?: {
     page?: number;

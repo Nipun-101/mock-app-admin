@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/app/services/ezprep-api";
 import ProductsPage from "./page";
 
-const { push, replace, refresh } = vi.hoisted(() => ({
+const { push, replace, refresh, searchGrantTargets } = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
+  searchGrantTargets: vi.fn(),
 }));
 
 vi.mock("@/app/services/ezprep-api", async () => {
@@ -30,24 +31,13 @@ vi.mock("@/app/services/ezprep-api", async () => {
       ...actual.mockTestsApi,
       list: vi.fn(),
     },
+    grantTargetsApi: {
+      search: searchGrantTargets,
+    },
     fetchAllPages: vi.fn(async (fetchPage) => {
       const first = await fetchPage(1, 100);
       return first.data || [];
     }),
-  };
-});
-
-vi.mock("./grant-options", async () => {
-  const actual = await vi.importActual<typeof import("./grant-options")>(
-    "./grant-options"
-  );
-  return {
-    ...actual,
-    loadGrantScopeOptions: vi.fn(async () => ({
-      EXAM_GROUP: [{ value: "g1", label: "SSC Group" }],
-      EXAM: [{ value: "e1", label: "SSC CGL" }],
-      MOCK_TEST: [{ value: "m1", label: "Mock 1" }],
-    })),
   };
 });
 
@@ -124,11 +114,45 @@ async function chooseSelectOption(placeholder: string, optionLabel: string) {
   fireEvent.click(option);
 }
 
+function mockGrantTargetSearch() {
+  const catalog = [
+    { id: "g1", label: "SSC Group", scopeType: "EXAM_GROUP" },
+    { id: "e1", label: "SSC CGL", scopeType: "EXAM" },
+    { id: "m1", label: "Mock 1", scopeType: "MOCK_TEST" },
+  ];
+  searchGrantTargets.mockImplementation(
+    async (params: { scopeType?: string; ids?: string; search?: string }) => {
+      let rows = catalog.filter((row) => row.scopeType === params?.scopeType);
+      if (params?.ids) {
+        const ids = params.ids.split(",");
+        rows = rows.filter((row) => ids.includes(row.id));
+      } else if (params?.search) {
+        const needle = params.search.toLowerCase();
+        rows = rows.filter((row) => row.label.toLowerCase().includes(needle));
+      }
+      return {
+        message: "ok",
+        data: rows.map(({ id, label }) => ({ id, label })),
+        pagination: {
+          total: rows.length,
+          page: 1,
+          limit: 20,
+          totalPages: rows.length ? 1 : 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      };
+    }
+  );
+}
+
 describe("ProductsPage", { timeout: 20000 }, () => {
   beforeEach(() => {
     mockWideViewport();
     listProducts.mockReset();
     createProduct.mockReset();
+    searchGrantTargets.mockReset();
+    mockGrantTargetSearch();
     push.mockReset();
     listProducts.mockResolvedValue({
       message: "ok",
@@ -177,8 +201,8 @@ describe("ProductsPage", { timeout: 20000 }, () => {
     expect(screen.getAllByText("Bank Pack").length).toBeGreaterThan(0);
     expect(screen.getByText("Add New Product")).toBeInTheDocument();
     expect(screen.getByText("Total 2 products")).toBeInTheDocument();
-    expect(screen.getAllByText("SSC Group").length).toBeGreaterThan(0);
-    expect(screen.getByText("SSC CGL")).toBeInTheDocument();
+    expect((await screen.findAllByText("SSC Group")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("SSC CGL")).toBeInTheDocument();
     expect(screen.getByText("+1")).toBeInTheDocument();
     expect(screen.queryByText("Mock 1")).not.toBeInTheDocument();
   });

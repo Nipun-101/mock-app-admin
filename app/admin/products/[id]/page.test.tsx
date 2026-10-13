@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Offer, ProductDetail } from "@/app/services/ezprep-api";
 import EditProductPage from "./page";
 
-const { push, replace, refresh } = vi.hoisted(() => ({
+const { push, replace, refresh, searchGrantTargets } = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
+  searchGrantTargets: vi.fn(),
 }));
 
 vi.mock("@/app/services/ezprep-api", async () => {
@@ -29,20 +30,9 @@ vi.mock("@/app/services/ezprep-api", async () => {
       update: vi.fn(),
       get: vi.fn(),
     },
-  };
-});
-
-vi.mock("../grant-options", async () => {
-  const actual = await vi.importActual<typeof import("../grant-options")>(
-    "../grant-options"
-  );
-  return {
-    ...actual,
-    loadGrantScopeOptions: vi.fn(async () => ({
-      EXAM_GROUP: [{ value: "g1", label: "SSC Group" }],
-      EXAM: [],
-      MOCK_TEST: [],
-    })),
+    grantTargetsApi: {
+      search: searchGrantTargets,
+    },
   };
 });
 
@@ -162,6 +152,19 @@ describe("EditProductPage", { timeout: 20000 }, () => {
     push.mockReset();
     vi.mocked(showConfirmModal).mockClear();
     getProduct.mockResolvedValue({ message: "ok", data: makeProduct() });
+    searchGrantTargets.mockReset();
+    searchGrantTargets.mockResolvedValue({
+      message: "ok",
+      data: [{ id: "g1", label: "SSC Group" }],
+      pagination: {
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    });
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error
     );

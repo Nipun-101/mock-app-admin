@@ -12,7 +12,7 @@ import {
   message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Select } from "@/app/components/SearchableSelect";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import {
@@ -26,9 +26,10 @@ import {
 import {
   EMPTY_GRANT_SCOPE_OPTIONS,
   SCOPE_TYPE_OPTIONS,
-  loadGrantScopeOptions,
+  resolveGrantTargetLabels,
   type GrantScopeOptions,
 } from "../products/grant-options";
+import { GrantTargetSelect } from "../products/GrantTargetSelect";
 import { formatJoinedDate } from "./helpers";
 
 const { Text } = Typography;
@@ -102,7 +103,7 @@ export function EntitlementsSection({ userId }: { userId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    void loadGrantScopeOptions()
+    void resolveGrantTargetLabels(rows)
       .then((options) => {
         if (!cancelled) setScopeOptions(options);
       })
@@ -112,12 +113,7 @@ export function EntitlementsSection({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const scopeIdOptions = useMemo(() => {
-    if (!scopeTypeWatch) return [];
-    return scopeOptions[scopeTypeWatch] ?? [];
-  }, [scopeOptions, scopeTypeWatch]);
+  }, [rows]);
 
   const openGrantModal = () => {
     form.resetFields();
@@ -351,13 +347,9 @@ export function EntitlementsSection({ userId }: { userId: string }) {
               return Array.from(new Set(value));
             }}
           >
-            <Select
-              mode="multiple"
-              allowClear
-              options={scopeIdOptions}
+            <GrantTargetSelect
+              scopeType={scopeTypeWatch}
               placeholder="Search and select one or more targets"
-              disabled={!scopeTypeWatch}
-              maxTagCount="responsive"
             />
           </Form.Item>
           <Form.Item

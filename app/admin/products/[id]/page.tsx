@@ -40,11 +40,6 @@ import {
   expandGrantFormRowsToApi,
   type GrantFormRow,
 } from "../grant-form";
-import {
-  EMPTY_GRANT_SCOPE_OPTIONS,
-  loadGrantScopeOptions,
-  type GrantScopeOptions,
-} from "../grant-options";
 
 const { Title, Text } = Typography;
 
@@ -86,9 +81,6 @@ export default function EditProductPage(props: {
   const [offerSaving, setOfferSaving] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [product, setProduct] = useState<ProductDetail | null>(null);
-  const [scopeOptions, setScopeOptions] = useState<GrantScopeOptions>(
-    EMPTY_GRANT_SCOPE_OPTIONS
-  );
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
   const router = useRouter();
@@ -143,11 +135,7 @@ export default function EditProductPage(props: {
     const load = async () => {
       setInitialLoading(true);
       try {
-        const [options] = await Promise.all([
-          loadGrantScopeOptions(),
-          fetchProduct(),
-        ]);
-        setScopeOptions(options);
+        await fetchProduct();
       } catch (error) {
         message.error(
           formatEzPrepError(error, "Failed to load product editor")
@@ -474,10 +462,7 @@ export default function EditProductPage(props: {
             </div>
 
             <div className="mb-6">
-              <ProductGrantsFields
-                scopeOptions={scopeOptions}
-                disabled={isArchived}
-              />
+              <ProductGrantsFields disabled={isArchived} />
             </div>
 
             {!isArchived && (

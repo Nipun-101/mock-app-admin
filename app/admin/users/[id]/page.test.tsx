@@ -26,20 +26,6 @@ vi.mock("@/app/services/ezprep-api", async () => {
   };
 });
 
-vi.mock("../../products/grant-options", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../products/grant-options")
-  >("../../products/grant-options");
-  return {
-    ...actual,
-    loadGrantScopeOptions: vi.fn(async () => ({
-      EXAM_GROUP: [],
-      EXAM: [],
-      MOCK_TEST: [],
-    })),
-  };
-});
-
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
   return {

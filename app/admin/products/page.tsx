@@ -32,7 +32,7 @@ import {
 } from "./grant-form";
 import {
   EMPTY_GRANT_SCOPE_OPTIONS,
-  loadGrantScopeOptions,
+  resolveGrantTargetLabels,
   type GrantScopeOptions,
 } from "./grant-options";
 
@@ -123,17 +123,27 @@ export default function ProductsPage() {
   }, [fetchProducts]);
 
   useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        setScopeOptions(await loadGrantScopeOptions());
-      } catch (error) {
-        message.error(
-          formatEzPrepError(error, "Failed to load grant targets")
-        );
-      }
+    const grants = products.flatMap((product) => product.grants ?? []);
+    if (grants.length === 0) {
+      setScopeOptions(EMPTY_GRANT_SCOPE_OPTIONS);
+      return;
+    }
+
+    let cancelled = false;
+    void resolveGrantTargetLabels(grants)
+      .then((options) => {
+        if (!cancelled) setScopeOptions(options);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setScopeOptions(EMPTY_GRANT_SCOPE_OPTIONS);
+        message.error(formatEzPrepError(error, "Failed to load grant targets"));
+      });
+
+    return () => {
+      cancelled = true;
     };
-    void loadOptions();
-  }, []);
+  }, [products]);
 
   const handleSubmit = async (values: {
     code: string;
@@ -307,7 +317,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="mb-6">
-            <ProductGrantsFields scopeOptions={scopeOptions} />
+            <ProductGrantsFields />
           </div>
 
           <Form.Item className="mb-0">

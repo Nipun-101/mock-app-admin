@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ezPrepApiClient } from "./browser-client";
-import { productsApi } from "./products";
+import { grantTargetsApi, productsApi } from "./products";
 
 vi.mock("./browser-client", () => ({
   ezPrepApiClient: {
@@ -75,6 +75,24 @@ describe("productsApi", () => {
       code: "SSC",
       name: "SSC Pack",
       grants: [{ scopeType: "EXAM_GROUP", scopeId: "g1" }],
+    });
+  });
+
+  it("searches grant targets", async () => {
+    get.mockResolvedValue({ message: "ok", data: [] });
+    await grantTargetsApi.search({
+      scopeType: "MOCK_TEST",
+      search: "polity",
+      page: 2,
+      limit: 20,
+    });
+    expect(get).toHaveBeenCalledWith("/v1/admin/grant-targets", {
+      searchParams: {
+        scopeType: "MOCK_TEST",
+        search: "polity",
+        page: 2,
+        limit: 20,
+      },
     });
   });
 });
