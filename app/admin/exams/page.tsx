@@ -117,6 +117,13 @@ export default function ExamsPage() {
       render: (isSessionWise: boolean) => isSessionWise ? 'Session-wise' : 'Mixed',
     },
     {
+      title: "In app",
+      key: "showInApp",
+      dataIndex: "showInApp",
+      responsive: ['md', 'lg', 'xl', 'xxl'] as Breakpoint[],
+      render: (showInApp: boolean) => (showInApp ? "Shown" : "Hidden"),
+    },
+    {
       title: "Actions",
       key: "actions",
       render: (record: any) => (
@@ -239,6 +246,7 @@ export default function ExamsPage() {
         isSessionWise: examData.isSessionWise,
         hasMultiLingualSupport: examData.hasMultiLingualSupport,
         trending: examData.trending,
+        showInApp: examData.showInApp,
         performanceBands: buildPerformanceBands(examData),
         subjects: normalizeExamSubjects(examData.subjects),
       });
@@ -289,6 +297,7 @@ export default function ExamsPage() {
             isExamSameAsGroup: false,
             hasMultiLingualSupport: false,
             trending: false,
+            showInApp: false,
             resultGood: DEFAULT_PERFORMANCE_BANDS[1].minPercent,
             resultVeryGood: DEFAULT_PERFORMANCE_BANDS[2].minPercent,
             resultExcellent: DEFAULT_PERFORMANCE_BANDS[3].minPercent,
@@ -415,6 +424,18 @@ export default function ExamsPage() {
               <Switch
                 checkedChildren="Yes"
                 unCheckedChildren="No"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Show in student app"
+              name="showInApp"
+              valuePropName="checked"
+              tooltip="Only controls the student dashboard, search, and profile exam picker."
+            >
+              <Switch
+                checkedChildren="Shown"
+                unCheckedChildren="Hidden"
               />
             </Form.Item>
           </div>

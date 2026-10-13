@@ -115,6 +115,7 @@ function makeExam(overrides: Partial<Exam> = {}): Exam {
     isSessionWise: true,
     hasMultiLingualSupport: true,
     trending: true,
+    showInApp: false,
     isActive: true,
     ...overrides,
   };
@@ -252,6 +253,7 @@ describe("EditExamPage", { timeout: 15000 }, () => {
         isSessionWise: true,
         hasMultiLingualSupport: true,
         trending: false,
+        showInApp: false,
         performanceBands: [
           { key: "needs_improvement", minPercent: 0 },
           { key: "good", minPercent: 40 },

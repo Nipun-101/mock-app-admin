@@ -119,6 +119,7 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
         isSessionWise: values.isSessionWise,
         hasMultiLingualSupport: values.hasMultiLingualSupport,
         trending: values.trending,
+        showInApp: values.showInApp,
         performanceBands: buildPerformanceBands(values),
         subjects: normalizeExamSubjects(values.subjects),
       });
@@ -230,6 +231,18 @@ export default function EditExamPage(props: { params: Promise<{ id: string }> })
               <Switch
                 checkedChildren="Yes"
                 unCheckedChildren="No"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Show in student app"
+              name="showInApp"
+              valuePropName="checked"
+              tooltip="Only controls the student dashboard, search, and profile exam picker."
+            >
+              <Switch
+                checkedChildren="Shown"
+                unCheckedChildren="Hidden"
               />
             </Form.Item>
           </div>

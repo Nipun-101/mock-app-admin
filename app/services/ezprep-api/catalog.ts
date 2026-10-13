@@ -62,6 +62,7 @@ export interface Exam {
   isSessionWise: boolean;
   hasMultiLingualSupport: boolean;
   trending: boolean;
+  showInApp: boolean;
   performanceBands?: PerformanceBand[];
   isActive: boolean;
   createdAt?: string;
@@ -265,6 +266,7 @@ export const catalogApi = {
     isSessionWise?: boolean;
     hasMultiLingualSupport?: boolean;
     trending?: boolean;
+    showInApp?: boolean;
     performanceBands?: PerformanceBand[];
   }) {
     return ezPrepApiClient.post<ApiItemResponse<Exam>>(
@@ -285,6 +287,7 @@ export const catalogApi = {
       isSessionWise?: boolean;
       hasMultiLingualSupport?: boolean;
       trending?: boolean;
+      showInApp?: boolean;
       performanceBands?: PerformanceBand[];
       isActive?: boolean;
     }
