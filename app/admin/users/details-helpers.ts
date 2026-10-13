@@ -1,5 +1,6 @@
 import {
   ADMIN_ROLE,
+  type AppUserAccess,
   type AppUserDetail,
   type AppUserDetailProfile,
   type FinishedAttempt,
@@ -135,14 +136,6 @@ const STUDY_TIME_LABELS: Record<string, string> = {
   night: "Night",
 };
 
-const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
-  trial: "Trial",
-  active: "Active",
-  past_due: "Past due",
-  cancelled: "Cancelled",
-  expired: "Expired",
-};
-
 export function genderLabel(value?: string | null): string | null {
   if (!value) {
     return null;
@@ -155,13 +148,6 @@ export function studyTimeLabel(value?: string | null): string | null {
     return null;
   }
   return STUDY_TIME_LABELS[value] ?? null;
-}
-
-export function subscriptionStatusLabel(value?: string | null): string | null {
-  if (!value) {
-    return null;
-  }
-  return SUBSCRIPTION_STATUS_LABELS[value] ?? null;
 }
 
 export function attemptStatusLabel(status?: string | null): string {
@@ -350,6 +336,26 @@ function normalizeAttempts(
     .slice(0, RECENT_ATTEMPT_LIMIT);
 }
 
+function normalizeAccess(access: AppUserAccess | null | undefined): AppUserAccess {
+  if (!access || access.paid !== true) {
+    return { paid: false, usableCount: 0 };
+  }
+  const count = access.usableCount;
+  const usableCount =
+    typeof count === "number" && Number.isFinite(count) && count > 0
+      ? Math.trunc(count)
+      : 0;
+  const expiresAt =
+    typeof access.expiresAt === "string" && access.expiresAt.trim()
+      ? access.expiresAt
+      : undefined;
+  return {
+    paid: true,
+    usableCount,
+    ...(expiresAt ? { expiresAt } : {}),
+  };
+}
+
 function normalizeProfile(
   profile: Partial<Omit<AppUserDetailProfile, "role">> & { role?: string }
 ): AppUserDetailProfile | null {
@@ -378,7 +384,7 @@ function normalizeProfile(
     isActive: profile.isActive !== false,
     gender: optionalText(profile.gender) ?? undefined,
     location: profile.location,
-    subscription: profile.subscription,
+    access: normalizeAccess(profile.access),
     membershipTier: profile.membershipTier,
     badgesEarnedCount: safeCount(profile.badgesEarnedCount),
     targetExam,

@@ -4,10 +4,8 @@ import { Button, Form, Space } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { Select } from "@/app/components/SearchableSelect";
 import type { EntitlementScopeType } from "@/app/services/ezprep-api";
-import {
-  SCOPE_TYPE_OPTIONS,
-  type GrantScopeOptions,
-} from "./grant-options";
+import { GrantTargetSelect } from "./GrantTargetSelect";
+import { SCOPE_TYPE_OPTIONS } from "./grant-options";
 import {
   emptyGrantFormRow,
   hasDuplicateScopeTypes,
@@ -16,7 +14,6 @@ import {
 } from "./grant-form";
 
 type Props = {
-  scopeOptions: GrantScopeOptions;
   disabled?: boolean;
 };
 
@@ -26,13 +23,6 @@ type ScopeTypeOption = {
   disabled?: boolean;
 };
 
-function uniqueIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return Array.from(
-    new Set(value.filter((id): id is string => typeof id === "string"))
-  );
-}
-
 /**
  * One form value for the whole row. Changing the scope type replaces the row,
  * including an empty target list, so a nested setFieldValue is unnecessary.
@@ -41,17 +31,14 @@ function GrantRowControl({
   value,
   onChange,
   scopeTypeOptions,
-  scopeOptions,
   disabled,
 }: {
   value?: GrantFormRow;
   onChange?: (next: GrantFormRow) => void;
   scopeTypeOptions: ScopeTypeOption[];
-  scopeOptions: GrantScopeOptions;
   disabled?: boolean;
 }) {
   const scopeType = value?.scopeType;
-  const targetOptions = scopeType ? scopeOptions[scopeType] || [] : [];
 
   return (
     <div className="flex min-w-0 flex-1 flex-wrap gap-2">
@@ -66,31 +53,22 @@ function GrantRowControl({
           onChange?.({ scopeType: nextType, scopeIds: [] });
         }}
       />
-      <Select
-        className="min-w-[280px] flex-1"
-        mode="multiple"
-        allowClear
+      <GrantTargetSelect
+        scopeType={scopeType}
+        disabled={disabled}
         placeholder={
           scopeType ? "Select one or more targets" : "Select scope type first"
         }
-        size="large"
-        options={targetOptions}
-        disabled={disabled || !scopeType}
-        optionFilterProp="label"
-        maxTagCount="responsive"
         value={value?.scopeIds ?? []}
-        onChange={(nextIds: string[]) => {
-          onChange?.({
-            scopeType,
-            scopeIds: uniqueIds(nextIds),
-          });
+        onChange={(scopeIds) => {
+          onChange?.({ scopeType, scopeIds });
         }}
       />
     </div>
   );
 }
 
-export function ProductGrantsFields({ scopeOptions, disabled }: Props) {
+export function ProductGrantsFields({ disabled }: Props) {
   const allRows = (Form.useWatch("grants") || []) as GrantFormRow[];
 
   return (
@@ -165,7 +143,6 @@ export function ProductGrantsFields({ scopeOptions, disabled }: Props) {
                 >
                   <GrantRowControl
                     scopeTypeOptions={scopeTypeOptions}
-                    scopeOptions={scopeOptions}
                     disabled={disabled}
                   />
                 </Form.Item>

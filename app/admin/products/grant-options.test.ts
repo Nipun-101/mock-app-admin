@@ -1,88 +1,75 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const {
-  listExamGroups,
-  listAllExams,
-  listMockTests,
-  listSprints,
-  listFullMocks,
-  fetchAllPages,
-} = vi.hoisted(() => ({
-  listExamGroups: vi.fn(),
-  listAllExams: vi.fn(),
-  listMockTests: vi.fn(),
-  listSprints: vi.fn(),
-  listFullMocks: vi.fn(),
-  fetchAllPages: vi.fn(
-    async (fetchPage: (page: number, limit: number) => Promise<{ data: unknown[] }>) => {
-      const first = await fetchPage(1, 100);
-      return first.data ?? [];
-    }
-  ),
-}));
+import { grantTargetsApi } from "@/app/services/ezprep-api";
+import { resolveGrantTargetLabels } from "./grant-options";
 
 vi.mock("@/app/services/ezprep-api", () => ({
-  catalogApi: {
-    listExamGroups,
-    listAllExams,
-  },
-  mockTestsApi: {
-    list: listMockTests,
-  },
-  fetchAllPages,
-}));
-
-vi.mock("../sprint-tests/api", () => ({
-  sprintTestsApi: {
-    listPublished: listSprints,
+  grantTargetsApi: {
+    search: vi.fn(),
   },
 }));
 
-vi.mock("../full-mock-tests/api", () => ({
-  fullMockApi: {
-    listPublished: listFullMocks,
-  },
-}));
+const search = vi.mocked(grantTargetsApi.search);
 
-import { loadGrantScopeOptions } from "./grant-options";
+function response(data: { id: string; label: string }[]) {
+  return {
+    message: "ok",
+    data,
+    pagination: {
+      total: data.length,
+      page: 1,
+      limit: 100,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPrevPage: false,
+    },
+  };
+}
 
-describe("loadGrantScopeOptions", () => {
+describe("resolveGrantTargetLabels", () => {
   beforeEach(() => {
-    listExamGroups.mockReset();
-    listAllExams.mockReset();
-    listMockTests.mockReset();
-    listSprints.mockReset();
-    listFullMocks.mockReset();
-    fetchAllPages.mockClear();
+    search.mockReset();
+  });
 
-    listAllExams.mockResolvedValue([{ id: "e1", name: "SSC CGL" }]);
-    listExamGroups.mockResolvedValue({
-      data: [{ id: "g1", name: "SSC", shortName: "SSC" }],
+  it("requests one lookup per scope type and keeps returned labels", async () => {
+    search.mockImplementation(async (params) => {
+      if (params.scopeType === "EXAM_GROUP") {
+        return response([{ id: "g1", label: "SSC Group" }]);
+      }
+      if (params.scopeType === "MOCK_TEST") {
+        return response([{ id: "m1", label: "Topic · Polity" }]);
+      }
+      return response([]);
     });
-    listMockTests.mockResolvedValue({
-      data: [{ id: "t1", title: "Polity set" }],
-    });
-    listSprints.mockResolvedValue({
-      data: [{ id: "s1", title: "Quick sprint" }],
-    });
-    listFullMocks.mockResolvedValue({
-      data: [{ id: "f1", title: "Full prelims" }],
+
+    const options = await resolveGrantTargetLabels([
+      { scopeType: "EXAM_GROUP", scopeId: "g1" },
+      { scopeType: "EXAM_GROUP", scopeId: "g1" },
+      { scopeType: "MOCK_TEST", scopeId: "m1" },
+      { scopeType: "EXAM", scopeId: "missing" },
+    ]);
+
+    expect(options.EXAM_GROUP).toEqual([{ value: "g1", label: "SSC Group" }]);
+    expect(options.MOCK_TEST).toEqual([
+      { value: "m1", label: "Topic · Polity" },
+    ]);
+    expect(options.EXAM).toEqual([]);
+    expect(search).toHaveBeenCalledTimes(3);
+    expect(search).toHaveBeenCalledWith({
+      scopeType: "EXAM_GROUP",
+      ids: "g1",
     });
   });
 
-  it("merges topic-wise, sprint, and full-mock papers into MOCK_TEST options", async () => {
-    const options = await loadGrantScopeOptions();
+  it("chunks id lookups at 100", async () => {
+    search.mockResolvedValue(response([]));
+    const ids = Array.from({ length: 101 }, (_, index) => `e${index}`);
 
-    expect(options.MOCK_TEST).toEqual(
-      expect.arrayContaining([
-        { value: "t1", label: "Topic · Polity set" },
-        { value: "s1", label: "Sprint · Quick sprint" },
-        { value: "f1", label: "Full · Full prelims" },
-      ])
+    await resolveGrantTargetLabels(
+      ids.map((scopeId) => ({ scopeType: "EXAM" as const, scopeId }))
     );
-    expect(options.MOCK_TEST).toHaveLength(3);
-    expect(listSprints).toHaveBeenCalled();
-    expect(listFullMocks).toHaveBeenCalled();
-    expect(listMockTests).toHaveBeenCalled();
+
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(search.mock.calls[0][0].ids?.split(",")).toHaveLength(100);
+    expect(search.mock.calls[1][0].ids?.split(",")).toHaveLength(1);
   });
 });

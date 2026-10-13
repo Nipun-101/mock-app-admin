@@ -1,6 +1,6 @@
-import { Avatar, Tag } from "antd";
+import { Avatar, Tag, Tooltip } from "antd";
 import type { AppUserDetail, FinishedAttempt, PaperPerformance } from "@/app/services/ezprep-api/users";
-import { planAccent, planStyle, tierStyle } from "../constants";
+import { accessPresentation, badgeTierLabel, BADGE_TIER_TOOLTIP, tierStyle } from "../constants";
 import {
   attemptContext,
   attemptStatusLabel,
@@ -12,7 +12,6 @@ import {
   performanceSummary,
   recentAttemptsCaption,
   studyTimeLabel,
-  subscriptionStatusLabel,
   trendLabel,
 } from "../details-helpers";
 import {
@@ -288,28 +287,20 @@ function AttemptSection({
 
 export function UserDetailView({ detail }: { detail: AppUserDetail }) {
   const { profile, analysis } = detail;
-  const plan = planStyle(profile.subscription?.plan);
+  const access = accessPresentation(profile.access);
   const tier = tierStyle(profile.membershipTier);
-  const accent = planAccent(profile.subscription?.plan);
   const location = formatLocation(profile.location);
   const activity = profile.testActivity;
-  const subscriptionStatus = subscriptionStatusLabel(profile.subscription?.status);
   const studyTime = studyTimeLabel(profile.study?.studyTime);
   const weeklyGoal =
     profile.study?.weeklyStudyGoalHours && profile.study.weeklyStudyGoalHours > 0
       ? `${profile.study.weeklyStudyGoalHours} hours / week`
       : null;
-  const autoRenew =
-    typeof profile.subscription?.autoRenew === "boolean"
-      ? profile.subscription.autoRenew
-        ? "On"
-        : "Off"
-      : null;
 
   return (
     <div className="w-full space-y-6" data-testid="user-detail">
       <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
-        <div className="h-1.5 w-full" style={{ background: accent }} />
+        <div className="h-1.5 w-full" style={{ background: access.accent }} />
         <div className="p-4 sm:p-6">
           <div className="flex items-start gap-3 sm:gap-4">
             <Avatar
@@ -342,17 +333,15 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            <Tag className="m-0 border-0" style={{ color: plan.color, background: plan.background }}>
-              {plan.label}
+            <Tag className="m-0 border-0" style={{ color: access.color, background: access.background }}>
+              {access.label}
             </Tag>
-            <Tag className="m-0 border-0" style={{ color: tier.color, background: tier.background }}>
-              {tier.label}
-            </Tag>
-            {subscriptionStatus ? <Tag className="m-0">{subscriptionStatus}</Tag> : null}
+            <Tooltip title={BADGE_TIER_TOOLTIP}>
+              <Tag className="m-0 border-0" style={{ color: tier.color, background: tier.background }}>
+                {badgeTierLabel(profile.membershipTier)}
+              </Tag>
+            </Tooltip>
             {profile.targetExam?.name ? <Tag className="m-0">{profile.targetExam.name}</Tag> : null}
-            <Tag className="m-0" color="default">
-              Legacy plan (not used for access)
-            </Tag>
           </div>
 
           <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -367,31 +356,6 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
             <Fact label="Study time" value={studyTime} />
             <Fact label="Weekly goal" value={weeklyGoal} />
             <Fact label="Badges" value={quantityLabel(profile.badgesEarnedCount ?? 0, "badge", "badges")} />
-            <Fact
-              label="Legacy subscription started"
-              value={
-                profile.subscription?.startedAt
-                  ? formatJoinedDate(profile.subscription.startedAt)
-                  : null
-              }
-            />
-            <Fact
-              label="Legacy subscription expires"
-              value={
-                profile.subscription?.expiresAt
-                  ? formatJoinedDate(profile.subscription.expiresAt)
-                  : null
-              }
-            />
-            <Fact
-              label="Legacy trial ends"
-              value={
-                profile.subscription?.trialEndsAt
-                  ? formatJoinedDate(profile.subscription.trialEndsAt)
-                  : null
-              }
-            />
-            <Fact label="Legacy auto-renew" value={autoRenew} />
             <Fact label="Joined" value={formatJoinedDate(profile.createdAt)} />
             <Fact label="Updated" value={profile.updatedAt ? formatJoinedDate(profile.updatedAt) : null} />
           </dl>

@@ -13,9 +13,11 @@ export interface AppUserLocation {
   timezone?: string;
 }
 
-export interface AppUserSubscription {
-  plan: "free" | "basic" | "premium" | "enterprise";
-  status: "trial" | "active" | "past_due" | "cancelled" | "expired";
+/** Usable entitlements right now. Missing means the learner is shown as free. */
+export interface AppUserAccess {
+  paid: boolean;
+  usableCount: number;
+  expiresAt?: string;
 }
 
 export interface AppUserTargetExam {
@@ -52,7 +54,7 @@ export interface AppUser {
   isActive: boolean;
   gender?: string;
   location?: AppUserLocation;
-  subscription?: AppUserSubscription;
+  access?: AppUserAccess;
   membershipTier?: "none" | "bronze" | "silver" | "gold" | "platinum";
   badgesEarnedCount?: number;
   targetExam?: AppUserTargetExam;
@@ -69,13 +71,6 @@ export interface ListAppUsersParams {
   search?: string;
 }
 
-export interface AppUserSubscriptionDetail extends AppUserSubscription {
-  startedAt?: string;
-  expiresAt?: string;
-  trialEndsAt?: string;
-  autoRenew?: boolean;
-}
-
 export interface AppUserStudyPreference {
   studyTime?: "morning" | "afternoon" | "evening" | "night";
   weeklyStudyGoalHours?: number;
@@ -87,7 +82,6 @@ export interface AppUserDetailProfile extends AppUser {
   dateOfBirth?: string;
   targetExamDate?: string;
   lastTierUpdatedAt?: string;
-  subscription?: AppUserSubscriptionDetail;
   study?: AppUserStudyPreference;
 }
 

@@ -12,7 +12,6 @@ function makeUser(overrides: Partial<AppUser> = {}): AppUser {
     role: "user",
     isActive: true,
     location: { city: "Bengaluru", state: "KA", country: "IN" },
-    subscription: { plan: "premium", status: "active" },
     membershipTier: "gold",
     targetExam: { id: "e1", name: "UPSC" },
     testsAttendedCount: 6,
@@ -37,8 +36,9 @@ describe("UserCard", () => {
     expect(screen.queryByText("anita@example.com")).not.toBeInTheDocument();
     expect(screen.queryByText("+919876543210")).not.toBeInTheDocument();
     expect(screen.getByText("Active")).toBeInTheDocument();
-    expect(screen.getByText("Premium")).toBeInTheDocument();
-    expect(screen.getByText("Gold")).toBeInTheDocument();
+    expect(screen.getByText("Free")).toBeInTheDocument();
+    expect(screen.queryByText("Premium")).not.toBeInTheDocument();
+    expect(screen.getByText("Badge · Gold")).toBeInTheDocument();
     expect(screen.getByText("UPSC")).toBeInTheDocument();
     expect(screen.getByText("Bengaluru, KA, IN")).toBeInTheDocument();
     expect(screen.getByText("Full mocks")).toBeInTheDocument();
@@ -94,6 +94,20 @@ describe("UserCard", () => {
     expect(screen.getByText("Anita Sharma")).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.queryByText("View details")).not.toBeInTheDocument();
+  });
+
+  it("shows paid access instead of the stored profile plan", () => {
+    render(
+      <UserCard
+        user={makeUser({
+          access: { paid: true, usableCount: 2 },
+        })}
+      />
+    );
+
+    expect(screen.getByText("Paid · 2")).toBeInTheDocument();
+    expect(screen.queryByText("Premium")).not.toBeInTheDocument();
+    expect(screen.queryByText("Free")).not.toBeInTheDocument();
   });
 
   it("uses a singular attended label for a single full mock", () => {

@@ -27,7 +27,6 @@ export interface AdminDashboardUsers {
   inactiveLearners: number;
   newLast7Days: number;
   newLast30Days: number;
-  byPlan: Array<{ plan: string; count: number }>;
 }
 
 export interface AdminDashboardQuestions {

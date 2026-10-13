@@ -7,10 +7,11 @@ import {
   resolveScopeLabel,
 } from "./EntitlementsSection";
 
-const { listForUser, grant, revoke } = vi.hoisted(() => ({
+const { listForUser, grant, revoke, searchGrantTargets } = vi.hoisted(() => ({
   listForUser: vi.fn(),
   grant: vi.fn(),
   revoke: vi.fn(),
+  searchGrantTargets: vi.fn(),
 }));
 
 vi.mock("@/app/services/ezprep-api", async () => {
@@ -24,26 +25,9 @@ vi.mock("@/app/services/ezprep-api", async () => {
       grant,
       revoke,
     },
-  };
-});
-
-vi.mock("../products/grant-options", async () => {
-  const actual = await vi.importActual<typeof import("../products/grant-options")>(
-    "../products/grant-options"
-  );
-  return {
-    ...actual,
-    loadGrantScopeOptions: vi.fn(async () => ({
-      EXAM_GROUP: [{ value: "g1", label: "SSC Group" }],
-      EXAM: [
-        { value: "exam1", label: "SSC CGL" },
-        { value: "exam2", label: "SSC CHSL" },
-      ],
-      MOCK_TEST: [
-        { value: "mt1", label: "Paper One" },
-        { value: "mt2", label: "Paper Two" },
-      ],
-    })),
+    grantTargetsApi: {
+      search: searchGrantTargets,
+    },
   };
 });
 
@@ -91,6 +75,35 @@ describe("EntitlementsSection", () => {
     listForUser.mockReset();
     grant.mockReset();
     revoke.mockReset();
+    searchGrantTargets.mockReset();
+    searchGrantTargets.mockImplementation(
+      async (params: { scopeType?: string; ids?: string }) => {
+        const catalog = [
+          { id: "exam1", label: "SSC CGL", scopeType: "EXAM" },
+          { id: "exam2", label: "SSC CHSL", scopeType: "EXAM" },
+          { id: "mt1", label: "Paper One", scopeType: "MOCK_TEST" },
+          { id: "mt2", label: "Paper Two", scopeType: "MOCK_TEST" },
+          { id: "g1", label: "SSC Group", scopeType: "EXAM_GROUP" },
+        ];
+        let rows = catalog.filter((row) => row.scopeType === params?.scopeType);
+        if (params?.ids) {
+          const ids = params.ids.split(",");
+          rows = rows.filter((row) => ids.includes(row.id));
+        }
+        return {
+          message: "ok",
+          data: rows.map(({ id, label }) => ({ id, label })),
+          pagination: {
+            total: rows.length,
+            page: 1,
+            limit: 20,
+            totalPages: rows.length ? 1 : 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        };
+      }
+    );
     vi.mocked(showConfirmModal).mockClear();
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error

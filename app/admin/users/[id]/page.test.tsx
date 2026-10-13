@@ -26,20 +26,6 @@ vi.mock("@/app/services/ezprep-api", async () => {
   };
 });
 
-vi.mock("../../products/grant-options", async () => {
-  const actual = await vi.importActual<
-    typeof import("../../products/grant-options")
-  >("../../products/grant-options");
-  return {
-    ...actual,
-    loadGrantScopeOptions: vi.fn(async () => ({
-      EXAM_GROUP: [],
-      EXAM: [],
-      MOCK_TEST: [],
-    })),
-  };
-});
-
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
   return {
@@ -93,7 +79,7 @@ function makeDetail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
       isActive: true,
       gender: "female",
       location: { city: "Bengaluru", state: "KA", country: "IN", timezone: "Asia/Kolkata" },
-      subscription: { plan: "premium", status: "active", autoRenew: true },
+      access: { paid: true, usableCount: 2 },
       membershipTier: "gold",
       badgesEarnedCount: 4,
       targetExam: { id: "e1", name: "UPSC" },
@@ -372,14 +358,17 @@ describe("UserDetailPage", () => {
     expect(get).toHaveBeenCalledTimes(2);
   });
 
-  it("shows entitlements section and legacy plan labeling", async () => {
+  it("shows entitlements and paid access without a profile plan", async () => {
     get.mockResolvedValue({ message: "ok", data: makeDetail() });
 
     renderPage();
 
     expect(await screen.findByTestId("entitlements-section")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Entitlements" })).toBeInTheDocument();
-    expect(screen.getByText("Legacy plan (not used for access)")).toBeInTheDocument();
+    expect(screen.getByText("Paid · 2")).toBeInTheDocument();
+    expect(screen.getByText("Badge · Gold")).toBeInTheDocument();
+    expect(screen.queryByText("Profile plan (not used for access)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Auto-renew")).not.toBeInTheDocument();
     expect(listForUser).toHaveBeenCalledWith("u1", { includeInactive: true });
   });
 

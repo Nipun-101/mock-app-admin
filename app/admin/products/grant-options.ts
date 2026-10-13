@@ -1,11 +1,8 @@
 import {
-  catalogApi,
-  fetchAllPages,
-  mockTestsApi,
+  grantTargetsApi,
   type EntitlementScopeType,
+  type ProductGrant,
 } from "@/app/services/ezprep-api";
-import { fullMockApi } from "../full-mock-tests/api";
-import { sprintTestsApi } from "../sprint-tests/api";
 
 export type ScopeOption = { value: string; label: string };
 
@@ -24,59 +21,59 @@ export const EMPTY_GRANT_SCOPE_OPTIONS: GrantScopeOptions = {
   MOCK_TEST: [],
 };
 
-function paperLabel(kind: "Topic" | "Sprint" | "Full", title?: string | null, id?: string) {
-  const name = title?.trim() || id || "Untitled";
-  return `${kind} · ${name}`;
-}
+const IDS_PER_REQUEST = 100;
 
 /**
- * Loads scope pickers for product grants and admin entitlements.
- *
- * MOCK_TEST merges topic-wise + sprint + full-exam published papers (they live on
- * separate list endpoints). Options are prefetched via paginated list APIs
- * (fetchAllPages, max 50 pages × 100) and filtered client-side in SearchableSelect.
+ * Resolves labels for grants already on screen.
+ * One request per scope type, in chunks of 100 ids. Unknown ids are omitted
+ * so callers can fall back to the scope type.
  */
-export async function loadGrantScopeOptions(): Promise<GrantScopeOptions> {
-  const [examGroups, exams, topicWise, sprints, fullMocks] = await Promise.all([
-    fetchAllPages((page, limit) =>
-      catalogApi.listExamGroups({ page, limit })
-    ),
-    catalogApi.listAllExams(),
-    fetchAllPages((page, limit) => mockTestsApi.list({ page, limit })),
-    fetchAllPages((page, limit) =>
-      sprintTestsApi.listPublished({ page, limit })
-    ),
-    fetchAllPages((page, limit) =>
-      fullMockApi.listPublished({ page, limit })
-    ),
-  ]);
-
-  const mockTestOptions: ScopeOption[] = [
-    ...topicWise.map((mock) => ({
-      value: mock.id,
-      label: paperLabel("Topic", mock.title, mock.id),
-    })),
-    ...sprints.map((mock) => ({
-      value: mock.id,
-      label: paperLabel("Sprint", mock.title, mock.id),
-    })),
-    ...fullMocks.map((mock) => ({
-      value: mock.id,
-      label: paperLabel("Full", mock.title, mock.id),
-    })),
-  ].sort((a, b) => a.label.localeCompare(b.label));
-
-  return {
-    EXAM_GROUP: examGroups.map((group) => ({
-      value: group.id,
-      label: group.shortName
-        ? `${group.name} (${group.shortName})`
-        : group.name,
-    })),
-    EXAM: exams.map((exam) => ({
-      value: exam.id,
-      label: exam.name,
-    })),
-    MOCK_TEST: mockTestOptions,
+export async function resolveGrantTargetLabels(
+  grants: Array<Pick<ProductGrant, "scopeType" | "scopeId"> | null | undefined>
+): Promise<GrantScopeOptions> {
+  const idsByType: GrantScopeOptions = {
+    EXAM_GROUP: [],
+    EXAM: [],
+    MOCK_TEST: [],
   };
+  const seen = new Set<string>();
+
+  for (const grant of grants) {
+    if (!grant?.scopeType || !grant.scopeId) continue;
+    const key = `${grant.scopeType}:${grant.scopeId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    idsByType[grant.scopeType].push({
+      value: grant.scopeId,
+      label: grant.scopeId,
+    });
+  }
+
+  const options: GrantScopeOptions = {
+    EXAM_GROUP: [],
+    EXAM: [],
+    MOCK_TEST: [],
+  };
+
+  await Promise.all(
+    (Object.keys(idsByType) as EntitlementScopeType[]).map(async (scopeType) => {
+      const ids = idsByType[scopeType].map((option) => option.value);
+      if (ids.length === 0) return;
+
+      const labels: ScopeOption[] = [];
+      for (let index = 0; index < ids.length; index += IDS_PER_REQUEST) {
+        const chunk = ids.slice(index, index + IDS_PER_REQUEST);
+        const response = await grantTargetsApi.search({
+          scopeType,
+          ids: chunk.join(","),
+        });
+        for (const row of response.data ?? []) {
+          labels.push({ value: row.id, label: row.label });
+        }
+      }
+      options[scopeType] = labels;
+    })
+  );
+
+  return options;
 }

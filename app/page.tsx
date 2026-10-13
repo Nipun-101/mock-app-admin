@@ -56,7 +56,7 @@ export default function Home() {
               Mock Test Admin
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-7 text-slate-600">
-              Internal console for EZ Prep. Manage the question bank, papers,
+              Internal console for admins. Manage the question bank, papers,
               catalog, and uploads — this is not the student test-taking app.
             </p>
             <Link

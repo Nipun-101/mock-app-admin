@@ -188,36 +188,22 @@ function DetailTables({ metric, data }: { metric: MetricKey; data: unknown }) {
 
   if (metric === "users") {
     return (
-      <>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="label"
-          dataSource={[
-            { label: "Total learners", count: row.totalLearners },
-            { label: "Active", count: row.activeLearners },
-            { label: "Inactive", count: row.inactiveLearners },
-            { label: "New (7 days)", count: row.newLast7Days },
-            { label: "New (30 days)", count: row.newLast30Days },
-          ]}
-          columns={[
-            { title: "Metric", dataIndex: "label", key: "label" },
-            { title: "Count", dataIndex: "count", key: "count" },
-          ]}
-          className="mb-4"
-        />
-        <Typography.Title level={5}>By plan</Typography.Title>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="plan"
-          dataSource={(row.byPlan as Array<{ plan: string; count: number }>) || []}
-          columns={[
-            { title: "Plan", dataIndex: "plan", key: "plan" },
-            { title: "Count", dataIndex: "count", key: "count" },
-          ]}
-        />
-      </>
+      <Table
+        size="small"
+        pagination={false}
+        rowKey="label"
+        dataSource={[
+          { label: "Total learners", count: row.totalLearners },
+          { label: "Active", count: row.activeLearners },
+          { label: "Inactive", count: row.inactiveLearners },
+          { label: "New (7 days)", count: row.newLast7Days },
+          { label: "New (30 days)", count: row.newLast30Days },
+        ]}
+        columns={[
+          { title: "Metric", dataIndex: "label", key: "label" },
+          { title: "Count", dataIndex: "count", key: "count" },
+        ]}
+      />
     );
   }
 
