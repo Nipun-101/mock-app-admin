@@ -134,6 +134,7 @@ async function renderReady(item: FailedQuestion = detail) {
       isSessionWise: false,
       hasMultiLingualSupport: false,
       trending: false,
+      showInApp: false,
       isActive: true,
       category: "c1",
       examGroup: "g1",

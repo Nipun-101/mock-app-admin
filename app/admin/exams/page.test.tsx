@@ -141,6 +141,7 @@ function makeExam(overrides: Partial<Exam> = {}): Exam {
     isSessionWise: false,
     hasMultiLingualSupport: false,
     trending: false,
+    showInApp: false,
     isActive: true,
     ...overrides,
   };
@@ -207,6 +208,7 @@ describe("ExamsPage", { timeout: 15000 }, () => {
         examGroup: "eg-1",
         subjects: [],
         isSessionWise: true,
+        showInApp: true,
         category: "missing",
       }),
     ]);
@@ -222,6 +224,8 @@ describe("ExamsPage", { timeout: 15000 }, () => {
     await findRow("Mathematics");
     expect(screen.getAllByText("Mixed").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Session-wise").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Hidden").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Shown").length).toBeGreaterThan(0);
     expect(screen.getByText("Add New Exam")).toBeInTheDocument();
   });
 
@@ -288,6 +292,7 @@ describe("ExamsPage", { timeout: 15000 }, () => {
         isSessionWise: false,
         hasMultiLingualSupport: false,
         trending: false,
+        showInApp: false,
         performanceBands: [
           { key: "needs_improvement", minPercent: 0 },
           { key: "good", minPercent: 40 },
