@@ -18,14 +18,30 @@ vi.mock("@/app/services/ezprep-api", async () => {
     ...actual,
     catalogApi: {
       ...actual.catalogApi,
-      getSubject: vi.fn().mockResolvedValue({
-        message: "ok",
-        data: {
-          id: "sub-1",
-          name: "Polity",
-          topics: [{ id: "top-1", name: "Parliament" }],
-        },
+      getSubject: vi.fn(async (id: string) => {
+        if (id === "sub-gs") {
+          return {
+            message: "ok",
+            data: {
+              id,
+              name: "General Science",
+              topics: [{ id: "top-gs", name: "Physics" }],
+            },
+          };
+        }
+        return {
+          message: "ok",
+          data: {
+            id: "sub-1",
+            name: "Polity",
+            topics: [{ id: "top-1", name: "Parliament" }],
+          },
+        };
       }),
+      getTopic: vi.fn(async (id: string) => ({
+        message: "ok",
+        data: { id, name: "Chemistry" },
+      })),
     },
   };
 });
@@ -222,6 +238,58 @@ describe("PublishedFullMockPage", () => {
     await screen.findAllByText("UPSC Full Mock 1");
     fireEvent.click(screen.getByRole("button", { name: /back to full mock tests/i }));
     expect(push).toHaveBeenCalledWith("/admin/full-mock-tests");
+  });
+
+  it("shows the topic name for a cross-subject replacement", async () => {
+    getPublished.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...testItem,
+        subjects: [
+          {
+            ...testItem.subjects![0],
+            questions: [
+              {
+                ...testItem.subjects![0].questions[0],
+                subject: "sub-gs",
+                topic: "top-gs",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Physics")).toBeInTheDocument();
+    expect(screen.queryByText("top-gs")).not.toBeInTheDocument();
+  });
+
+  it("shows a topic name that is not linked on the section subject", async () => {
+    getPublished.mockResolvedValue({
+      message: "ok",
+      data: {
+        ...testItem,
+        subjects: [
+          {
+            ...testItem.subjects![0],
+            questions: [
+              {
+                ...testItem.subjects![0].questions[0],
+                subject: "sub-1",
+                topic: "top-orphan",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Chemistry")).toBeInTheDocument();
+    expect(screen.queryByText("top-orphan")).not.toBeInTheDocument();
   });
 
   it("redirects when fetch fails", async () => {
