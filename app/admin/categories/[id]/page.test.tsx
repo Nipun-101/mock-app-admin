@@ -137,6 +137,7 @@ describe("EditCategoryPage", { timeout: 15000 }, () => {
         shortName: "UPSC",
         imageUrl: "https://example.com/ssc.png",
         description: "Central exams",
+        priority: 0,
       })
     );
     expect(message.success).toHaveBeenCalledWith("Category updated successfully");
@@ -164,7 +165,9 @@ describe("EditCategoryPage", { timeout: 15000 }, () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /update category/i }));
 
-    expect(await screen.findByText("Please enter category name")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Please enter category name", { hidden: true }),
+    ).toBeInTheDocument();
     expect(updateCategory).not.toHaveBeenCalled();
   });
 
