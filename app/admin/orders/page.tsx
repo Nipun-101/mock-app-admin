@@ -57,10 +57,10 @@ export default function OrdersPage() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [tableLoading, setTableLoading] = useState(false);
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [search, setSearch] = useState(searchParams?.get("search") ?? "");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
   const [flagFilter, setFlagFilter] = useState<AdminOrderFlag | "">(
-    flagFromQuery(searchParams.get("flag"))
+    flagFromQuery(searchParams?.get("flag") ?? null)
   );
   const [pagination, setPagination] = useState({
     current: 1,

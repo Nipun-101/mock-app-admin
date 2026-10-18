@@ -165,9 +165,7 @@ describe("EditCategoryPage", { timeout: 15000 }, () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /update category/i }));
 
-    expect(
-      await screen.findByText("Please enter category name", { hidden: true }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Please enter category name")).toBeInTheDocument();
     expect(updateCategory).not.toHaveBeenCalled();
   });
 
