@@ -1,6 +1,15 @@
 "use client";
 
-import { Button, Card, Form, Input, Table, Typography, message } from "antd";
+import {
+  Button,
+  Card,
+  Form,
+  Input,
+  InputNumber,
+  Table,
+  Typography,
+  message,
+} from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { Breakpoint } from "antd/es/_util/responsiveObserver";
@@ -36,6 +45,13 @@ export default function CategoriesPage() {
       title: "Short Name",
       dataIndex: "shortName",
       key: "shortName",
+    },
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
+      width: 100,
+      render: (value: number | undefined) => value ?? 0,
     },
     {
       title: "Description",
@@ -111,6 +127,7 @@ export default function CategoriesPage() {
     shortName: string;
     imageUrl?: string;
     description?: string;
+    priority: number;
   }) => {
     setLoading(true);
     try {
@@ -159,6 +176,7 @@ export default function CategoriesPage() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          initialValues={{ priority: 0 }}
           className="max-w-4xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,6 +196,30 @@ export default function CategoriesPage() {
               rules={[{ required: true, message: "Please enter short name" }]}
             >
               <Input placeholder="e.g. SSC" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Dashboard priority"
+              name="priority"
+              extra="Higher numbers appear first in Popular Exams. Categories with the same priority are listed alphabetically."
+              rules={[
+                { required: true, message: "Please enter a priority" },
+                {
+                  type: "number",
+                  min: 0,
+                  max: 9999,
+                  message: "Priority must be a whole number from 0 to 9999",
+                },
+              ]}
+            >
+              <InputNumber
+                min={0}
+                max={9999}
+                precision={0}
+                className="w-full"
+                size="large"
+                placeholder="e.g. 10"
+              />
             </Form.Item>
 
             <Form.Item label="Image URL" name="imageUrl">

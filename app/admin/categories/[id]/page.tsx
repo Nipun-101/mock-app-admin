@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Card, Form, Input, Typography, message } from "antd";
+import {
+  Button,
+  Card,
+  Form,
+  Input,
+  InputNumber,
+  Typography,
+  message,
+} from "antd";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
@@ -26,6 +34,7 @@ export default function EditCategoryPage(props: {
           shortName: data.shortName,
           imageUrl: data.imageUrl,
           description: data.description,
+          priority: data.priority ?? 0,
         });
       } catch (error) {
         message.error(formatEzPrepError(error, "Failed to fetch category"));
@@ -42,6 +51,7 @@ export default function EditCategoryPage(props: {
     shortName: string;
     imageUrl?: string;
     description?: string;
+    priority: number;
   }) => {
     setLoading(true);
     try {
@@ -89,6 +99,30 @@ export default function EditCategoryPage(props: {
               rules={[{ required: true, message: "Please enter short name" }]}
             >
               <Input placeholder="e.g. SSC" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Dashboard priority"
+              name="priority"
+              extra="Higher numbers appear first in Popular Exams. Categories with the same priority are listed alphabetically."
+              rules={[
+                { required: true, message: "Please enter a priority" },
+                {
+                  type: "number",
+                  min: 0,
+                  max: 9999,
+                  message: "Priority must be a whole number from 0 to 9999",
+                },
+              ]}
+            >
+              <InputNumber
+                min={0}
+                max={9999}
+                precision={0}
+                className="w-full"
+                size="large"
+                placeholder="e.g. 10"
+              />
             </Form.Item>
 
             <Form.Item label="Image URL" name="imageUrl">

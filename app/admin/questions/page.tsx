@@ -44,11 +44,11 @@ function QuestionsPageContent() {
   const [exams, setExams] = useState<{ _id: string; name: string }[]>([]);
   const [topics, setTopics] = useState<{ _id: string; name: string }[]>([]);
 
-  const page = parsePositiveInt(searchParams.get("page"), 1);
-  const pageSize = parsePositiveInt(searchParams.get("limit"), 10);
-  const selectedSubject = searchParams.get("subjectId");
-  const selectedExam = searchParams.get("examId");
-  const selectedTopic = searchParams.get("topicId");
+  const page = parsePositiveInt(searchParams?.get("page") ?? null, 1);
+  const pageSize = parsePositiveInt(searchParams?.get("limit") ?? null, 10);
+  const selectedSubject = searchParams?.get("subjectId") ?? null;
+  const selectedExam = searchParams?.get("examId") ?? null;
+  const selectedTopic = searchParams?.get("topicId") ?? null;
   const [selectedQuestions, setSelectedQuestions] = useState<
     Map<string, SelectedSprintQuestion>
   >(new Map());
@@ -57,7 +57,7 @@ function QuestionsPageContent() {
   const canCreateSprint = isSprintSelectionSize(selectedCount);
 
   const updateQuery = (updates: Record<string, string | number | null | undefined>) => {
-    const next = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams(searchParams?.toString());
     Object.entries(updates).forEach(([key, value]) => {
       if (value == null || value === "") {
         next.delete(key);
@@ -66,6 +66,7 @@ function QuestionsPageContent() {
       }
     });
     const query = next.toString();
+    if (!pathname) return;
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 

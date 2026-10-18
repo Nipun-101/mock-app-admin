@@ -19,6 +19,8 @@ export interface Category {
   shortName: string;
   imageUrl?: string;
   description?: string;
+  /** Higher values appear first in dashboard Popular Exams. Defaults to 0. */
+  priority?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -147,6 +149,7 @@ export const catalogApi = {
     shortName: string;
     imageUrl?: string;
     description?: string;
+    priority?: number;
   }) {
     return ezPrepApiClient.post<ApiItemResponse<Category>>(
       "/v1/categories",
@@ -161,6 +164,7 @@ export const catalogApi = {
       shortName?: string;
       imageUrl?: string;
       description?: string;
+      priority?: number;
       isActive?: boolean;
     }
   ) {

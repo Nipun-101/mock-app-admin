@@ -137,6 +137,7 @@ describe("EditCategoryPage", { timeout: 15000 }, () => {
         shortName: "UPSC",
         imageUrl: "https://example.com/ssc.png",
         description: "Central exams",
+        priority: 0,
       })
     );
     expect(message.success).toHaveBeenCalledWith("Category updated successfully");

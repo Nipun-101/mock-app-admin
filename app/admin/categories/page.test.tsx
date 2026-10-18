@@ -118,13 +118,18 @@ describe("CategoriesPage", { timeout: 15000 }, () => {
   it("renders categories returned by the API", async () => {
     listCategories.mockResolvedValue({
       message: "ok",
-      data: [makeCategory(), makeCategory({ id: "c2", name: "UPSC", shortName: "UPSC", imageUrl: undefined })],
+      data: [
+        makeCategory({ priority: 12 }),
+        makeCategory({ id: "c2", name: "UPSC", shortName: "UPSC", imageUrl: undefined }),
+      ],
       pagination: { ...pagination, total: 2 },
     });
 
     render(<CategoriesPage />);
 
     await findRow("Staff Selection Commission");
+    expect(screen.getByRole("columnheader", { name: "Priority" })).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getAllByText("UPSC").length).toBeGreaterThan(0);
     expect(screen.getAllByText("SSC").length).toBeGreaterThan(0);
     expect(screen.getByAltText("category")).toHaveAttribute(
@@ -203,6 +208,7 @@ describe("CategoriesPage", { timeout: 15000 }, () => {
         shortName: "RRB",
         imageUrl: "https://example.com/rrb.png",
         description: "Railway exams",
+        priority: 0,
       })
     );
     expect(message.success).toHaveBeenCalledWith("Category created successfully");
