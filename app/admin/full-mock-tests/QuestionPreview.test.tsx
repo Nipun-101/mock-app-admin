@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { QuestionPreview } from "./QuestionPreview";
 import type { SafeQuestion } from "./types";
 
+vi.mock("@/app/hooks/usePresignedUrl", () => ({
+  usePresignedUrl: (metadata: { key: string; bucket: string } | null) => ({
+    url: metadata ? `https://signed.example/${metadata.key}` : null,
+    loading: false,
+  }),
+}));
+
 vi.mock("next/image", () => ({
   default: (props: { alt?: string }) => <img alt={props.alt ?? ""} />,
 }));
@@ -135,6 +142,46 @@ describe("QuestionPreview", () => {
     expect(screen.getByAltText("Option A")).toHaveAttribute(
       "src",
       "https://cdn.example/a.png"
+    );
+  });
+
+  it("loads stored question images through a signed url", () => {
+    render(
+      <QuestionPreview
+        question={makeQuestion({
+          questionText: {
+            en: {
+              text: "Name the line",
+              imageUrl: "https://stale.example/expired",
+              image: {
+                key: "question-imports/line.jpg",
+                bucket: "ez-prep-image-bucket",
+              },
+            },
+            ml: { text: null },
+          },
+          options: [
+            {
+              id: "a",
+              type: "image",
+              imageUrl: "https://stale.example/opt",
+              image: {
+                key: "question-imports/opt.jpg",
+                bucket: "ez-prep-image-bucket",
+              },
+            },
+          ],
+        })}
+      />
+    );
+
+    expect(screen.getByAltText("Question")).toHaveAttribute(
+      "src",
+      "https://signed.example/question-imports/line.jpg"
+    );
+    expect(screen.getByAltText("Option A")).toHaveAttribute(
+      "src",
+      "https://signed.example/question-imports/opt.jpg"
     );
   });
 

@@ -4,8 +4,15 @@ import { Button, Card, Descriptions, Tag, Table, Space, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatEzPrepError, mockTestsApi, refName } from "@/app/services/ezprep-api";
+import {
+  formatEzPrepError,
+  mockTestsApi,
+  refName,
+  type MockTestQuestion,
+} from "@/app/services/ezprep-api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
+import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 
 export default function MockTestDetailPage(props: {
   params: Promise<{ id: string }>;
@@ -37,18 +44,25 @@ export default function MockTestDetailPage(props: {
     {
       title: "Question",
       key: "question",
-      render: (record: any) => (
-        <div>
-          <div>{record?.questionText?.en?.text?.substring(0, 100)}...</div>
-        </div>
-      ),
+      render: (record: MockTestQuestion) =>
+        record?.questionText?.en?.text?.slice(0, 120) || "Question",
     },
     {
       title: "Subject",
       key: "subject",
-      render: (record: any) => (
-        <Tag color="blue">{refName(record?.subject) || 'N/A'}</Tag>
+      render: (record: MockTestQuestion) => (
+        <Tag color="blue">{refName(record?.subject) || "N/A"}</Tag>
       ),
+    },
+    {
+      title: "Topic",
+      key: "topic",
+      render: (record: MockTestQuestion) =>
+        refName(record?.topic) ? (
+          <Tag color="purple">{refName(record.topic)}</Tag>
+        ) : (
+          "-"
+        ),
     },
   ];
 
@@ -132,11 +146,26 @@ export default function MockTestDetailPage(props: {
         </Card>
 
         <Card title={`Questions (${(mockTest.questions || mockTest.questionIds)?.length || 0})`}>
-          <Table 
+          <Table
             columns={questionColumns}
             dataSource={mockTest.questions || mockTest.questionIds}
             rowKey="id"
             pagination={{ pageSize: 10 }}
+            expandable={{
+              expandedRowRender: (record: MockTestQuestion) => (
+                <QuestionPreview
+                  question={{
+                    _id: record.id,
+                    questionText: {
+                      en: record.questionText?.en || { text: null },
+                      ml: record.questionText?.ml || { text: null },
+                    },
+                    optionType: record.optionType,
+                    options: record.options || [],
+                  } as SafeQuestion}
+                />
+              ),
+            }}
           />
         </Card>
       </div>

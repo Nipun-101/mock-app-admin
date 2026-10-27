@@ -3,16 +3,44 @@
 import { Button, Card, Form, Input, InputNumber, Slider, Table, Typography, Switch, Space, message, Tag } from "antd";
 import { Select } from "@/app/components/SearchableSelect";
 import { PlusOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Breakpoint } from 'antd/es/_util/responsiveObserver';
 import { showConfirmModal } from '@/components/ConfirmModal';
 import { useRouter } from "next/navigation";
-import { catalogApi, formatEzPrepError, mockTestsApi } from "@/app/services/ezprep-api";
+import { catalogApi, formatEzPrepError, mockTestsApi, refId, type Exam } from "@/app/services/ezprep-api";
 import { setFormValue } from "@/app/lib/form-store";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
+import { topicWiseDraftsApi } from "./api";
+import type { TopicWiseDraftListItem } from "./types";
 
 const { Title } = Typography;
 const { TextArea } = Input;
+
+function EllipsisTag({
+  color,
+  children,
+}: {
+  color: string;
+  children: string;
+}) {
+  return (
+    <Tag color={color} title={children} className="!m-0 !block max-w-full truncate">
+      {children}
+    </Tag>
+  );
+}
+
+function subjectsOnExam(exam: Exam) {
+  const seen = new Set<string>();
+  const options: { value: string; label: string }[] = [];
+  for (const row of exam.subjects || []) {
+    const id = refId(row.subject);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    options.push({ value: id, label: row.name || id });
+  }
+  return options;
+}
 
 export default function MockTestsPage() {
   const [form] = Form.useForm();
@@ -25,11 +53,16 @@ export default function MockTestsPage() {
     total: 0
   });
   const [subjects, setSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [topics, setTopics] = useState<{ value: string; label: string }[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const subjectsRequest = useRef(0);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState({ easy: 0, medium: 0, hard: 0 });
+  const [drafts, setDrafts] = useState<TopicWiseDraftListItem[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
   const router = useRouter();
 
   const computeDefaults = (total: number) => {
@@ -143,17 +176,34 @@ export default function MockTestsPage() {
     }
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjectsForExam = async (examId: string) => {
+    const requestId = ++subjectsRequest.current;
+    setSubjectsLoading(true);
+    setSubjects([]);
     try {
-      const data = await catalogApi.listSubjects();
-      setSubjects(
-        (data.data || []).map((subject) => ({
-          value: subject.id,
-          label: subject.name,
-        }))
-      );
+      const { data } = await catalogApi.getExam(examId);
+      if (requestId !== subjectsRequest.current) return;
+      setSubjects(subjectsOnExam(data));
     } catch (error) {
+      if (requestId !== subjectsRequest.current) return;
+      setSubjects([]);
       message.error(formatEzPrepError(error, 'Failed to fetch subjects'));
+    } finally {
+      if (requestId === subjectsRequest.current) {
+        setSubjectsLoading(false);
+      }
+    }
+  };
+
+  const fetchDrafts = async () => {
+    setDraftsLoading(true);
+    try {
+      const data = await topicWiseDraftsApi.listDrafts({ page: 1, limit: 20 });
+      setDrafts(data.data || []);
+    } catch (error) {
+      message.error(formatEzPrepError(error, "Failed to fetch drafts"));
+    } finally {
+      setDraftsLoading(false);
     }
   };
 
@@ -188,7 +238,20 @@ export default function MockTestsPage() {
     }
   };
 
-  const handleSubjectChange = (subjectId: string) => {
+  const handleExamChange = (examId?: string) => {
+    setFormValue(form, "subject", undefined);
+    setFormValue(form, "topic", undefined);
+    setTopics([]);
+    setSubjects([]);
+    if (!examId) {
+      subjectsRequest.current += 1;
+      setSubjectsLoading(false);
+      return;
+    }
+    void fetchSubjectsForExam(examId);
+  };
+
+  const handleSubjectChange = (subjectId?: string) => {
     setFormValue(form, "topic", undefined);
     setTopics([]);
     if (subjectId) {
@@ -202,9 +265,12 @@ export default function MockTestsPage() {
   }, [pagination.current, pagination.pageSize]);
 
   useEffect(() => {
-    fetchSubjects();
     fetchExams();
+    fetchDrafts();
   }, []);
+
+  const selectedExam = Form.useWatch("exam", form);
+  const selectedSubject = Form.useWatch("subject", form);
 
   const handleSubmit = async (values: any) => {
     if (!isDifficultyValid) {
@@ -217,17 +283,33 @@ export default function MockTestsPage() {
         ...values,
         difficultyDistribution: difficulty,
       };
-      await mockTestsApi.create(payload);
-      message.success('Mock test created successfully');
-      form.resetFields();
-      setTotalQuestions(null);
-      setDifficulty({ easy: 0, medium: 0, hard: 0 });
-      fetchMockTests();
+      const response = await topicWiseDraftsApi.createDraft(payload);
+      message.success(response.message || "Topic-wise draft created");
+      router.push(`/admin/mock-tests/drafts/${response.data.id}`);
     } catch (error) {
-      message.error(formatEzPrepError(error, 'Failed to create mock test'));
-    } finally {
+      message.error(formatEzPrepError(error, "Failed to create mock test"));
       setLoading(false);
     }
+  };
+
+  const handleDiscardDraft = (draft: TopicWiseDraftListItem) => {
+    showConfirmModal({
+      title: "Discard Draft",
+      content:
+        "Discard this draft? Nothing is written to published mock tests.",
+      onConfirm: async () => {
+        setDiscardingId(draft.id);
+        try {
+          const response = await topicWiseDraftsApi.discardDraft(draft.id);
+          message.success(response.message || "Draft discarded");
+          await fetchDrafts();
+        } catch (error) {
+          message.error(formatEzPrepError(error, "Failed to discard draft"));
+        } finally {
+          setDiscardingId(null);
+        }
+      },
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -252,9 +334,9 @@ export default function MockTestsPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <Title level={2}>Mock Tests Management</Title>
+        <Title level={2}>Topic Wise Tests Management</Title>
         
-        <Card title="Create New Mock Test">
+        <Card title="Create New Topic Wise Test">
           <Form
             form={form}
             layout="vertical"
@@ -313,6 +395,7 @@ export default function MockTestsPage() {
                   placeholder="Select exam"
                   options={exams}
                   showSearch
+                  onChange={handleExamChange}
                   filterOption={(input, option: any) =>
                     (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
@@ -325,8 +408,18 @@ export default function MockTestsPage() {
                 rules={[{ required: true, message: "Please select a subject" }]}
               >
                 <Select
-                  placeholder="Select subject"
+                  placeholder={
+                    selectedExam
+                      ? subjectsLoading
+                        ? "Loading subjects"
+                        : subjects.length > 0
+                          ? "Select subject"
+                          : "No subjects for this exam"
+                      : "Select an exam first"
+                  }
                   options={subjects}
+                  disabled={!selectedExam || subjectsLoading || subjects.length === 0}
+                  loading={subjectsLoading}
                   onChange={handleSubjectChange}
                 />
               </Form.Item>
@@ -336,9 +429,17 @@ export default function MockTestsPage() {
                 name="topic"
               >
                 <Select
-                  placeholder={topics.length > 0 ? "Select topic" : "Select a subject first"}
+                  placeholder={
+                    !selectedSubject
+                      ? "Select a subject first"
+                      : topicsLoading
+                        ? "Loading topics"
+                        : topics.length > 0
+                          ? "Select topic"
+                          : "No topics for this subject"
+                  }
                   options={topics}
-                  disabled={topics.length === 0}
+                  disabled={!selectedSubject || topicsLoading || topics.length === 0}
                   loading={topicsLoading}
                   allowClear
                 />
@@ -483,10 +584,112 @@ export default function MockTestsPage() {
                 disabled={totalQuestions !== null && !isDifficultyValid}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Create Mock Test
+                Create Draft
               </Button>
             </Form.Item>
           </Form>
+        </Card>
+
+        <Card title="Open Drafts">
+          <Table
+            rowKey="id"
+            loading={draftsLoading}
+            dataSource={drafts}
+            pagination={false}
+            tableLayout="fixed"
+            columns={[
+              {
+                title: "Title",
+                dataIndex: "title",
+                key: "title",
+                width: "10%",
+                ellipsis: true,
+                render: (title?: string) => (
+                  <span title={title || undefined} className="block truncate">
+                    {title || "-"}
+                  </span>
+                ),
+              },
+              {
+                title: "Exam",
+                dataIndex: "examName",
+                key: "examName",
+                width: "16%",
+                ellipsis: true,
+                render: (name?: string) => (
+                  <EllipsisTag color="cyan">{name || "N/A"}</EllipsisTag>
+                ),
+              },
+              {
+                title: "Subject",
+                dataIndex: "subjectName",
+                key: "subjectName",
+                width: "16%",
+                ellipsis: true,
+                render: (name?: string) => (
+                  <EllipsisTag color="blue">{name || "N/A"}</EllipsisTag>
+                ),
+              },
+              {
+                title: "Topic",
+                dataIndex: "topicName",
+                key: "topicName",
+                width: "16%",
+                ellipsis: true,
+                render: (name?: string) =>
+                  name ? <EllipsisTag color="purple">{name}</EllipsisTag> : "-",
+              },
+              {
+                title: "Questions",
+                dataIndex: "totalQuestions",
+                key: "totalQuestions",
+                width: "9%",
+              },
+              {
+                title: "Duration",
+                dataIndex: "durationInMinutes",
+                key: "duration",
+                width: "9%",
+                render: (minutes: number) => `${minutes} mins`,
+              },
+              {
+                title: "Status",
+                dataIndex: "status",
+                key: "status",
+                width: "8%",
+                render: (status: string) => <Tag color="blue">{status}</Tag>,
+              },
+              {
+                title: "Actions",
+                key: "actions",
+                width: "16%",
+                render: (record: TopicWiseDraftListItem) => (
+                  <Space size={0} wrap>
+                    <Button
+                      type="link"
+                      size="small"
+                      className="!px-1"
+                      onClick={() =>
+                        router.push(`/admin/mock-tests/drafts/${record.id}`)
+                      }
+                    >
+                      Review
+                    </Button>
+                    <Button
+                      type="link"
+                      size="small"
+                      className="!px-1"
+                      danger
+                      loading={discardingId === record.id}
+                      onClick={() => handleDiscardDraft(record)}
+                    >
+                      Discard
+                    </Button>
+                  </Space>
+                ),
+              },
+            ]}
+          />
         </Card>
 
         <Card title="All Mock Tests">

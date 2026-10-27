@@ -49,6 +49,43 @@ describe("sprint selection", () => {
     expect(setQuestionSelected(bothPages, snapshotQuestion(question("q-2", ["e1"])), false).has("q-1")).toBe(true);
   });
 
+  it("keeps storage metadata for images and drops the stored url", () => {
+    const snap = snapshotQuestion({
+      ...question("q-img", ["e1"]),
+      questionText: {
+        en: {
+          text: "Name the line",
+          image: {
+            key: "question-imports/line.jpg",
+            bucket: "ez-prep-image-bucket",
+            url: "https://ez-prep-image-bucket.s3.amazonaws.com/expired",
+          },
+        },
+      },
+      options: [
+        {
+          id: "a",
+          type: "image",
+          image: {
+            key: "question-imports/opt.jpg",
+            bucket: "ez-prep-image-bucket",
+            url: "https://ez-prep-image-bucket.s3.amazonaws.com/expired-opt",
+          },
+        },
+      ],
+    });
+
+    expect(snap.preview?.questionText.en.imageUrl).toBeNull();
+    expect(snap.preview?.questionText.en.image).toEqual({
+      key: "question-imports/line.jpg",
+      bucket: "ez-prep-image-bucket",
+    });
+    expect(snap.preview?.options[0].image).toEqual({
+      key: "question-imports/opt.jpg",
+      bucket: "ez-prep-image-bucket",
+    });
+  });
+
   it("keeps only exams tagged on every selected question", () => {
     const questions = [
       snapshotQuestion(question("q-1", ["e1", "e2"])),

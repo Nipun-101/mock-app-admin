@@ -18,6 +18,7 @@ import {
 import { PageLoader } from "@/app/components/PageLoader";
 import { questionsEditHref } from "./questions-list-href";
 import { CreateSprintFromSelectionModal } from "./CreateSprintFromSelectionModal";
+import { CreateTopicWiseFromSelectionModal } from "./CreateTopicWiseFromSelectionModal";
 import {
   isSprintSelectionSize,
   setQuestionsSelected,
@@ -26,6 +27,7 @@ import {
   sprintSelectionHint,
   type SelectedSprintQuestion,
 } from "./sprint-selection";
+import { topicWiseSelectionIssue } from "./topic-wise-selection";
 
 function parsePositiveInt(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value || "", 10);
@@ -53,8 +55,12 @@ function QuestionsPageContent() {
     Map<string, SelectedSprintQuestion>
   >(new Map());
   const [sprintModalOpen, setSprintModalOpen] = useState(false);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
   const selectedCount = selectedQuestions.size;
+  const selectedList = [...selectedQuestions.values()];
   const canCreateSprint = isSprintSelectionSize(selectedCount);
+  const topicIssue = topicWiseSelectionIssue(selectedList);
+  const canCreateTopic = topicIssue === null;
 
   const updateQuery = (updates: Record<string, string | number | null | undefined>) => {
     const next = new URLSearchParams(searchParams?.toString());
@@ -323,6 +329,26 @@ function QuestionsPageContent() {
                   </Button>
                 </span>
               </Tooltip>
+              <Tooltip
+                title={
+                  topicIssue ||
+                  `${selectedCount} questions selected. You can create a topic-wise test.`
+                }
+              >
+                <span className="inline-block">
+                  <Button
+                    disabled={!canCreateTopic}
+                    className={
+                      canCreateTopic
+                        ? "!bg-[#722ed1] hover:!bg-[#531dab] !text-white !border-[#722ed1]"
+                        : undefined
+                    }
+                    onClick={() => setTopicModalOpen(true)}
+                  >
+                    + Topic Test
+                  </Button>
+                </span>
+              </Tooltip>
               <Tooltip title="Clear selection">
                 <Button
                   aria-label={`Clear selection (${selectedCount})`}
@@ -348,6 +374,9 @@ function QuestionsPageContent() {
           showIcon
           message={sprintSelectionHint(selectedCount)}
         />
+      ) : null}
+      {selectedCount > 0 && canCreateSprint && !canCreateTopic && topicIssue ? (
+        <Alert className="mb-4" type="warning" showIcon message={topicIssue} />
       ) : null}
       <Table
         columns={columns}
@@ -388,12 +417,22 @@ function QuestionsPageContent() {
       </div>
       <CreateSprintFromSelectionModal
         open={sprintModalOpen}
-        questions={[...selectedQuestions.values()]}
+        questions={selectedList}
         exams={exams.map((exam) => ({ id: exam._id, name: exam.name }))}
         onClose={() => setSprintModalOpen(false)}
         onCreated={() => {
           setSelectedQuestions(new Map());
           setSprintModalOpen(false);
+        }}
+      />
+      <CreateTopicWiseFromSelectionModal
+        open={topicModalOpen}
+        questions={selectedList}
+        exams={exams.map((exam) => ({ id: exam._id, name: exam.name }))}
+        onClose={() => setTopicModalOpen(false)}
+        onCreated={() => {
+          setSelectedQuestions(new Map());
+          setTopicModalOpen(false);
         }}
       />
     </div>

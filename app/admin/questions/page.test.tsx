@@ -83,6 +83,7 @@ describe("QuestionsPage", () => {
 
     const button = screen.getByRole("button", { name: "+ Sprint Test" });
     expect(button).toBeDisabled();
+    expect(screen.getByRole("button", { name: "+ Topic Test" })).toBeDisabled();
     expect(screen.getByText(/Select at least 10 questions/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /clear selection \(1\)/i }));
     expect(screen.queryByRole("button", { name: "+ Sprint Test" })).not.toBeInTheDocument();
