@@ -58,6 +58,15 @@ export default function MockTestsPage() {
   const [topicsLoading, setTopicsLoading] = useState(false);
   const subjectsRequest = useRef(0);
   const [exams, setExams] = useState<{ value: string; label: string }[]>([]);
+  const [listExamId, setListExamId] = useState<string>();
+  const [listSubjectId, setListSubjectId] = useState<string>();
+  const [listTopicId, setListTopicId] = useState<string>();
+  const [listSubjects, setListSubjects] = useState<{ value: string; label: string }[]>([]);
+  const [listTopics, setListTopics] = useState<{ value: string; label: string }[]>([]);
+  const [listSubjectsLoading, setListSubjectsLoading] = useState(false);
+  const [listTopicsLoading, setListTopicsLoading] = useState(false);
+  const listSubjectsRequest = useRef(0);
+  const listTopicsRequest = useRef(0);
   const [totalQuestions, setTotalQuestions] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState({ easy: 0, medium: 0, hard: 0 });
   const [drafts, setDrafts] = useState<TopicWiseDraftListItem[]>([]);
@@ -163,6 +172,9 @@ export default function MockTestsPage() {
       const data = await mockTestsApi.list({
         page: pagination.current,
         limit: pagination.pageSize,
+        ...(listExamId ? { examId: listExamId } : {}),
+        ...(listSubjectId ? { subjectId: listSubjectId } : {}),
+        ...(listTopicId ? { topicId: listTopicId } : {}),
       });
       setMockTests(data.data || []);
       setPagination(prev => ({
@@ -259,10 +271,78 @@ export default function MockTestsPage() {
     }
   };
 
+  const handleListExamChange = (examId?: string) => {
+    setListExamId(examId);
+    setListSubjectId(undefined);
+    setListTopicId(undefined);
+    setListTopics([]);
+    setListSubjects([]);
+    listTopicsRequest.current += 1;
+    setListTopicsLoading(false);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    if (!examId) {
+      listSubjectsRequest.current += 1;
+      setListSubjectsLoading(false);
+      return;
+    }
+    const requestId = ++listSubjectsRequest.current;
+    setListSubjectsLoading(true);
+    void catalogApi
+      .getExam(examId)
+      .then(({ data }) => {
+        if (requestId !== listSubjectsRequest.current) return;
+        setListSubjects(subjectsOnExam(data));
+      })
+      .catch((error) => {
+        if (requestId !== listSubjectsRequest.current) return;
+        setListSubjects([]);
+        message.error(formatEzPrepError(error, "Failed to fetch subjects"));
+      })
+      .finally(() => {
+        if (requestId === listSubjectsRequest.current) {
+          setListSubjectsLoading(false);
+        }
+      });
+  };
+
+  const handleListSubjectChange = (subjectId?: string) => {
+    setListSubjectId(subjectId);
+    setListTopicId(undefined);
+    setListTopics([]);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    const requestId = ++listTopicsRequest.current;
+    if (!subjectId) {
+      setListTopicsLoading(false);
+      return;
+    }
+    setListTopicsLoading(true);
+    void catalogApi
+      .getSubject(subjectId)
+      .then(({ data }) => {
+        if (requestId !== listTopicsRequest.current) return;
+        setListTopics(
+          (data.topics || []).map((topic) => ({
+            value: topic.id,
+            label: topic.name,
+          }))
+        );
+      })
+      .catch((error) => {
+        if (requestId !== listTopicsRequest.current) return;
+        setListTopics([]);
+        message.error(formatEzPrepError(error, "Failed to fetch topics"));
+      })
+      .finally(() => {
+        if (requestId === listTopicsRequest.current) {
+          setListTopicsLoading(false);
+        }
+      });
+  };
+
   useEffect(() => {
     fetchMockTests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, listExamId, listSubjectId, listTopicId]);
 
   useEffect(() => {
     fetchExams();
@@ -693,6 +773,58 @@ export default function MockTestsPage() {
         </Card>
 
         <Card title="All Mock Tests">
+          <div className="mb-4 flex flex-wrap gap-3">
+            <Select
+              allowClear
+              placeholder="Filter by exam"
+              aria-label="Filter by exam"
+              style={{ width: 240 }}
+              options={exams}
+              value={listExamId}
+              onChange={handleListExamChange}
+            />
+            <Select
+              allowClear
+              placeholder={
+                !listExamId
+                  ? "Select an exam first"
+                  : listSubjectsLoading
+                    ? "Loading subjects"
+                    : listSubjects.length > 0
+                      ? "Filter by subject"
+                      : "No subjects for this exam"
+              }
+              aria-label="Filter by subject"
+              style={{ width: 240 }}
+              options={listSubjects}
+              value={listSubjectId}
+              disabled={!listExamId || listSubjectsLoading || listSubjects.length === 0}
+              loading={listSubjectsLoading}
+              onChange={handleListSubjectChange}
+            />
+            <Select
+              allowClear
+              placeholder={
+                !listSubjectId
+                  ? "Select a subject first"
+                  : listTopicsLoading
+                    ? "Loading topics"
+                    : listTopics.length > 0
+                      ? "Filter by topic"
+                      : "No topics for this subject"
+              }
+              aria-label="Filter by topic"
+              style={{ width: 240 }}
+              options={listTopics}
+              value={listTopicId}
+              disabled={!listSubjectId || listTopicsLoading || listTopics.length === 0}
+              loading={listTopicsLoading}
+              onChange={(topicId?: string) => {
+                setListTopicId(topicId);
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            />
+          </div>
           <Table 
             columns={columns} 
             dataSource={mockTests}

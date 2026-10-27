@@ -76,7 +76,14 @@ export type CreateMockTestPayload = {
 };
 
 export const mockTestsApi = {
-  list(searchParams?: { page?: number; limit?: number; search?: string }) {
+  list(searchParams?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    examId?: string;
+    subjectId?: string;
+    topicId?: string;
+  }) {
     return ezPrepApiClient.get<ApiListResponse<MockTest>>("/v1/mock-tests", {
       searchParams,
     });
