@@ -1,12 +1,15 @@
-import { refId, refName, type Question } from "@/app/services/ezprep-api";
-import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
+import { refId, refName, type Question, type QuestionImage } from "@/app/services/ezprep-api";
+import type { QuestionImageRef, SafeQuestion } from "@/app/admin/full-mock-tests/types";
 
 export const SPRINT_SELECTION_SIZES = [10, 15, 20, 25, 30] as const;
 
 export interface SelectedSprintQuestion {
   id: string;
   snippet: string;
+  subjectId?: string;
   subjectName?: string;
+  topicId?: string;
+  topicName?: string;
   examIds: string[];
   difficultyLevel?: string;
   isActive: boolean;
@@ -28,6 +31,19 @@ export function sprintSelectionHint(count: number): string {
   return `A sprint must have exactly ${sizes} questions. You have selected ${count}. Add or remove questions to reach one of those counts.`;
 }
 
+function previewImage(image?: QuestionImage | null): {
+  imageUrl: string | null;
+  image: QuestionImageRef | null;
+} {
+  if (image?.key && image.bucket) {
+    return {
+      imageUrl: null,
+      image: { key: image.key, bucket: image.bucket },
+    };
+  }
+  return { imageUrl: image?.url ?? null, image: null };
+}
+
 export function snapshotQuestion(question: Question): SelectedSprintQuestion {
   const text =
     question.questionText?.en?.text ||
@@ -36,7 +52,10 @@ export function snapshotQuestion(question: Question): SelectedSprintQuestion {
   return {
     id: question.id,
     snippet: text.slice(0, 140),
+    subjectId: refId(question.subject),
     subjectName: refName(question.subject),
+    topicId: refId(question.topic),
+    topicName: refName(question.topic),
     examIds: (question.exams || [])
       .map((exam) => refId(exam))
       .filter((id): id is string => Boolean(id)),
@@ -47,11 +66,11 @@ export function snapshotQuestion(question: Question): SelectedSprintQuestion {
       questionText: {
         en: {
           text: question.questionText?.en?.text ?? null,
-          imageUrl: question.questionText?.en?.image?.url ?? null,
+          ...previewImage(question.questionText?.en?.image),
         },
         ml: {
           text: question.questionText?.ml?.text ?? null,
-          imageUrl: question.questionText?.ml?.image?.url ?? null,
+          ...previewImage(question.questionText?.ml?.image),
         },
       },
       options: (question.options || []).map((option) => ({
@@ -59,7 +78,7 @@ export function snapshotQuestion(question: Question): SelectedSprintQuestion {
         type: option.type,
         en: option.en,
         ml: option.ml,
-        imageUrl: option.image?.url ?? null,
+        ...previewImage(option.image),
       })),
       difficultyLevel: question.difficultyLevel,
     },

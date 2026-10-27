@@ -66,8 +66,22 @@ const detail = {
   questions: [
     {
       id: "q1",
-      questionText: { en: { text: "Who is the speaker of the Lok Sabha in this scenario?" } },
+      questionText: {
+        en: {
+          text: "Who is the speaker of the Lok Sabha in this scenario?",
+          imageUrl: "https://signed.example/q.png",
+        },
+      },
       subject: { id: "sub-1", name: "Polity" },
+      topic: { id: "top-1", name: "Parliament" },
+      options: [
+        { id: "a", type: "text", en: "The Speaker" },
+        {
+          id: "b",
+          type: "image",
+          imageUrl: "https://signed.example/b.png",
+        },
+      ],
     },
   ],
 };
@@ -98,7 +112,19 @@ describe("MockTestDetailPage", () => {
     expect(screen.getByText("UPSC")).toBeInTheDocument();
     expect(screen.getByText("Easy: 3")).toBeInTheDocument();
     expect(screen.getByText("Questions (1)")).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader", { name: "Topic" }).length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Parliament").length).toBeGreaterThan(1);
     expect(screen.getByText(/Who is the speaker/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /expand row/i }));
+    expect(await screen.findByText("The Speaker")).toBeInTheDocument();
+    expect(screen.getByAltText("Question")).toHaveAttribute(
+      "src",
+      "https://signed.example/q.png"
+    );
+    expect(screen.getByAltText("Option B")).toHaveAttribute(
+      "src",
+      "https://signed.example/b.png"
+    );
     expect(get).toHaveBeenCalledWith("id-1");
   });
 

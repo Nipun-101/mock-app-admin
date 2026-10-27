@@ -249,7 +249,7 @@ export default function AdminLayout({
     {
       key: "/admin/mock-tests",
       icon: <ExperimentOutlined />,
-      label: <Link href="/admin/mock-tests">Mock Tests</Link>,
+      label: <Link href="/admin/mock-tests">Topic Wise Tests</Link>,
     },
     {
       key: "/admin/full-mock-tests",
@@ -371,6 +371,8 @@ export default function AdminLayout({
               ? "/admin/bulk-upload"
               : pathname.startsWith("/admin/failed-questions")
                 ? "/admin/failed-questions"
+                : pathname.startsWith("/admin/mock-tests")
+                  ? "/admin/mock-tests"
                 : pathname.startsWith("/admin/full-mock-tests")
                   ? "/admin/full-mock-tests"
                   : pathname.startsWith("/admin/sprint-tests")

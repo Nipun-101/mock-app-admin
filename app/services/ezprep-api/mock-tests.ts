@@ -17,10 +17,19 @@ export interface DifficultyDistribution {
 export interface MockTestQuestion {
   id: string;
   questionText?: {
-    en?: { text?: string | null };
-    ml?: { text?: string | null };
+    en?: { text?: string | null; imageUrl?: string | null };
+    ml?: { text?: string | null; imageUrl?: string | null };
   };
+  optionType?: string;
+  options?: Array<{
+    id?: string;
+    type?: string;
+    en?: string | null;
+    ml?: string | null;
+    imageUrl?: string | null;
+  }>;
   subject?: NamedRef | null;
+  topic?: NamedRef | null;
 }
 
 export interface MockTest {

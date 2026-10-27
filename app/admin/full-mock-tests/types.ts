@@ -26,9 +26,16 @@ export interface FullMockExamListItem {
   mode: ExamMode;
 }
 
+export interface QuestionImageRef {
+  key: string;
+  bucket: string;
+}
+
 export interface QuestionTextLocale {
   text?: string | null;
   imageUrl?: string | null;
+  /** Present when the list payload only has storage metadata. Signed at render time. */
+  image?: QuestionImageRef | null;
 }
 
 export interface SafeQuestionOption {
@@ -37,6 +44,7 @@ export interface SafeQuestionOption {
   en?: string | null;
   ml?: string | null;
   imageUrl?: string | null;
+  image?: QuestionImageRef | null;
 }
 
 export interface SafeQuestion {

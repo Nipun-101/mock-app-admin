@@ -39,6 +39,7 @@ export interface ExamGroup {
 
 export interface ExamSubjectConfig {
   subject: string;
+  name?: string;
   numberOfQuestions: number;
   marksPerQuestion: number;
   hasNegativeMarking: boolean;
