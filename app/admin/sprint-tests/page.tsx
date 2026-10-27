@@ -35,6 +35,7 @@ export default function SprintTestsPage() {
   const [published, setPublished] = useState<SprintTest[]>([]);
   const [publishedLoading, setPublishedLoading] = useState(true);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [filterExamId, setFilterExamId] = useState<string>();
   const [drafts, setDrafts] = useState<SprintDraftListItem[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(true);
   const [discardingId, setDiscardingId] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export default function SprintTestsPage() {
       const response = await sprintTestsApi.listPublished({
         page: pagination.current,
         limit: pagination.pageSize,
+        ...(filterExamId ? { examId: filterExamId } : {}),
       });
       setPublished(response.data || []);
       setPagination((prev) => ({ ...prev, total: response.pagination?.total ?? 0 }));
@@ -62,7 +64,7 @@ export default function SprintTestsPage() {
     } finally {
       setPublishedLoading(false);
     }
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, filterExamId]);
 
   const fetchDrafts = useCallback(async () => {
     setDraftsLoading(true);
@@ -299,6 +301,20 @@ export default function SprintTestsPage() {
         </Card>
 
         <Card title="Published Sprint Tests">
+          <div className="mb-4">
+            <Select
+              allowClear
+              placeholder="Filter by exam"
+              aria-label="Filter by exam"
+              style={{ width: 240 }}
+              options={exams}
+              value={filterExamId}
+              onChange={(examId?: string) => {
+                setFilterExamId(examId);
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            />
+          </div>
           <Table
             rowKey="id"
             loading={publishedLoading}

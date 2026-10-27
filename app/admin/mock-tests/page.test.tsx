@@ -346,6 +346,52 @@ describe("MockTestsPage", () => {
     await waitFor(() => expect(message.error).toHaveBeenCalled());
   });
 
+  it("filters published tests by exam, then that exam's subjects and topics", async () => {
+    await renderReady();
+    const subjectFilter = screen.getByRole("combobox", { name: "Filter by subject" });
+    const topicFilter = screen.getByRole("combobox", { name: "Filter by topic" });
+    expect(subjectFilter).toBeDisabled();
+    expect(topicFilter).toBeDisabled();
+
+    const chooseDropdownOption = async (label: string, optionText: string) => {
+      fireEvent.mouseDown(screen.getByRole("combobox", { name: label }));
+      const option = await waitFor(() => {
+        const match = [...document.querySelectorAll(".ant-select-item-option-content")].find(
+          (node) => node.textContent === optionText
+        );
+        expect(match).toBeTruthy();
+        return match!;
+      });
+      fireEvent.click(option);
+    };
+
+    await chooseDropdownOption("Filter by exam", "UPSC");
+
+    await waitFor(() => expect(getExam).toHaveBeenCalledWith("ex-1"));
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Filter by subject" })).toBeEnabled()
+    );
+    expect(screen.getByRole("combobox", { name: "Filter by topic" })).toBeDisabled();
+
+    await chooseDropdownOption("Filter by subject", "Polity");
+    await waitFor(() => expect(getSubject).toHaveBeenCalledWith("sub-1"));
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: "Filter by topic" })).toBeEnabled()
+    );
+
+    await chooseDropdownOption("Filter by topic", "Parliament");
+
+    await waitFor(() => {
+      expect(list).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          examId: "ex-1",
+          subjectId: "sub-1",
+          topicId: "top-1",
+        })
+      );
+    });
+  });
+
   it("shows an empty table when the API returns no tests", async () => {
     list.mockResolvedValue({
       message: "ok",

@@ -132,7 +132,7 @@ describe("SprintTestsPage", () => {
     expect(await screen.findByText("Morning sprint")).toBeInTheDocument();
     expect(screen.getByText("Published sprint")).toBeInTheDocument();
 
-    fireEvent.mouseDown(screen.getByRole("combobox", { name: /exam/i }));
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Exam" }));
     fireEvent.click(await screen.findByText("SSC CGL"));
     const questionSelect = screen.getAllByRole("combobox")[1];
     fireEvent.mouseDown(questionSelect);
@@ -153,6 +153,20 @@ describe("SprintTestsPage", () => {
       );
     });
     expect(router.push).toHaveBeenCalledWith("/admin/sprint-tests/drafts/draft-9");
+  });
+
+  it("filters published sprint tests by exam", async () => {
+    render(<SprintTestsPage />);
+    expect(await screen.findByText("Published sprint")).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Filter by exam" }));
+    fireEvent.click(await screen.findByText("SSC CGL"));
+
+    await waitFor(() => {
+      expect(listPublished).toHaveBeenLastCalledWith(
+        expect.objectContaining({ examId: "e1", page: 1 })
+      );
+    });
   });
 
   it("opens a draft for review and a published paper", async () => {
