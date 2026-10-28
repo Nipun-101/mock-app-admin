@@ -55,7 +55,7 @@ describe("normalizeFailedQuestionForm", () => {
       subject: "nope",
       topic: OBJECT_ID,
       exams: [OBJECT_ID, "bad"],
-      tag: OBJECT_ID,
+      tags: [OBJECT_ID],
       difficultyLevel: "insane",
       explanation: { en: "e", ml: "m", image: null },
     });
@@ -68,7 +68,7 @@ describe("normalizeFailedQuestionForm", () => {
     expect(values.subject).toBeUndefined();
     expect(values.topic).toBe(OBJECT_ID);
     expect(values.exams).toEqual([OBJECT_ID]);
-    expect(values.tag).toBe(OBJECT_ID);
+    expect(values.tagIds).toEqual([OBJECT_ID]);
     expect(values.difficultyLevel).toBeUndefined();
   });
 

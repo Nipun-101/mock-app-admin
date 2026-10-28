@@ -69,6 +69,7 @@ describe("QuestionsPage", () => {
         expect.objectContaining({ page: 5, limit: 10 })
       )
     );
+    expect(screen.getByText("No Tags")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute(
       "href",
       "/admin/questions/q-1?page=5&limit=10"

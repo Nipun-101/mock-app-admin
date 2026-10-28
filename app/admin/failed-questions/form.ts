@@ -31,7 +31,7 @@ export interface FixFormValues {
   subject?: string;
   topic?: string;
   exams: string[];
-  tag?: string;
+  tagIds?: string[];
   difficultyLevel?: "easy" | "medium" | "hard";
 }
 
@@ -117,7 +117,7 @@ export function normalizeFailedQuestionForm(
     subject: isObjectId(draft?.subject) ? draft?.subject : undefined,
     topic: isObjectId(draft?.topic) ? draft?.topic : undefined,
     exams: (draft?.exams ?? []).filter((exam) => isObjectId(exam)),
-    tag: isObjectId(draft?.tag) ? draft?.tag : undefined,
+    tagIds: (draft?.tags ?? []).filter((tagId) => isObjectId(tagId)),
     difficultyLevel:
       draft?.difficultyLevel === "easy" ||
       draft?.difficultyLevel === "medium" ||

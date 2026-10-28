@@ -6,6 +6,7 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { formatEzPrepError, sprintTestsApi } from "../api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 import type { SprintQuestionItem, SprintTest } from "../types";
@@ -95,6 +96,7 @@ export default function PublishedSprintPage(props: { params: Promise<{ id: strin
                 key: "difficulty",
                 render: (level?: string) => level || "-",
               },
+              questionTagsColumn(),
             ]}
           />
         </Card>

@@ -51,7 +51,8 @@ export interface Question {
   subject?: NamedRef | string | null;
   topic?: NamedRef | string | null;
   exams?: Array<NamedRef | string>;
-  tag?: string | null;
+  tagIds?: string[];
+  tags?: string[];
   difficultyLevel?: string;
   source?: string;
   isActive: boolean;
@@ -68,7 +69,7 @@ export type QuestionPayload = {
   subject?: string | null;
   topic?: string | null;
   exams?: string[];
-  tag?: string | null;
+  tagIds?: string[];
   difficultyLevel?: string;
 };
 

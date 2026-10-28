@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
 import { loadTopicNamesForQuestions } from "@/app/admin/full-mock-tests/topic-names";
@@ -375,6 +376,7 @@ export default function TopicWiseDraftPage(props: {
           "-"
         ),
     },
+    questionTagsColumn(),
     {
       title: "",
       key: "replaced",
@@ -531,6 +533,7 @@ export default function TopicWiseDraftPage(props: {
               render: (topicId?: string) =>
                 topicId ? topicNameById.get(topicId) || topicId : "-",
             },
+            questionTagsColumn(),
             {
               title: "",
               key: "use",

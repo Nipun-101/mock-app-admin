@@ -26,6 +26,7 @@ export interface BulkUpload {
   subjectId: string;
   topicId?: string;
   examIds: string[];
+  tagIds?: string[];
   s3Key: string;
   markdownS3Key?: string;
   errorMessage?: string;

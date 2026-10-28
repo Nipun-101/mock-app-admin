@@ -84,6 +84,7 @@ const question: Question = {
   subject: { id: "sub-1", name: "History" },
   topic: { id: "top-1", name: "Ancient" },
   exams: [{ id: "ex-1", name: "UPSC" }],
+  tagIds: ["tag-1", "tag-2"],
   difficultyLevel: "easy",
   isActive: true,
 };
@@ -199,6 +200,7 @@ describe("EditQuestionPage", () => {
         topic: "top-1",
         correctAnswer: "opt-b",
         difficultyLevel: "easy",
+        tagIds: ["tag-1", "tag-2"],
       })
     );
     expect(message.success).toHaveBeenCalled();

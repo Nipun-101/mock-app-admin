@@ -30,6 +30,7 @@ export interface MockTestQuestion {
   }>;
   subject?: NamedRef | null;
   topic?: NamedRef | null;
+  tags?: string[];
 }
 
 export interface MockTest {
