@@ -37,6 +37,7 @@ export interface TopicWiseQuestionItem {
   subject?: string;
   topic?: string;
   difficultyLevel?: string;
+  tags?: string[];
   position: number;
   marksPerQuestion: number;
   negativeMarking: number;
@@ -89,6 +90,7 @@ export interface TopicWiseSearchQuestion {
   subject?: string;
   topic?: string;
   difficultyLevel?: string;
+  tags?: string[];
   snippet?: string;
 }
 

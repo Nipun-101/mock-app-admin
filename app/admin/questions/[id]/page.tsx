@@ -279,7 +279,7 @@ export default function EditQuestionPage(props: {
         subject: subjectId,
         topic: topicId,
         exams: (question.exams || []).map((exam) => refId(exam)).filter(Boolean),
-        tag: question.tag || null,
+        tagIds: question.tagIds ?? [],
         difficultyLevel: question.difficultyLevel
       });
     } catch (error) {
@@ -296,7 +296,7 @@ export default function EditQuestionPage(props: {
     setSelectedTopic(null);
     setFormValues(form, [
       { name: "topic", value: undefined },
-      { name: "tag", value: undefined },
+      { name: "tagIds", value: undefined },
     ]);
     setTags([]);
     fetchTopicsBySubject(value);
@@ -305,7 +305,7 @@ export default function EditQuestionPage(props: {
   // Handle topic change
   const handleTopicChange = (value: string) => {
     setSelectedTopic(value);
-    setFormValue(form, "tag", undefined);
+    setFormValue(form, "tagIds", undefined);
     if (selectedSubject && value) {
       fetchTagsBySubjectAndTopic(selectedSubject, value);
     } else {
@@ -361,7 +361,7 @@ export default function EditQuestionPage(props: {
         subject: values.subject,
         topic: values.topic || null,
         exams: values.exams || [],
-        tag: values.tag || null,
+        tagIds: values.tagIds || [],
         difficultyLevel: values.difficultyLevel
       };
 
@@ -623,12 +623,10 @@ export default function EditQuestionPage(props: {
             </Form.Item>
 
             {/* Tag */}
-            <Form.Item
-              label="Tag"
-              name="tag"
-            >
+            <Form.Item label="Tags (optional)" name="tagIds">
               <Select
-                placeholder={selectedSubject && selectedTopic ? "Select tag" : "Please select subject and topic first"}
+                mode="multiple"
+                placeholder={selectedSubject && selectedTopic ? "Select tags" : "Please select subject and topic first"}
                 options={tags}
                 disabled={!selectedSubject || !selectedTopic}
                 loading={tagsLoading}

@@ -20,7 +20,7 @@ const payload = {
   questionText: { en: { text: "2+2?" } },
   options: [],
   correctAnswer: "a",
-  tag: "",
+  topic: "",
 };
 
 beforeEach(() => {
@@ -42,14 +42,14 @@ describe("questionsApi", () => {
 
   it("creates with empty fields omitted and updates with undefined omitted", async () => {
     await questionsApi.create(payload);
-    await questionsApi.update("q1", { ...payload, tag: undefined as never });
+    await questionsApi.update("q1", { ...payload, topic: undefined as never });
     expect(post).toHaveBeenCalledWith("/v1/questions", {
       questionText: payload.questionText,
       options: [],
       correctAnswer: "a",
     });
     expect(patch.mock.calls[0][0]).toBe("/v1/questions/q1");
-    expect(patch.mock.calls[0][1]).not.toHaveProperty("tag");
+    expect(patch.mock.calls[0][1]).not.toHaveProperty("topic");
   });
 
   it("deletes by id", async () => {

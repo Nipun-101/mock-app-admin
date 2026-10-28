@@ -166,8 +166,30 @@ describe("BulkUploadFormPage", () => {
     const [path, body] = apiPost.mock.calls[0];
     expect(path).toBe("/v1/imports/upload-pdf");
     expect(body).toBeInstanceOf(FormData);
+    expect((body as FormData).getAll("tagIds")).toEqual([]);
     expect(message.success).toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/admin/bulk-upload");
+  });
+
+  it("sends selected tags with the PDF", async () => {
+    apiPost.mockResolvedValue({ message: "PDF uploaded successfully" });
+    await renderReady();
+
+    const file = new File(["%PDF"], "paper.pdf", { type: "application/pdf" });
+    fireEvent.change(document.querySelector("input[type=file]") as HTMLInputElement, {
+      target: { files: [file] },
+    });
+    await chooseOption("Subject", "Polity");
+    await chooseOption("Topic", "Parliament");
+    await waitFor(() => expect(listAllTags).toHaveBeenCalled());
+    await chooseOption("Tags (optional)", "GK");
+    await chooseOption("Associated Exams", "UPSC");
+    fireEvent.click(uploadSubmitButton());
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalled());
+    const body = apiPost.mock.calls[0][1] as FormData;
+    expect(body.getAll("tagIds")).toEqual(["tag-1"]);
+    expect(body.getAll("examIds")).toEqual(["ex-1"]);
   });
 
   it("surfaces lookup and upload errors", async () => {

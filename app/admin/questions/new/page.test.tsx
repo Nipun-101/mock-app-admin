@@ -80,7 +80,11 @@ async function chooseOption(formLabel: string, optionText: string) {
   fireEvent.click(option);
 }
 
-async function renderReady() {
+async function renderReady(
+  tags: Array<{ id: string; name: string; subject: string; topic: string }> = [
+    { id: "tag-1", name: "GK", subject: "sub-1", topic: "top-1" },
+  ]
+) {
   listSubjects.mockResolvedValue(subjects);
   listAllExams.mockResolvedValue(exams);
   getSubject.mockResolvedValue({
@@ -91,7 +95,7 @@ async function renderReady() {
       topics: [{ id: "top-1", name: "Ancient" }],
     },
   });
-  listAllTags.mockResolvedValue([{ id: "tag-1", name: "GK", subject: "sub-1", topic: "top-1" }]);
+  listAllTags.mockResolvedValue(tags);
   render(<CreateQuestionPage />);
   await waitFor(() => expect(listSubjects).toHaveBeenCalled());
   expect(await screen.findByText("Add New Question")).toBeInTheDocument();
@@ -170,9 +174,53 @@ describe("CreateQuestionPage", () => {
         difficultyLevel: "easy",
         subject: "sub-1",
         topic: "top-1",
+        tagIds: [],
       })
     );
     expect(message.success).toHaveBeenCalled();
+  });
+
+  it("sends every selected tag", async () => {
+    create.mockResolvedValue({
+      message: "ok",
+      data: {
+        id: "q1",
+        questionText: { en: { text: "Capital of India?" } },
+        options: [],
+        correctAnswer: "a",
+        isActive: true,
+      },
+    });
+
+    await renderReady([
+      { id: "tag-1", name: "GK", subject: "sub-1", topic: "top-1" },
+      { id: "tag-2", name: "Scales", subject: "sub-1", topic: "top-1" },
+    ]);
+    fireEvent.change(screen.getByPlaceholderText("Enter question text in English"), {
+      target: { value: "Capital of India?" },
+    });
+    for (const [placeholder, value] of [
+      ["Option A in English", "Mumbai"],
+      ["Option B in English", "Delhi"],
+      ["Option C in English", "Kolkata"],
+      ["Option D in English", "Chennai"],
+    ] as const) {
+      fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value } });
+    }
+    await chooseOption("Correct Answer", "Option A");
+    await chooseOption("Subject", "History");
+    await waitFor(() => expect(getSubject).toHaveBeenCalledWith("sub-1"));
+    await chooseOption("Topic", "Ancient");
+    await waitFor(() => expect(listAllTags).toHaveBeenCalled());
+    await chooseOption("Tags (optional)", "GK");
+    await chooseOption("Tags (optional)", "Scales");
+    await chooseOption("Difficulty Level", "Easy");
+    fireEvent.click(screen.getByRole("button", { name: /add question/i }));
+
+    await waitFor(() => expect(create).toHaveBeenCalled());
+    expect(create.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ tagIds: ["tag-1", "tag-2"] })
+    );
   });
 
   it("blocks image-option submit when images are missing", async () => {

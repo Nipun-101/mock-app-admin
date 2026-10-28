@@ -23,6 +23,7 @@ import { showConfirmModal } from "@/components/ConfirmModal";
 import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, sprintTestsApi } from "../../api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
@@ -343,6 +344,7 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
       render: (level?: string) =>
         level ? <Tag color={DIFFICULTY_COLORS[level] || "default"}>{level}</Tag> : "-",
     },
+    questionTagsColumn(),
     {
       title: "",
       key: "replaced",
@@ -607,6 +609,7 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
                   "-"
                 ),
             },
+            questionTagsColumn(),
             {
               title: "Actions",
               key: "use",

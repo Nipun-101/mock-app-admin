@@ -186,7 +186,7 @@ export default function FixFailedQuestionPage(props: {
     setSelectedTopic(null);
     setFormValues(form, [
       { name: "topic", value: undefined },
-      { name: "tag", value: undefined },
+      { name: "tagIds", value: undefined },
     ]);
     setTags([]);
     fetchTopicsBySubject(value);
@@ -194,7 +194,7 @@ export default function FixFailedQuestionPage(props: {
 
   const handleTopicChange = (value: string) => {
     setSelectedTopic(value);
-    setFormValue(form, "tag", undefined);
+    setFormValue(form, "tagIds", undefined);
     if (selectedSubject && value) {
       fetchTagsBySubjectAndTopic(selectedSubject, value);
     } else {
@@ -277,7 +277,7 @@ export default function FixFailedQuestionPage(props: {
         subject: values.subject as string,
         topic: values.topic as string,
         exams: values.exams || [],
-        tag: values.tag || null,
+        tags: values.tagIds || [],
         difficultyLevel: values.difficultyLevel as string,
         isActive: originalDraft?.isActive ?? true,
         isDeleted: originalDraft?.isDeleted ?? false,
@@ -428,11 +428,7 @@ export default function FixFailedQuestionPage(props: {
                     const isImage = getFieldValue("optionType") === "image";
                     const fields = (
                       <Form.Item label={`Option ${option.label}`}>
-                        <Form.Item
-                          name={["options", index, "id"]}
-                          initialValue={option.id}
-                          hidden
-                        >
+                        <Form.Item name={["options", index, "id"]} hidden>
                           <Input type="hidden" />
                         </Form.Item>
                         {isImage ? (
@@ -561,11 +557,12 @@ export default function FixFailedQuestionPage(props: {
               />
             </Form.Item>
 
-            <Form.Item label="Tag" name="tag">
+            <Form.Item label="Tags (optional)" name="tagIds">
               <Select
+                mode="multiple"
                 placeholder={
                   selectedSubject && selectedTopic
-                    ? "Select tag"
+                    ? "Select tags"
                     : "Please select subject and topic first"
                 }
                 options={tags}

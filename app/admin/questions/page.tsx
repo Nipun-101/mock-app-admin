@@ -16,6 +16,7 @@ import {
   type Question,
 } from "@/app/services/ezprep-api";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { questionsEditHref } from "./questions-list-href";
 import { CreateSprintFromSelectionModal } from "./CreateSprintFromSelectionModal";
 import { CreateTopicWiseFromSelectionModal } from "./CreateTopicWiseFromSelectionModal";
@@ -219,6 +220,7 @@ function QuestionsPageContent() {
         );
       },
     },
+    questionTagsColumn(),
     {
       title: "Topic",
       key: "topic",

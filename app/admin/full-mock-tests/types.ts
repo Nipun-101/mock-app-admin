@@ -58,6 +58,7 @@ export interface SafeQuestion {
   subject?: string;
   topic?: string;
   difficultyLevel?: DifficultyLevel | string;
+  tags?: string[];
 }
 
 export interface DraftQuestionItem extends SafeQuestion {

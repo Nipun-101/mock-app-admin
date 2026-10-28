@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { formatEzPrepError, fullMockApi } from "../api";
 import { loadTopicNamesForQuestions } from "../topic-names";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { QuestionPreview } from "../QuestionPreview";
 import type {
   DraftQuestionItem,
@@ -141,6 +142,7 @@ export default function PublishedFullMockPage(props: {
           "-"
         ),
     },
+    questionTagsColumn(),
     {
       title: "Marks",
       key: "marks",

@@ -24,6 +24,7 @@ import { catalogApi } from "@/app/services/ezprep-api";
 import { formatEzPrepError, fullMockApi } from "../../api";
 import { loadTopicNamesForQuestions } from "../../topic-names";
 import { PageLoader } from "@/app/components/PageLoader";
+import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "../../QuestionPreview";
 import type {
@@ -392,6 +393,7 @@ export default function FullMockDraftPage(props: {
           "-"
         ),
     },
+    questionTagsColumn(),
     {
       title: "Marks",
       key: "marks",
@@ -451,6 +453,7 @@ export default function FullMockDraftPage(props: {
           "-"
         ),
     },
+    questionTagsColumn(),
     {
       title: "Actions",
       key: "actions",

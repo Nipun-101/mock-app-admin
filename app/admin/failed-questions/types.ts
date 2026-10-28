@@ -31,7 +31,7 @@ export interface ImportQuestion {
   isActive?: boolean;
   isDeleted?: boolean;
   source?: string;
-  tag?: string | null;
+  tags?: string[];
 }
 
 export interface MatchedQuestion {
