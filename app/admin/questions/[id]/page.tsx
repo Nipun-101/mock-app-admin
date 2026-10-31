@@ -19,16 +19,40 @@ interface Option {
   label: string;
 }
 
-type PreviewImageUrls = {
-  en?: string | null;
-  ml?: string | null;
-  options: (string | null)[];
+type PreviewImage = {
+  imageUrl: string | null;
+  image: { key: string; bucket: string } | null;
 };
+
+type PreviewImageUrls = {
+  en: PreviewImage;
+  ml: PreviewImage;
+  options: PreviewImage[];
+};
+
+const emptyPreviewImage: PreviewImage = { imageUrl: null, image: null };
 
 function imageUrlOf(image: unknown): string | null {
   if (!image || typeof image !== "object") return null;
   const url = (image as { url?: unknown }).url;
   return typeof url === "string" && url ? url : null;
+}
+
+function signableImageOf(
+  image: unknown
+): { key: string; bucket: string } | null {
+  if (!image || typeof image !== "object") return null;
+  const row = image as { key?: unknown; bucket?: unknown };
+  if (typeof row.key !== "string" || !row.key) return null;
+  if (typeof row.bucket !== "string" || !row.bucket) return null;
+  return { key: row.key, bucket: row.bucket };
+}
+
+/** Prefer storage metadata so the preview can request a fresh signed URL. */
+function previewImageFrom(image: unknown): PreviewImage {
+  const stored = signableImageOf(image);
+  if (stored) return { imageUrl: null, image: stored };
+  return { imageUrl: imageUrlOf(image), image: null };
 }
 
 function buildPreviewQuestion(
@@ -48,30 +72,39 @@ function buildPreviewQuestion(
   loadedImageUrls: PreviewImageUrls
 ): SafeQuestion {
   const type = optionType || "text";
+  const formTextReady = questionText !== undefined;
+  const formOptionsReady = options !== undefined;
+  const enImage = formTextReady
+    ? previewImageFrom(questionText?.en?.image)
+    : loadedImageUrls.en;
+  const mlImage = formTextReady
+    ? previewImageFrom(questionText?.ml?.image)
+    : loadedImageUrls.ml;
+
   return {
     _id: id,
     questionText: {
       en: {
         text: questionText?.en?.text ?? null,
-        imageUrl:
-          imageUrlOf(questionText?.en?.image) ?? loadedImageUrls.en ?? null,
+        ...enImage,
       },
       ml: {
         text: questionText?.ml?.text ?? null,
-        imageUrl:
-          imageUrlOf(questionText?.ml?.image) ?? loadedImageUrls.ml ?? null,
+        ...mlImage,
       },
     },
     optionType: type,
     options: optionSlots.map((slot, index) => {
       const opt = options?.[index];
+      const optionImage = formOptionsReady
+        ? previewImageFrom(opt?.image)
+        : (loadedImageUrls.options[index] ?? emptyPreviewImage);
       return {
         id: slot.id,
         type,
         en: opt?.en ?? null,
         ml: opt?.ml ?? null,
-        imageUrl:
-          imageUrlOf(opt?.image) ?? loadedImageUrls.options[index] ?? null,
+        ...optionImage,
       };
     }),
   };
@@ -103,12 +136,15 @@ export default function EditQuestionPage(props: {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [OPTIONS, setOPTIONS] = useState<Option[]>([]);
   const [loadedImageUrls, setLoadedImageUrls] = useState<PreviewImageUrls>({
+    en: emptyPreviewImage,
+    ml: emptyPreviewImage,
     options: [],
   });
 
-  const watchedQuestionText = Form.useWatch("questionText", form);
-  const watchedOptions = Form.useWatch("options", form);
-  const watchedOptionType = Form.useWatch("optionType", form);
+  const watchOptions = { form, preserve: true as const };
+  const watchedQuestionText = Form.useWatch("questionText", watchOptions);
+  const watchedOptions = Form.useWatch("options", watchOptions);
+  const watchedOptionType = Form.useWatch("optionType", watchOptions);
 
   const previewQuestion = useMemo(
     () =>
@@ -225,9 +261,9 @@ export default function EditQuestionPage(props: {
       })));
 
       setLoadedImageUrls({
-        en: imageUrlOf(question.questionText?.en?.image),
-        ml: imageUrlOf(question.questionText?.ml?.image),
-        options: options.map((opt: any) => imageUrlOf(opt?.image)),
+        en: previewImageFrom(question.questionText?.en?.image),
+        ml: previewImageFrom(question.questionText?.ml?.image),
+        options: options.map((opt: any) => previewImageFrom(opt?.image)),
       });
 
       // Set selected subject and fetch related topics

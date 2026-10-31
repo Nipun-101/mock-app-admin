@@ -34,6 +34,13 @@ vi.mock("@/app/components/PasteToImage", () => ({
   PasteHint: () => <span>paste hint</span>,
 }));
 
+vi.mock("@/app/hooks/usePresignedUrl", () => ({
+  usePresignedUrl: (metadata: { key: string; bucket: string } | null) => ({
+    url: metadata ? `https://signed.example/${metadata.key}` : null,
+    loading: false,
+  }),
+}));
+
 vi.mock("@/app/services/ezprep-api", async () => {
   const actual = await vi.importActual<typeof import("@/app/services/ezprep-api")>(
     "@/app/services/ezprep-api"
@@ -172,6 +179,46 @@ describe("EditQuestionPage", () => {
     ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("A.")).toBeInTheDocument();
     expect(screen.getAllByText("Mumbai").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("signs stored question images in the preview instead of using a stale url", async () => {
+    await renderReady({
+      ...question,
+      questionText: {
+        en: {
+          text: "Capital of India?",
+          image: {
+            key: "question-imports/rod.jpg",
+            bucket: "ez-prep-image-bucket",
+            url: "https://stale.example/expired.jpg",
+          },
+        },
+        ml: { text: "ഇന്ത്യയുടെ തലസ്ഥാനം?" },
+      },
+      optionType: "image",
+      options: question.options.map((option, index) => ({
+        ...option,
+        type: "image",
+        image: {
+          key: `question-imports/opt-${index}.jpg`,
+          bucket: "ez-prep-image-bucket",
+          url: "https://stale.example/opt.jpg",
+        },
+      })),
+    });
+
+    expect(screen.getByAltText("Question")).toHaveAttribute(
+      "src",
+      "https://signed.example/question-imports/rod.jpg"
+    );
+    expect(screen.getByAltText("Option A")).toHaveAttribute(
+      "src",
+      "https://signed.example/question-imports/opt-0.jpg"
+    );
+    expect(screen.queryByRole("img", { name: "Question" })).not.toHaveAttribute(
+      "src",
+      "https://stale.example/expired.jpg"
+    );
   });
 
   it("updates the rendered preview as question text changes", async () => {
