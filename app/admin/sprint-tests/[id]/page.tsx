@@ -11,6 +11,18 @@ import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 import type { SprintQuestionItem, SprintTest } from "../types";
 
+const DIFFICULTY_COLORS: Record<string, string> = {
+  easy: "green",
+  medium: "orange",
+  hard: "red",
+};
+
+function difficultyChip(level?: string) {
+  if (!level) return "-";
+  const label = level.charAt(0).toUpperCase() + level.slice(1);
+  return <Tag color={DIFFICULTY_COLORS[level] || "default"}>{label}</Tag>;
+}
+
 export default function PublishedSprintPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const router = useRouter();
@@ -94,7 +106,7 @@ export default function PublishedSprintPage(props: { params: Promise<{ id: strin
                 title: "Difficulty",
                 dataIndex: "difficultyLevel",
                 key: "difficulty",
-                render: (level?: string) => level || "-",
+                render: (level?: string) => difficultyChip(level),
               },
               questionTagsColumn(),
             ]}

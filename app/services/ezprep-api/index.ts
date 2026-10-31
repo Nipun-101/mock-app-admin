@@ -16,5 +16,6 @@ export * from "./entitlements";
 export * from "./orders";
 export * from "./commerce-health";
 export * from "./accounting";
+export * from "./feedback";
 export { ezPrepApiClient } from "./browser-client";
 export { ezPrepApiServerClient } from "./client";

@@ -72,6 +72,7 @@ describe("PublishedSprintPage", () => {
     expect(await screen.findByRole("heading", { name: "Morning sprint" })).toBeInTheDocument();
     expect(screen.getByText("Newest stem")).toBeInTheDocument();
     expect(screen.getByText("CGL")).toBeInTheDocument();
+    expect(screen.getByText("Easy")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /back to sprint tests/i }));
     await waitFor(() => {
       expect(router.push).toHaveBeenCalledWith("/admin/sprint-tests");

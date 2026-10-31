@@ -23,6 +23,7 @@ import {
   FileTextOutlined,
   AlertOutlined,
   AccountBookOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -232,6 +233,11 @@ export default function AdminLayout({
       ),
     },
     {
+      key: "/admin/feedback",
+      icon: <MessageOutlined />,
+      label: <Link href="/admin/feedback">Feedback</Link>,
+    },
+    {
       key: "/admin/questions",
       icon: <QuestionCircleOutlined />,
       label: <Link href="/admin/questions">Questions</Link>,
@@ -365,6 +371,8 @@ export default function AdminLayout({
                 ? "/admin/accounting"
                 : pathname.startsWith("/admin/commerce-health")
                 ? "/admin/commerce-health"
+                : pathname.startsWith("/admin/feedback")
+                ? "/admin/feedback"
                 : pathname.startsWith("/admin/questions")
                 ? "/admin/questions"
                 : pathname.startsWith("/admin/bulk-upload")
