@@ -10,14 +10,14 @@ describe("questions list href", () => {
 
   it("keeps list pagination and filters when returning from edit", () => {
     const params = new URLSearchParams(
-      "page=30&limit=20&subjectId=s1&examId=e1&topicId=t1&unused=x"
+      "page=30&limit=20&subjectId=s1&examId=e1&topicId=t1&search=president&unused=x"
     );
 
     expect(questionsListHref(params)).toBe(
-      "/admin/questions?page=30&limit=20&subjectId=s1&examId=e1&topicId=t1"
+      "/admin/questions?page=30&limit=20&subjectId=s1&examId=e1&topicId=t1&search=president"
     );
     expect(questionsEditHref("q1", params)).toBe(
-      "/admin/questions/q1?page=30&limit=20&subjectId=s1&examId=e1&topicId=t1"
+      "/admin/questions/q1?page=30&limit=20&subjectId=s1&examId=e1&topicId=t1&search=president"
     );
   });
 });

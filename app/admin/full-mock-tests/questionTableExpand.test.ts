@@ -8,7 +8,7 @@ import {
 
 describe("questionTableExpand", () => {
   it("enables expand-on-row-click for question previews", () => {
-    const render = () => null;
+    const render = (_record: { id: string }) => null;
     expect(questionPreviewExpandable(render)).toEqual({
       expandedRowRender: render,
       expandRowByClick: true,

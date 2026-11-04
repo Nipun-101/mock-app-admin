@@ -4,6 +4,7 @@ export const QUESTIONS_LIST_QUERY_KEYS = [
   "subjectId",
   "examId",
   "topicId",
+  "search",
 ] as const;
 
 export function questionsListHref(

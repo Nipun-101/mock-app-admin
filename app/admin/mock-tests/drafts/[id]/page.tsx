@@ -446,12 +446,16 @@ export default function TopicWiseDraftPage(props: {
             <Table
               columns={questionColumns(subject)}
               dataSource={subject.questions}
-              rowKey={(record) => `${record.position}-${record._id}`}
+              rowKey={(record: TopicWiseQuestionItem) =>
+                `${record.position}-${record._id}`
+              }
               pagination={false}
               onRow={questionPreviewOnRow}
-              expandable={questionPreviewExpandable((record) => (
-                <QuestionPreview question={record as SafeQuestion} />
-              ))}
+              expandable={questionPreviewExpandable(
+                (record: TopicWiseQuestionItem) => (
+                  <QuestionPreview question={record as SafeQuestion} />
+                )
+              )}
             />
           </Card>
         ))}

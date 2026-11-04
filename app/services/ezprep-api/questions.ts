@@ -80,6 +80,7 @@ export const questionsApi = {
     subjectId?: string;
     topicId?: string;
     examId?: string;
+    search?: string;
   }) {
     return ezPrepApiClient.get<ApiListResponse<Question>>("/v1/questions", {
       searchParams,

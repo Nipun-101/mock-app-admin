@@ -32,10 +32,10 @@ beforeEach(() => {
 
 describe("questionsApi", () => {
   it("lists with search params and gets by id", async () => {
-    await questionsApi.list({ page: 1, subjectId: "s1" });
+    await questionsApi.list({ page: 1, subjectId: "s1", search: "president" });
     await questionsApi.get("q1");
     expect(get).toHaveBeenCalledWith("/v1/questions", {
-      searchParams: { page: 1, subjectId: "s1" },
+      searchParams: { page: 1, subjectId: "s1", search: "president" },
     });
     expect(get).toHaveBeenCalledWith("/v1/questions/q1");
   });

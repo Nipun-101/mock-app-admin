@@ -1,5 +1,4 @@
-import type { CSSProperties, MouseEvent } from "react";
-import type { TableProps } from "antd";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 
 const rowStyle: CSSProperties = { cursor: "pointer" };
 
@@ -10,10 +9,11 @@ export function stopQuestionRowToggle(event: MouseEvent) {
 
 /** Expand/collapse question preview via + or a click anywhere on the row. */
 export function questionPreviewExpandable<T extends object>(
-  expandedRowRender: NonNullable<
-    NonNullable<TableProps<T>["expandable"]>["expandedRowRender"]
-  >
-): NonNullable<TableProps<T>["expandable"]> {
+  expandedRowRender: (record: T, index: number, indent: number) => ReactNode
+): {
+  expandedRowRender: (record: T, index: number, indent: number) => ReactNode;
+  expandRowByClick: true;
+} {
   return {
     expandedRowRender,
     expandRowByClick: true,

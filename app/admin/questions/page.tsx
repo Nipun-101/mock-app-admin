@@ -1,7 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { Table, Button, Space, message, Pagination, Tag, Tooltip, Alert } from "antd";
+import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  Table,
+  Button,
+  Space,
+  message,
+  Pagination,
+  Tag,
+  Tooltip,
+  Alert,
+  Input,
+} from "antd";
 import { Select } from "@/app/components/SearchableSelect";
 import { CloseOutlined } from "@ant-design/icons";
 import Link from "next/link";
@@ -35,6 +45,8 @@ function parsePositiveInt(value: string | null, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 function QuestionsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -52,6 +64,9 @@ function QuestionsPageContent() {
   const selectedSubject = searchParams?.get("subjectId") ?? null;
   const selectedExam = searchParams?.get("examId") ?? null;
   const selectedTopic = searchParams?.get("topicId") ?? null;
+  const selectedSearch = searchParams?.get("search") ?? "";
+  const [searchInput, setSearchInput] = useState(selectedSearch);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<
     Map<string, SelectedSprintQuestion>
   >(new Map());
@@ -128,6 +143,7 @@ function QuestionsPageContent() {
         subjectId: selectedSubject || undefined,
         examId: selectedExam || undefined,
         topicId: selectedTopic || undefined,
+        search: selectedSearch.trim() || undefined,
       });
       setQuestions(data.data || []);
       setTotal(data.pagination?.total ?? 0);
@@ -143,6 +159,18 @@ function QuestionsPageContent() {
   }, []);
 
   useEffect(() => {
+    setSearchInput(selectedSearch);
+  }, [selectedSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (selectedSubject) {
       void fetchTopicsBySubject(selectedSubject);
     } else {
@@ -152,7 +180,28 @@ function QuestionsPageContent() {
 
   useEffect(() => {
     void fetchQuestions();
-  }, [page, pageSize, selectedSubject, selectedExam, selectedTopic]);
+  }, [
+    page,
+    pageSize,
+    selectedSubject,
+    selectedExam,
+    selectedTopic,
+    selectedSearch,
+  ]);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      const trimmed = value.trim();
+      updateQuery({
+        search: trimmed || null,
+        page: 1,
+      });
+    }, SEARCH_DEBOUNCE_MS);
+  };
 
   const handleDelete = async (id: string) => {
     showConfirmModal({
@@ -269,13 +318,34 @@ function QuestionsPageContent() {
 
   return (
     <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Questions</h1>
       <div className="flex justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Questions</h1>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="questions-list-search shrink-0">
+            <Input.Search
+              allowClear
+              placeholder="Search question text"
+              value={searchInput}
+              onChange={(event) => handleSearchInputChange(event.target.value)}
+              onSearch={(value) => {
+                if (searchDebounceRef.current) {
+                  clearTimeout(searchDebounceRef.current);
+                }
+                const trimmed = value.trim();
+                setSearchInput(value);
+                updateQuery({
+                  search: trimmed || null,
+                  page: 1,
+                });
+              }}
+              style={{ width: "100%" }}
+            />
+          </div>
           <Select
             placeholder="Filter by exam"
             allowClear
-            style={{ width: 200 }}
+            className="questions-list-filter shrink-0"
+            popupMatchSelectWidth={false}
             value={selectedExam}
             onChange={(value) => updateQuery({ examId: value, page: 1 })}
             options={
@@ -290,7 +360,8 @@ function QuestionsPageContent() {
           <Select
             placeholder="Filter by subject"
             allowClear
-            style={{ width: 200 }}
+            className="questions-list-filter shrink-0"
+            popupMatchSelectWidth={false}
             value={selectedSubject}
             onChange={(value) => {
               updateQuery({ subjectId: value, topicId: null, page: 1 });
@@ -304,7 +375,8 @@ function QuestionsPageContent() {
             placeholder="Filter by topic"
             allowClear
             disabled={!selectedSubject}
-            style={{ width: 200 }}
+            className="questions-list-filter shrink-0"
+            popupMatchSelectWidth={false}
             value={selectedTopic}
             onChange={(value) => updateQuery({ topicId: value, page: 1 })}
             options={topics.map((topic) => ({
