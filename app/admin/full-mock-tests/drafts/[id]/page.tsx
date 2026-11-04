@@ -27,6 +27,7 @@ import { PageLoader } from "@/app/components/PageLoader";
 import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "../../QuestionPreview";
+import { stopQuestionRowToggle } from "../../questionTableExpand";
 import type {
   DraftQuestionItem,
   DraftResponse,
@@ -418,7 +419,10 @@ export default function FullMockDraftPage(props: {
               <Button
                 type="link"
                 size="small"
-                onClick={() => openReplace(subject, record)}
+                onClick={(event) => {
+                  stopQuestionRowToggle(event);
+                  void openReplace(subject, record);
+                }}
               >
                 Replace
               </Button>

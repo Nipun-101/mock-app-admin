@@ -13,6 +13,10 @@ import {
 import { PageLoader } from "@/app/components/PageLoader";
 import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
+import {
+  questionPreviewExpandable,
+  questionPreviewOnRow,
+} from "@/app/admin/full-mock-tests/questionTableExpand";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 
 export default function MockTestDetailPage(props: {
@@ -153,8 +157,9 @@ export default function MockTestDetailPage(props: {
             dataSource={mockTest.questions || mockTest.questionIds}
             rowKey="id"
             pagination={{ pageSize: 10 }}
-            expandable={{
-              expandedRowRender: (record: MockTestQuestion) => (
+            onRow={questionPreviewOnRow}
+            expandable={questionPreviewExpandable(
+              (record: MockTestQuestion) => (
                 <QuestionPreview
                   question={{
                     _id: record.id,
@@ -166,8 +171,8 @@ export default function MockTestDetailPage(props: {
                     options: record.options || [],
                   } as SafeQuestion}
                 />
-              ),
-            }}
+              )
+            )}
           />
         </Card>
       </div>

@@ -202,6 +202,18 @@ describe("PublishedFullMockPage", () => {
     );
   });
 
+  it("expands a question when the row body is clicked", async () => {
+    getPublished.mockResolvedValue({ message: "ok", data: testItem });
+    renderPage();
+    expect(await screen.findByText("Who elects the President?")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Who elects the President?"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Parliament")).toBeInTheDocument()
+    );
+  });
+
   it("falls back when optional fields are missing", async () => {
     getPublished.mockResolvedValue({
       message: "ok",

@@ -26,6 +26,11 @@ import { PageLoader } from "@/app/components/PageLoader";
 import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { AccessModeSwitch } from "@/app/components/AccessModeSwitch";
 import { QuestionPreview } from "@/app/admin/full-mock-tests/QuestionPreview";
+import {
+  questionPreviewExpandable,
+  questionPreviewOnRow,
+  stopQuestionRowToggle,
+} from "@/app/admin/full-mock-tests/questionTableExpand";
 import type { SafeQuestion } from "@/app/admin/full-mock-tests/types";
 import type {
   PublishSprintDraftPayload,
@@ -360,7 +365,10 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
               <Button
                 type="link"
                 size="small"
-                onClick={() => openReplace(subject, record)}
+                onClick={(event) => {
+                  stopQuestionRowToggle(event);
+                  void openReplace(subject, record);
+                }}
               >
                 Replace
               </Button>
@@ -405,11 +413,10 @@ export default function SprintDraftPage(props: { params: Promise<{ id: string }>
               dataSource={subject.questions}
               rowKey={(record) => `${record.position}-${record._id}`}
               pagination={false}
-              expandable={{
-                expandedRowRender: (record) => (
-                  <QuestionPreview question={record as SafeQuestion} />
-                ),
-              }}
+              onRow={questionPreviewOnRow}
+              expandable={questionPreviewExpandable((record) => (
+                <QuestionPreview question={record as SafeQuestion} />
+              ))}
             />
           </Card>
         ))}

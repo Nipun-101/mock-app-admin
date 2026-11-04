@@ -9,6 +9,10 @@ import { loadTopicNamesForQuestions } from "../topic-names";
 import { PageLoader } from "@/app/components/PageLoader";
 import { questionTagsColumn } from "@/app/components/QuestionTags";
 import { QuestionPreview } from "../QuestionPreview";
+import {
+  questionPreviewExpandable,
+  questionPreviewOnRow,
+} from "../questionTableExpand";
 import type {
   DraftQuestionItem,
   DraftSubjectBlock,
@@ -287,11 +291,10 @@ export default function PublishedFullMockPage(props: {
                 `${record.position}-${record._id}`
               }
               pagination={false}
-              expandable={{
-                expandedRowRender: (record) => (
-                  <QuestionPreview question={record} />
-                ),
-              }}
+              onRow={questionPreviewOnRow}
+              expandable={questionPreviewExpandable((record) => (
+                <QuestionPreview question={record} />
+              ))}
             />
           </Card>
         ))}
