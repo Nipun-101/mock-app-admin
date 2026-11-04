@@ -565,6 +565,10 @@ export default function FullMockDraftPage(props: {
                 expandedRowRender: (record) => (
                   <QuestionPreview question={record} />
                 ),
+                expandedRowKeys: subject.questions.map(
+                  (record) => `${record.position}-${record._id}`
+                ),
+                showExpandColumn: false,
               }}
             />
           </Card>

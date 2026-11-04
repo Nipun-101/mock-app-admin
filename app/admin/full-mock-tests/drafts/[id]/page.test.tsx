@@ -258,10 +258,21 @@ describe("FullMockDraftPage", () => {
   it("loads a reviewable draft", async () => {
     await renderReady();
     expect(screen.getByText("REVIEW")).toBeInTheDocument();
-    expect(screen.getByText("Who elects the President?")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Who elects the President?").length
+    ).toBeGreaterThan(0);
     expect(screen.getByText("Replaced")).toBeInTheDocument();
     expect(screen.getByText("Publish Full Mock")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("renders all question previews expanded by default without expand controls", async () => {
+    await renderReady();
+    // Snippet column + expanded Mathpix preview for each question
+    expect(screen.getAllByText("Who elects the President?").length).toBe(2);
+    expect(screen.getAllByText("Article 32").length).toBe(2);
+    expect(document.querySelectorAll(".ant-table-expanded-row")).toHaveLength(2);
+    expect(document.querySelector(".ant-table-row-expand-icon")).toBeNull();
   });
 
   it("publishes the draft and navigates to the published test", async () => {
