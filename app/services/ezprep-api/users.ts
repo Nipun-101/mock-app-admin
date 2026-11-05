@@ -71,6 +71,12 @@ export interface ListAppUsersParams {
   search?: string;
 }
 
+/** Unique learners recently active, from throttled `lastActiveAt`. */
+export interface AppUsersActiveSummary {
+  last1Day: number;
+  last7Days: number;
+}
+
 export interface AppUserStudyPreference {
   studyTime?: "morning" | "afternoon" | "evening" | "night";
   weeklyStudyGoalHours?: number;
@@ -162,6 +168,12 @@ export const usersApi = {
   get(id: string) {
     return ezPrepApiClient.get<ApiItemResponse<AppUserDetail>>(
       `/v1/admin/users/${encodeURIComponent(id)}`
+    );
+  },
+
+  activeSummary() {
+    return ezPrepApiClient.get<ApiItemResponse<AppUsersActiveSummary>>(
+      "/v1/admin/users/active-summary"
     );
   },
 };

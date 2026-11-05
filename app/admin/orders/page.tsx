@@ -163,8 +163,22 @@ export default function OrdersPage() {
             {
               title: "User",
               key: "user",
-              render: (_value: unknown, row: AdminOrder) =>
-                row.user?.name?.trim() || "Unknown user",
+              render: (_value: unknown, row: AdminOrder) => {
+                const name = row.user?.name?.trim() || "Unknown user";
+                const userId = row.user?.id || row.userId;
+                if (!userId) {
+                  return name;
+                }
+                return (
+                  <Button
+                    type="link"
+                    className="px-0"
+                    onClick={() => router.push(`/admin/users/${userId}`)}
+                  >
+                    {name}
+                  </Button>
+                );
+              },
             },
             {
               title: "Created",

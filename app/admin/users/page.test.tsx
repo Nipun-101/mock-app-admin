@@ -12,6 +12,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
     ...actual,
     usersApi: {
       list: vi.fn(),
+      activeSummary: vi.fn(),
     },
   };
 });
@@ -19,6 +20,7 @@ vi.mock("@/app/services/ezprep-api", async () => {
 import { usersApi } from "@/app/services/ezprep-api";
 
 const list = vi.mocked(usersApi.list);
+const activeSummary = vi.mocked(usersApi.activeSummary);
 
 function makeUser(overrides: Partial<AppUser> = {}): AppUser {
   return {
@@ -46,6 +48,11 @@ const pagination = {
 describe("UsersPage", () => {
   beforeEach(() => {
     list.mockReset();
+    activeSummary.mockReset();
+    activeSummary.mockResolvedValue({
+      message: "ok",
+      data: { last1Day: 3, last7Days: 11 },
+    });
     vi.spyOn(message, "error").mockImplementation(
       (() => undefined) as unknown as typeof message.error
     );
@@ -68,11 +75,16 @@ describe("UsersPage", () => {
       "/admin/users/u1"
     );
     expect(screen.getByText(/Showing 1 of 1 learner/)).toBeInTheDocument();
+    expect(screen.getByText("Active last 1 day")).toBeInTheDocument();
+    expect(screen.getByText("Active last 7 days")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("11")).toBeInTheDocument();
     expect(list).toHaveBeenCalledWith({
       page: 1,
       limit: 12,
       search: undefined,
     });
+    expect(activeSummary).toHaveBeenCalledTimes(1);
   });
 
   it("strips admin rows before they can appear in the UI", async () => {

@@ -7,6 +7,7 @@ import {
   formatEzPrepError,
   usersApi,
   type AppUser,
+  type AppUsersActiveSummary,
 } from "@/app/services/ezprep-api";
 import { excludeAdmins } from "./helpers";
 import { UserCard } from "./user-card";
@@ -23,7 +24,33 @@ export default function UsersPage() {
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [activeSummary, setActiveSummary] = useState<AppUsersActiveSummary | null>(
+    null
+  );
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const fetchGeneration = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    void usersApi
+      .activeSummary()
+      .then((response) => {
+        if (!cancelled) setActiveSummary(response.data);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setActiveSummary(null);
+        message.error(formatEzPrepError(error, "Failed to load active users"));
+      })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     const generation = ++fetchGeneration.current;
@@ -105,6 +132,14 @@ export default function UsersPage() {
         </Space.Compact>
       </div>
 
+      {summaryLoading && !activeSummary ? (
+        <div className="mb-6 flex min-h-[5.5rem] items-center justify-center rounded-2xl border border-neutral-200 bg-white">
+          <Spin />
+        </div>
+      ) : activeSummary ? (
+        <ActiveUsersStrip summary={activeSummary} />
+      ) : null}
+
       {loading ? (
         <div className="flex min-h-[40vh] items-center justify-center">
           <Spin size="large" />
@@ -145,6 +180,52 @@ export default function UsersPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function ActiveUsersStrip({ summary }: { summary: AppUsersActiveSummary }) {
+  return (
+    <section
+      aria-label="Active learners"
+      className="mb-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white"
+    >
+      <div className="grid grid-cols-1 divide-y divide-neutral-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+        <ActiveMetric
+          label="Active last 1 day"
+          value={summary.last1Day}
+          hint="Unique learners with activity in the past 24 hours"
+        />
+        <ActiveMetric
+          label="Active last 7 days"
+          value={summary.last7Days}
+          hint="Unique learners with activity in the past week"
+        />
+      </div>
+    </section>
+  );
+}
+
+function ActiveMetric({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+}) {
+  return (
+    <div className="flex items-center gap-4 px-5 py-4">
+      <span className="shrink-0 text-3xl font-semibold tabular-nums leading-none text-neutral-900">
+        {value.toLocaleString("en-IN")}
+      </span>
+      <div className="min-w-0">
+        <div className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-500">
+          {label}
+        </div>
+        <div className="mt-0.5 text-xs leading-snug text-neutral-400">{hint}</div>
+      </div>
     </div>
   );
 }

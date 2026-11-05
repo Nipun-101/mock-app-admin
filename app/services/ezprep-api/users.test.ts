@@ -54,4 +54,9 @@ describe("usersApi", () => {
     await usersApi.get("learner/id");
     expect(get).toHaveBeenCalledWith("/v1/admin/users/learner%2Fid");
   });
+
+  it("loads active learner summary from the dedicated endpoint", async () => {
+    await usersApi.activeSummary();
+    expect(get).toHaveBeenCalledWith("/v1/admin/users/active-summary");
+  });
 });
