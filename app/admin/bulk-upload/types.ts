@@ -54,6 +54,12 @@ export const FALLBACK_PROMPT_ENHANCERS: PromptEnhancerCatalogItem[] = [
     description:
       "Use when one reading passage (or similar stem) is followed by several questions that all depend on it. Each saved question gets the full passage prepended to its specific stem.",
   },
+  {
+    id: "multi-correct-statements",
+    label: "More than one correct (statement MCQ)",
+    description:
+      "Use when some items allow more than one true option. Those questions are rewritten as I–IV statements with a single combination answer; ordinary single-correct questions are left unchanged.",
+  },
 ];
 
 export const PROMPT_ENHANCER_NONE_VALUE = "none";

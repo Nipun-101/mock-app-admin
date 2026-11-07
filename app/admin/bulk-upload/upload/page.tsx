@@ -286,7 +286,7 @@ export default function BulkUploadFormPage() {
           <Form.Item
             name="promptEnhancer"
             label="Prompt Enhancers"
-            extra="Leave as None for standard papers. Choose Shared passage when one passage feeds several questions."
+            extra="Leave as None for standard papers. Use Shared passage for RC-style groups, or More than one correct when some items need statement-style rewriting."
           >
             <Select
               options={[
