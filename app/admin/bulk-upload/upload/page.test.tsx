@@ -36,6 +36,7 @@ import { EzPrepApiError } from "@/app/services/ezprep-api/types";
 const listSubjects = vi.mocked(catalogApi.listSubjects);
 const listAllExams = vi.mocked(catalogApi.listAllExams);
 const listAllTags = vi.mocked(catalogApi.listAllTags);
+const apiGet = vi.mocked(ezPrepApiClient.get);
 const apiPost = vi.mocked(ezPrepApiClient.post);
 
 function uploadSubmitButton() {
@@ -87,6 +88,16 @@ async function renderReady() {
   listAllTags.mockResolvedValue([
     { id: "tag-1", name: "GK", subject: "sub-1", topic: "top-1" },
   ]);
+  apiGet.mockResolvedValue({
+    message: "ok",
+    data: [
+      {
+        id: "shared-passage",
+        label: "Shared passage (multiple questions)",
+        description: "RC",
+      },
+    ],
+  });
   render(<BulkUploadFormPage />);
   expect(await screen.findByText("Click or drag a PDF file to upload")).toBeInTheDocument();
   // EditPageShell keeps the form mounted while lookups load. The submit
@@ -104,6 +115,7 @@ describe("BulkUploadFormPage", () => {
     listSubjects.mockReset();
     listAllExams.mockReset();
     listAllTags.mockReset();
+    apiGet.mockReset();
     apiPost.mockReset();
     push.mockReset();
     vi.spyOn(message, "error").mockImplementation(
@@ -167,8 +179,29 @@ describe("BulkUploadFormPage", () => {
     expect(path).toBe("/v1/imports/upload-pdf");
     expect(body).toBeInstanceOf(FormData);
     expect((body as FormData).getAll("tagIds")).toEqual([]);
+    expect((body as FormData).getAll("promptEnhancers")).toEqual([]);
     expect(message.success).toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/admin/bulk-upload");
+  });
+
+  it("sends a selected prompt enhancer with the PDF", async () => {
+    apiPost.mockResolvedValue({ message: "PDF uploaded successfully" });
+    await renderReady();
+
+    const file = new File(["%PDF"], "paper.pdf", { type: "application/pdf" });
+    fireEvent.change(document.querySelector("input[type=file]") as HTMLInputElement, {
+      target: { files: [file] },
+    });
+    await chooseOption("Subject", "Polity");
+    await chooseOption("Topic", "Parliament");
+    await waitFor(() => expect(listAllTags).toHaveBeenCalled());
+    await chooseOption("Associated Exams", "UPSC");
+    await chooseOption("Prompt Enhancers", "Shared passage (multiple questions)");
+    fireEvent.click(uploadSubmitButton());
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalled());
+    const body = apiPost.mock.calls[0][1] as FormData;
+    expect(body.getAll("promptEnhancers")).toEqual(["shared-passage"]);
   });
 
   it("sends selected tags with the PDF", async () => {

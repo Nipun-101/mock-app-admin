@@ -10,7 +10,14 @@ import { catalogApi, ezPrepApiClient } from "@/app/services/ezprep-api";
 import { setFormValue, setFormValues } from "@/app/lib/form-store";
 import { EditPageShell } from "@/app/components/PageLoader";
 import { EzPrepApiError } from "@/app/services/ezprep-api/types";
-import { BulkUploadPdfResponse, LookupItem } from "../types";
+import {
+  BulkUploadPdfResponse,
+  FALLBACK_PROMPT_ENHANCERS,
+  LookupItem,
+  PROMPT_ENHANCER_NONE_VALUE,
+  PromptEnhancerCatalogItem,
+  PromptEnhancersListResponse,
+} from "../types";
 
 export default function BulkUploadFormPage() {
   const [form] = Form.useForm();
@@ -22,6 +29,9 @@ export default function BulkUploadFormPage() {
   const [tags, setTags] = useState<LookupItem[]>([]);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [exams, setExams] = useState<LookupItem[]>([]);
+  const [promptEnhancers, setPromptEnhancers] = useState<
+    PromptEnhancerCatalogItem[]
+  >(FALLBACK_PROMPT_ENHANCERS);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const selectedSubject = Form.useWatch("subjectId", form);
@@ -31,9 +41,12 @@ export default function BulkUploadFormPage() {
     const fetchLookups = async () => {
       setLookupsLoading(true);
       try {
-        const [subjectData, examData] = await Promise.all([
+        const [subjectData, examData, enhancerResponse] = await Promise.all([
           catalogApi.listSubjects(),
           catalogApi.listAllExams(),
+          ezPrepApiClient
+            .get<PromptEnhancersListResponse>("/v1/imports/prompt-enhancers")
+            .catch(() => null),
         ]);
         setSubjects(
           (subjectData.data || []).map((subject) => ({
@@ -46,6 +59,9 @@ export default function BulkUploadFormPage() {
           }))
         );
         setExams(examData.map((exam) => ({ _id: exam.id, name: exam.name })));
+        if (enhancerResponse?.data?.length) {
+          setPromptEnhancers(enhancerResponse.data);
+        }
       } catch {
         message.error("Failed to load form options");
       } finally {
@@ -132,6 +148,14 @@ export default function BulkUploadFormPage() {
         }
       }
 
+      const selectedEnhancer = values.promptEnhancer as string | undefined;
+      if (
+        selectedEnhancer &&
+        selectedEnhancer !== PROMPT_ENHANCER_NONE_VALUE
+      ) {
+        formData.append("promptEnhancers", selectedEnhancer);
+      }
+
       const response = await ezPrepApiClient.post<BulkUploadPdfResponse>(
         "/v1/imports/upload-pdf",
         formData
@@ -159,7 +183,12 @@ export default function BulkUploadFormPage() {
       </div>
 
       <Card>
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{ promptEnhancer: PROMPT_ENHANCER_NONE_VALUE }}
+        >
           <Form.Item
             name="file"
             hidden
@@ -251,6 +280,22 @@ export default function BulkUploadFormPage() {
               mode="multiple"
               placeholder="Select exams"
               options={exams.map((e) => ({ value: e._id, label: e.name }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="promptEnhancer"
+            label="Prompt Enhancers"
+            extra="Leave as None for standard papers. Choose Shared passage when one passage feeds several questions."
+          >
+            <Select
+              options={[
+                { value: PROMPT_ENHANCER_NONE_VALUE, label: "None" },
+                ...promptEnhancers.map((enhancer) => ({
+                  value: enhancer.id,
+                  label: enhancer.label,
+                })),
+              ]}
             />
           </Form.Item>
 
