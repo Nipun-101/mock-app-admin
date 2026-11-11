@@ -14,7 +14,6 @@ vi.mock("./browser-client", () => ({
 const get = vi.mocked(ezPrepApiClient.get);
 const post = vi.mocked(ezPrepApiClient.post);
 const patch = vi.mocked(ezPrepApiClient.patch);
-const del = vi.mocked(ezPrepApiClient.delete);
 
 const payload = {
   totalQuestions: 10,
@@ -29,16 +28,14 @@ beforeEach(() => {
   get.mockReset().mockResolvedValue({ message: "ok", data: [] });
   post.mockReset().mockResolvedValue({ message: "ok", data: {} });
   patch.mockReset().mockResolvedValue({ message: "ok", data: {} });
-  del.mockReset().mockResolvedValue({ message: "ok" });
 });
 
 describe("mockTestsApi", () => {
-  it("lists, gets, creates, updates, and deletes", async () => {
+  it("lists, gets, creates, and updates", async () => {
     await mockTestsApi.list({ page: 1, search: "upsc" });
     await mockTestsApi.get("m1");
     await mockTestsApi.create(payload);
     await mockTestsApi.update("m1", { ...payload, title: undefined as never });
-    await mockTestsApi.delete("m1");
 
     expect(get).toHaveBeenCalledWith("/v1/mock-tests", {
       searchParams: { page: 1, search: "upsc" },
@@ -53,6 +50,5 @@ describe("mockTestsApi", () => {
     });
     expect(patch.mock.calls[0][0]).toBe("/v1/mock-tests/m1");
     expect(patch.mock.calls[0][1]).not.toHaveProperty("title");
-    expect(del).toHaveBeenCalledWith("/v1/mock-tests/m1");
   });
 });

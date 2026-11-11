@@ -24,7 +24,6 @@ vi.mock("@/app/services/ezprep-api", async () => {
     mockTestsApi: {
       list: vi.fn(),
       create: vi.fn(),
-      delete: vi.fn(),
       get: vi.fn(),
       update: vi.fn(),
     },
@@ -52,7 +51,6 @@ import { topicWiseDraftsApi } from "./api";
 const list = vi.mocked(mockTestsApi.list);
 const createDraft = vi.mocked(topicWiseDraftsApi.createDraft);
 const listDrafts = vi.mocked(topicWiseDraftsApi.listDrafts);
-const remove = vi.mocked(mockTestsApi.delete);
 const listSubjects = vi.mocked(catalogApi.listSubjects);
 const listAllExams = vi.mocked(catalogApi.listAllExams);
 const getSubject = vi.mocked(catalogApi.getSubject);
@@ -164,7 +162,6 @@ describe("MockTestsPage", () => {
     list.mockReset();
     createDraft.mockReset();
     listDrafts.mockReset();
-    remove.mockReset();
     listSubjects.mockReset();
     listAllExams.mockReset();
     getSubject.mockReset();
@@ -223,6 +220,22 @@ describe("MockTestsPage", () => {
     );
     expect(push).toHaveBeenCalledWith("/admin/mock-tests/drafts/draft-1");
     expect(message.success).toHaveBeenCalled();
+  });
+
+  it("does not create a draft until a topic is selected", async () => {
+    await renderReady();
+
+    await chooseOption("Total Questions", "10 Questions");
+    await chooseOption("Duration (Minutes)", "15 Minutes");
+    await chooseOption("Exam", "UPSC");
+    await waitUntilEnabled("Subject");
+    await chooseOption("Subject", "Polity");
+    await waitFor(() => expect(getSubject).toHaveBeenCalledWith("sub-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: /create draft/i }));
+
+    expect(await screen.findByText("Please select a topic")).toBeInTheDocument();
+    expect(createDraft).not.toHaveBeenCalled();
   });
 
   it("limits subjects to the selected exam and topics to that subject", async () => {
@@ -304,15 +317,13 @@ describe("MockTestsPage", () => {
     expect(push).toHaveBeenCalledWith("/admin/mock-tests/mt-1");
   });
 
-  it("deletes a mock test after confirm", async () => {
-    remove.mockResolvedValue({ message: "ok" });
+  it("does not offer delete for a published test", async () => {
     await renderReady();
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    await waitFor(() => expect(remove).toHaveBeenCalledWith("mt-1"));
-    expect(message.success).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 
-  it("surfaces list, catalog, create, and delete errors", async () => {
+  it("surfaces list, catalog, and create errors", async () => {
     list.mockRejectedValue(new Error("nope"));
     listSubjects.mockRejectedValue(new Error("nope"));
     listAllExams.mockRejectedValue(new Error("nope"));
@@ -324,7 +335,6 @@ describe("MockTestsPage", () => {
     listSubjects.mockResolvedValue({ message: "ok", data: [] });
     listAllExams.mockResolvedValue([]);
     createDraft.mockRejectedValue(new Error("nope"));
-    remove.mockRejectedValue(new Error("nope"));
   });
 
   it("surfaces a create error after a valid form submit", async () => {
@@ -335,14 +345,9 @@ describe("MockTestsPage", () => {
     await chooseOption("Exam", "UPSC");
     await waitUntilEnabled("Subject");
     await chooseOption("Subject", "Polity");
+    await waitUntilEnabled("Topic");
+    await chooseOption("Topic", "Parliament");
     fireEvent.click(screen.getByRole("button", { name: /create draft/i }));
-    await waitFor(() => expect(message.error).toHaveBeenCalled());
-  });
-
-  it("surfaces a delete error", async () => {
-    remove.mockRejectedValue(new Error("nope"));
-    await renderReady();
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(message.error).toHaveBeenCalled());
   });
 

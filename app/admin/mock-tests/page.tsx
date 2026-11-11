@@ -153,14 +153,6 @@ export default function MockTestsPage() {
           >
             View
           </Button>
-          <Button 
-            type="link" 
-            size="small" 
-            danger 
-            onClick={() => handleDelete(record.id)}
-          >
-            Delete
-          </Button>
         </Space>
       ),
     },
@@ -392,25 +384,6 @@ export default function MockTestsPage() {
     });
   };
 
-  const handleDelete = async (id: string) => {
-    showConfirmModal({
-      title: 'Delete Mock Test',
-      content: 'Are you sure you want to delete this mock test? This action cannot be undone.',
-      onConfirm: async () => {
-        setTableLoading(true);
-        try {
-          await mockTestsApi.delete(id);
-          message.success('Mock test deleted successfully');
-          fetchMockTests();
-        } catch (error) {
-          message.error(formatEzPrepError(error, 'Failed to delete mock test'));
-        } finally {
-          setTableLoading(false);
-        }
-      }
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -507,6 +480,7 @@ export default function MockTestsPage() {
               <Form.Item
                 label="Topic"
                 name="topic"
+                rules={[{ required: true, message: "Please select a topic" }]}
               >
                 <Select
                   placeholder={
@@ -521,7 +495,6 @@ export default function MockTestsPage() {
                   options={topics}
                   disabled={!selectedSubject || topicsLoading || topics.length === 0}
                   loading={topicsLoading}
-                  allowClear
                 />
               </Form.Item>
             </div>

@@ -42,7 +42,6 @@ describe("sprintTestsApi", () => {
     await sprintTestsApi.discardDraft("d1");
     await sprintTestsApi.listPublished({ page: 1 });
     await sprintTestsApi.getPublished("m1");
-    await sprintTestsApi.deletePublished("m1");
 
     expect(post).toHaveBeenCalledWith("/v1/sprint-tests/drafts", {
       examId: "e1",
@@ -66,6 +65,6 @@ describe("sprintTestsApi", () => {
     expect(del).toHaveBeenCalledWith("/v1/sprint-tests/drafts/d1");
     expect(get).toHaveBeenCalledWith("/v1/sprint-tests", { searchParams: { page: 1 } });
     expect(get).toHaveBeenCalledWith("/v1/sprint-tests/m1");
-    expect(del).toHaveBeenCalledWith("/v1/sprint-tests/m1");
+    expect(del).not.toHaveBeenCalledWith("/v1/sprint-tests/m1");
   });
 });

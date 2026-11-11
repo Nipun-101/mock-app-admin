@@ -2,7 +2,6 @@ import { ezPrepApiClient } from "./browser-client";
 import {
   ApiItemResponse,
   ApiListResponse,
-  ApiMessageResponse,
   omitEmpty,
   omitUndefined,
 } from "./envelope";
@@ -106,9 +105,5 @@ export const mockTestsApi = {
       `/v1/mock-tests/${id}`,
       omitUndefined(body as Record<string, unknown>)
     );
-  },
-
-  delete(id: string) {
-    return ezPrepApiClient.delete<ApiMessageResponse>(`/v1/mock-tests/${id}`);
   },
 };
