@@ -225,6 +225,22 @@ describe("MockTestsPage", () => {
     expect(message.success).toHaveBeenCalled();
   });
 
+  it("does not create a draft until a topic is selected", async () => {
+    await renderReady();
+
+    await chooseOption("Total Questions", "10 Questions");
+    await chooseOption("Duration (Minutes)", "15 Minutes");
+    await chooseOption("Exam", "UPSC");
+    await waitUntilEnabled("Subject");
+    await chooseOption("Subject", "Polity");
+    await waitFor(() => expect(getSubject).toHaveBeenCalledWith("sub-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: /create draft/i }));
+
+    expect(await screen.findByText("Please select a topic")).toBeInTheDocument();
+    expect(createDraft).not.toHaveBeenCalled();
+  });
+
   it("limits subjects to the selected exam and topics to that subject", async () => {
     list.mockResolvedValue({
       message: "ok",
@@ -335,6 +351,8 @@ describe("MockTestsPage", () => {
     await chooseOption("Exam", "UPSC");
     await waitUntilEnabled("Subject");
     await chooseOption("Subject", "Polity");
+    await waitUntilEnabled("Topic");
+    await chooseOption("Topic", "Parliament");
     fireEvent.click(screen.getByRole("button", { name: /create draft/i }));
     await waitFor(() => expect(message.error).toHaveBeenCalled());
   });

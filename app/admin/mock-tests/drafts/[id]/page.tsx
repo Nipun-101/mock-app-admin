@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Button,
   Card,
   Descriptions,
@@ -53,11 +54,13 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 function PublishDraftForm({
   settings,
   publishing,
+  missingTopic,
   onPublish,
   onDiscard,
 }: {
   settings: TopicWiseDraftSettings;
   publishing: boolean;
+  missingTopic: boolean;
   onPublish: (values: PublishTopicWiseDraftPayload) => void;
   onDiscard: () => void;
 }) {
@@ -65,6 +68,15 @@ function PublishDraftForm({
 
   return (
     <Card title="Publish">
+      {missingTopic ? (
+        <Alert
+          type="error"
+          showIcon
+          className="mb-4"
+          message="This draft has no topic"
+          description="A topic-wise test must belong to one topic. Discard this draft and create it again with a topic. Use a sprint test for questions from more than one topic."
+        />
+      ) : null}
       <Form
         form={form}
         layout="vertical"
@@ -127,7 +139,7 @@ function PublishDraftForm({
             type="primary"
             htmlType="submit"
             loading={publishing}
-            disabled={publishing}
+            disabled={publishing || missingTopic}
             className={primaryButtonClass}
           >
             Publish
@@ -388,7 +400,7 @@ export default function TopicWiseDraftPage(props: {
       render: (record: TopicWiseQuestionItem) =>
         record.replacedFrom ? <Tag color="gold">Replaced</Tag> : null,
     },
-    ...(editable
+    ...(editable && draft.topicId
       ? [
           {
             title: "Actions",
@@ -464,6 +476,7 @@ export default function TopicWiseDraftPage(props: {
           <PublishDraftForm
             settings={settings}
             publishing={publishing}
+            missingTopic={!draft.topicId}
             onPublish={handlePublish}
             onDiscard={handleDiscard}
           />
