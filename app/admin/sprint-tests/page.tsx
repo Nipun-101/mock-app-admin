@@ -131,22 +131,6 @@ export default function SprintTestsPage() {
     });
   };
 
-  const handleDelete = (id: string) => {
-    showConfirmModal({
-      title: "Delete Sprint Test",
-      content: "Soft-delete this published sprint test?",
-      onConfirm: async () => {
-        try {
-          const response = await sprintTestsApi.deletePublished(id);
-          message.success(response.message || "Sprint test deleted");
-          await fetchPublished();
-        } catch (error) {
-          message.error(formatEzPrepError(error, "Failed to delete sprint test"));
-        }
-      },
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -368,14 +352,6 @@ export default function SprintTestsPage() {
                       onClick={() => router.push(`/admin/sprint-tests/${record.id}`)}
                     >
                       View
-                    </Button>
-                    <Button
-                      type="link"
-                      size="small"
-                      danger
-                      onClick={() => handleDelete(record.id)}
-                    >
-                      Delete
                     </Button>
                   </Space>
                 ),

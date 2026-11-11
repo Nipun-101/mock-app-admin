@@ -30,7 +30,6 @@ vi.mock("./api", () => ({
     listDrafts: vi.fn(),
     listPublished: vi.fn(),
     discardDraft: vi.fn(),
-    deletePublished: vi.fn(),
   },
 }));
 
@@ -174,6 +173,7 @@ describe("SprintTestsPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Review" }));
     expect(router.push).toHaveBeenCalledWith("/admin/sprint-tests/drafts/draft-1");
     fireEvent.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
     expect(router.push).toHaveBeenCalledWith("/admin/sprint-tests/sp-1");
   });
 });

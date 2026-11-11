@@ -80,8 +80,4 @@ export const sprintTestsApi = {
   getPublished(id: string) {
     return ezPrepApiClient.get<ApiItemResponse<SprintTest>>(`${BASE}/${id}`);
   },
-
-  deletePublished(id: string) {
-    return ezPrepApiClient.delete<ApiMessageResponse>(`${BASE}/${id}`);
-  },
 };

@@ -18,7 +18,6 @@ vi.mock("@/app/services/ezprep-api", async () => {
     mockTestsApi: {
       list: vi.fn(),
       create: vi.fn(),
-      delete: vi.fn(),
       get: vi.fn(),
       update: vi.fn(),
     },
