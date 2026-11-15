@@ -46,10 +46,39 @@ const FLAG_FILTER_OPTIONS: Array<{ value: AdminOrderFlag | ""; label: string }> 
   { value: "duplicate", label: "Duplicate payment" },
 ];
 
+const DURATION_LABELS: Record<string, string> = {
+  "1M": "1 month",
+  "3M": "3 months",
+  "6M": "6 months",
+  "12M": "12 months",
+  LIFETIME: "Lifetime",
+};
+
 function flagFromQuery(value: string | null): AdminOrderFlag | "" {
   return FLAG_FILTER_OPTIONS.some((option) => option.value === value && value !== "")
     ? (value as AdminOrderFlag)
     : "";
+}
+
+function formatPurchasedItems(items: AdminOrder["items"]) {
+  if (!items?.length) {
+    return "—";
+  }
+  const [first, ...rest] = items;
+  const duration =
+    DURATION_LABELS[first.durationPreset] ?? first.durationPreset;
+  const label = duration
+    ? `${first.productName} · ${duration}`
+    : first.productName;
+  if (rest.length === 0) {
+    return label;
+  }
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <span>{label}</span>
+      <Tag className="m-0">{`+${rest.length}`}</Tag>
+    </span>
+  );
 }
 
 export default function OrdersPage() {
@@ -159,6 +188,12 @@ export default function OrdersPage() {
               title: "Amount",
               dataIndex: "amount",
               render: (amount: number) => formatPaiseAsRupees(amount),
+            },
+            {
+              title: "Bought",
+              key: "bought",
+              render: (_value: unknown, row: AdminOrder) =>
+                formatPurchasedItems(row.items),
             },
             {
               title: "User",

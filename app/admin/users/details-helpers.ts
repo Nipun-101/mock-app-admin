@@ -336,9 +336,31 @@ function normalizeAttempts(
     .slice(0, RECENT_ATTEMPT_LIMIT);
 }
 
+function normalizeAccessProducts(
+  products: AppUserAccess["products"]
+): NonNullable<AppUserAccess["products"]> {
+  if (!Array.isArray(products)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const normalized: NonNullable<AppUserAccess["products"]> = [];
+  for (const product of products) {
+    const productId =
+      typeof product?.productId === "string" ? product.productId.trim() : "";
+    const productName =
+      typeof product?.productName === "string" ? product.productName.trim() : "";
+    if (!productId || !productName || seen.has(productId)) {
+      continue;
+    }
+    seen.add(productId);
+    normalized.push({ productId, productName });
+  }
+  return normalized;
+}
+
 function normalizeAccess(access: AppUserAccess | null | undefined): AppUserAccess {
   if (!access || access.paid !== true) {
-    return { paid: false, usableCount: 0 };
+    return { paid: false, usableCount: 0, products: [] };
   }
   const count = access.usableCount;
   const usableCount =
@@ -352,6 +374,7 @@ function normalizeAccess(access: AppUserAccess | null | undefined): AppUserAcces
   return {
     paid: true,
     usableCount,
+    products: normalizeAccessProducts(access.products),
     ...(expiresAt ? { expiresAt } : {}),
   };
 }

@@ -139,12 +139,32 @@ export function UserCard({ user }: { user: AppUser }) {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <Tag
-            className="m-0 border-0"
-            style={{ color: access.color, background: access.background }}
+          <Tooltip
+            title={
+              access.paid && access.productNames.length > 1
+                ? access.productNames.join(", ")
+                : access.paid
+                  ? "What this learner paid for"
+                  : undefined
+            }
           >
-            {access.label}
-          </Tag>
+            <Tag
+              className="m-0 max-w-[14rem] truncate border-0"
+              style={{ color: access.color, background: access.background }}
+            >
+              {access.label}
+            </Tag>
+          </Tooltip>
+          {access.extraCount > 0 ? (
+            <Tooltip title={access.productNames.slice(1).join(", ")}>
+              <Tag
+                className="m-0 border-0"
+                style={{ color: access.color, background: access.background }}
+              >
+                {`+${access.extraCount}`}
+              </Tag>
+            </Tooltip>
+          ) : null}
           <Tooltip title={BADGE_TIER_TOOLTIP}>
             <Tag
               className="m-0 border-0"

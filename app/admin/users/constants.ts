@@ -51,22 +51,66 @@ export function badgeTierLabel(tier?: string) {
   return `Badge · ${tierStyle(tier).label}`;
 }
 
+export type AccessProduct = {
+  productId?: string;
+  productName?: string;
+};
+
+function paidProductNames(
+  products?: AccessProduct[] | null
+): string[] {
+  if (!Array.isArray(products)) {
+    return [];
+  }
+  const names: string[] = [];
+  for (const product of products) {
+    const name =
+      typeof product?.productName === "string" ? product.productName.trim() : "";
+    if (name && !names.includes(name)) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+/**
+ * Free / paid tag for learner cards and detail.
+ * Paid learners show the first product name; extras use +N (not a grant count).
+ */
 export function accessPresentation(
-  access?: { paid?: boolean; usableCount?: number } | null
+  access?: {
+    paid?: boolean;
+    usableCount?: number;
+    products?: AccessProduct[] | null;
+  } | null
 ) {
   const paid = access?.paid === true;
-  const count =
-    typeof access?.usableCount === "number" && Number.isFinite(access.usableCount)
-      ? Math.max(0, Math.trunc(access.usableCount))
-      : 0;
+  const productNames = paidProductNames(access?.products);
   if (!paid) {
     return {
+      paid: false as const,
       label: "Free",
+      productNames: [] as string[],
+      extraCount: 0,
       ...FREE_ACCESS,
     };
   }
+
+  if (productNames.length === 0) {
+    return {
+      paid: true as const,
+      label: "Paid",
+      productNames,
+      extraCount: 0,
+      ...PAID_ACCESS,
+    };
+  }
+
   return {
-    label: count > 0 ? `Paid · ${count}` : "Paid",
+    paid: true as const,
+    label: productNames[0],
+    productNames,
+    extraCount: Math.max(0, productNames.length - 1),
     ...PAID_ACCESS,
   };
 }

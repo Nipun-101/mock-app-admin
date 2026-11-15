@@ -100,14 +100,43 @@ describe("UserCard", () => {
     render(
       <UserCard
         user={makeUser({
-          access: { paid: true, usableCount: 2 },
+          access: {
+            paid: true,
+            usableCount: 2,
+            products: [{ productId: "p1", productName: "SSC CGL Pack" }],
+          },
         })}
       />
     );
 
-    expect(screen.getByText("Paid · 2")).toBeInTheDocument();
+    expect(screen.getByText("SSC CGL Pack")).toBeInTheDocument();
+    expect(screen.queryByText("Paid · 2")).not.toBeInTheDocument();
     expect(screen.queryByText("Premium")).not.toBeInTheDocument();
     expect(screen.queryByText("Free")).not.toBeInTheDocument();
+  });
+
+  it("shows what a paid learner paid for, with +N for extras", () => {
+    render(
+      <UserCard
+        user={makeUser({
+          access: {
+            paid: true,
+            usableCount: 3,
+            products: [
+              { productId: "p1", productName: "SSC CGL Pack" },
+              { productId: "p2", productName: "RRB NTPC Pack" },
+              { productId: "p3", productName: "UPSC Prelims Pack" },
+            ],
+          },
+        })}
+      />
+    );
+
+    expect(screen.getByText("SSC CGL Pack")).toBeInTheDocument();
+    expect(screen.getByText("+2")).toBeInTheDocument();
+    expect(screen.queryByText("Paid · 3")).not.toBeInTheDocument();
+    expect(screen.queryByText("RRB NTPC Pack")).not.toBeInTheDocument();
+    expect(screen.queryByText("UPSC Prelims Pack")).not.toBeInTheDocument();
   });
 
   it("uses a singular attended label for a single full mock", () => {

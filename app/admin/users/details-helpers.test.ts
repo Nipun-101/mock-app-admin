@@ -158,7 +158,11 @@ describe("normalizeUserDetail", () => {
       totalMarks: 100,
       percentage: 40,
     });
-    expect(normalized?.profile.access).toEqual({ paid: false, usableCount: 0 });
+    expect(normalized?.profile.access).toEqual({
+      paid: false,
+      usableCount: 0,
+      products: [],
+    });
   });
 
   it("keeps a paid access summary and drops a blank expiry", () => {
@@ -166,12 +170,25 @@ describe("normalizeUserDetail", () => {
       detail({
         profile: {
           ...detail().profile,
-          access: { paid: true, usableCount: 2.8, expiresAt: "  " },
+          access: {
+            paid: true,
+            usableCount: 2.8,
+            expiresAt: "  ",
+            products: [
+              { productId: "p1", productName: "SSC CGL Pack" },
+              { productId: "p1", productName: "dup" },
+              { productId: " ", productName: "skip" },
+            ],
+          },
         },
       })
     );
 
-    expect(normalized?.profile.access).toEqual({ paid: true, usableCount: 2 });
+    expect(normalized?.profile.access).toEqual({
+      paid: true,
+      usableCount: 2,
+      products: [{ productId: "p1", productName: "SSC CGL Pack" }],
+    });
   });
 
   it("rejects admin payloads and missing profiles", () => {

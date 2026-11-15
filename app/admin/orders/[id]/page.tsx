@@ -128,6 +128,20 @@ export default function OrderDetailPage(props: {
                 <Text>{formatPaiseAsRupees(order.amount)}</Text>
               </div>
               <div>
+                <Text type="secondary">Bought </Text>
+                {order.items?.length ? (
+                  <Space size={[4, 4]} wrap>
+                    {order.items.map((item, index) => (
+                      <Tag key={`${item.productName}-${item.durationPreset}-${index}`} className="m-0">
+                        {formatBoughtItem(item)}
+                      </Tag>
+                    ))}
+                  </Space>
+                ) : (
+                  <Text>—</Text>
+                )}
+              </div>
+              <div>
                 <Text type="secondary">Name </Text>
                 <Text>{order.user?.name?.trim() || "Unknown user"}</Text>
               </div>
@@ -246,6 +260,23 @@ export default function OrderDetailPage(props: {
       ) : null}
     </EditPageShell>
   );
+}
+
+const DURATION_LABELS: Record<string, string> = {
+  "1M": "1 month",
+  "3M": "3 months",
+  "6M": "6 months",
+  "12M": "12 months",
+  LIFETIME: "Lifetime",
+};
+
+function formatBoughtItem(item: {
+  productName: string;
+  durationPreset: string;
+}): string {
+  const duration =
+    DURATION_LABELS[item.durationPreset] ?? item.durationPreset;
+  return duration ? `${item.productName} · ${duration}` : item.productName;
 }
 
 function TaxBlock({ order }: { order: AdminOrderDetail }) {
