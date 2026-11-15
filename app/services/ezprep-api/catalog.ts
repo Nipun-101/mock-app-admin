@@ -13,6 +13,8 @@ export interface NamedRef {
   shortName?: string;
 }
 
+export type CategoryScope = "central" | "state";
+
 export interface Category {
   id: string;
   name: string;
@@ -21,6 +23,10 @@ export interface Category {
   description?: string;
   /** Higher values appear first in dashboard Popular Exams. Defaults to 0. */
   priority?: number;
+  /** Central = main dashboard; state = State PSC page. Defaults to central. */
+  scope?: CategoryScope;
+  /** ISO 3166-2:IN two-letter code when scope is state (e.g. KL). */
+  stateCode?: string;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -151,6 +157,8 @@ export const catalogApi = {
     imageUrl?: string;
     description?: string;
     priority?: number;
+    scope?: CategoryScope;
+    stateCode?: string;
   }) {
     return ezPrepApiClient.post<ApiItemResponse<Category>>(
       "/v1/categories",
@@ -166,6 +174,8 @@ export const catalogApi = {
       imageUrl?: string;
       description?: string;
       priority?: number;
+      scope?: CategoryScope;
+      stateCode?: string;
       isActive?: boolean;
     }
   ) {
