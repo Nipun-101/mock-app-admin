@@ -6,6 +6,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Select,
   Table,
   Typography,
   message,
@@ -19,7 +20,9 @@ import {
   catalogApi,
   formatEzPrepError,
   type Category,
+  type CategoryScope,
 } from "@/app/services/ezprep-api";
+import { INDIA_STATE_SELECT_OPTIONS } from "@/app/lib/india-states";
 
 const { Title } = Typography;
 
@@ -52,6 +55,15 @@ export default function CategoriesPage() {
       key: "priority",
       width: 100,
       render: (value: number | undefined) => value ?? 0,
+    },
+    {
+      title: "Jurisdiction",
+      key: "scope",
+      width: 140,
+      render: (record: Category) =>
+        record.scope === "state"
+          ? `State (${record.stateCode ?? "—"})`
+          : "Central",
     },
     {
       title: "Description",
@@ -122,16 +134,26 @@ export default function CategoriesPage() {
     fetchCategories();
   }, [pagination.current, pagination.pageSize]);
 
+  const selectedScope = Form.useWatch("scope", form) as
+    | CategoryScope
+    | undefined;
+
   const handleSubmit = async (values: {
     name: string;
     shortName: string;
     imageUrl?: string;
     description?: string;
     priority: number;
+    scope: CategoryScope;
+    stateCode?: string;
   }) => {
     setLoading(true);
     try {
-      await catalogApi.createCategory(values);
+      await catalogApi.createCategory({
+        ...values,
+        stateCode:
+          values.scope === "state" ? values.stateCode : undefined,
+      });
       message.success("Category created successfully");
       form.resetFields();
       fetchCategories();
@@ -176,7 +198,7 @@ export default function CategoriesPage() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ priority: 0 }}
+          initialValues={{ priority: 0, scope: "central" }}
           className="max-w-4xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -197,6 +219,47 @@ export default function CategoriesPage() {
             >
               <Input placeholder="e.g. SSC" size="large" />
             </Form.Item>
+
+            <Form.Item
+              label="Jurisdiction"
+              name="scope"
+              extra="Central categories appear on the main dashboard. State categories appear under State PSC."
+              rules={[
+                { required: true, message: "Please select jurisdiction" },
+              ]}
+            >
+              <Select
+                size="large"
+                options={[
+                  { value: "central", label: "Central" },
+                  { value: "state", label: "State" },
+                ]}
+                onChange={(value) => {
+                  if (value !== "state") {
+                    form.setFieldValue("stateCode", undefined);
+                  }
+                }}
+              />
+            </Form.Item>
+
+            {selectedScope === "state" ? (
+              <Form.Item
+                label="State"
+                name="stateCode"
+                extra="ISO 3166-2:IN code with GST numeric code."
+                rules={[
+                  { required: true, message: "Please select a state" },
+                ]}
+              >
+                <Select
+                  size="large"
+                  showSearch
+                  placeholder="Select state"
+                  optionFilterProp="label"
+                  options={INDIA_STATE_SELECT_OPTIONS}
+                />
+              </Form.Item>
+            ) : null}
 
             <Form.Item
               label="Dashboard priority"

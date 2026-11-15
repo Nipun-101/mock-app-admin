@@ -6,13 +6,19 @@ import {
   Form,
   Input,
   InputNumber,
+  Select,
   Typography,
   message,
 } from "antd";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { catalogApi, formatEzPrepError } from "@/app/services/ezprep-api";
+import {
+  catalogApi,
+  formatEzPrepError,
+  type CategoryScope,
+} from "@/app/services/ezprep-api";
 import { EditPageShell } from "@/app/components/PageLoader";
+import { INDIA_STATE_SELECT_OPTIONS } from "@/app/lib/india-states";
 
 const { Title } = Typography;
 
@@ -24,6 +30,9 @@ export default function EditCategoryPage(props: {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const router = useRouter();
+  const selectedScope = Form.useWatch("scope", form) as
+    | CategoryScope
+    | undefined;
 
   useEffect(() => {
     const fetchCategory = async () => {
@@ -35,6 +44,8 @@ export default function EditCategoryPage(props: {
           imageUrl: data.imageUrl,
           description: data.description,
           priority: data.priority ?? 0,
+          scope: data.scope ?? "central",
+          stateCode: data.stateCode,
         });
       } catch (error) {
         message.error(formatEzPrepError(error, "Failed to fetch category"));
@@ -52,10 +63,16 @@ export default function EditCategoryPage(props: {
     imageUrl?: string;
     description?: string;
     priority: number;
+    scope: CategoryScope;
+    stateCode?: string;
   }) => {
     setLoading(true);
     try {
-      await catalogApi.updateCategory(params.id, values);
+      await catalogApi.updateCategory(params.id, {
+        ...values,
+        stateCode:
+          values.scope === "state" ? values.stateCode : undefined,
+      });
       message.success("Category updated successfully");
       router.push("/admin/categories");
     } catch (error) {
@@ -100,6 +117,47 @@ export default function EditCategoryPage(props: {
             >
               <Input placeholder="e.g. SSC" size="large" />
             </Form.Item>
+
+            <Form.Item
+              label="Jurisdiction"
+              name="scope"
+              extra="Central categories appear on the main dashboard. State categories appear under State PSC."
+              rules={[
+                { required: true, message: "Please select jurisdiction" },
+              ]}
+            >
+              <Select
+                size="large"
+                options={[
+                  { value: "central", label: "Central" },
+                  { value: "state", label: "State" },
+                ]}
+                onChange={(value) => {
+                  if (value !== "state") {
+                    form.setFieldValue("stateCode", undefined);
+                  }
+                }}
+              />
+            </Form.Item>
+
+            {selectedScope === "state" ? (
+              <Form.Item
+                label="State"
+                name="stateCode"
+                extra="ISO 3166-2:IN code with GST numeric code."
+                rules={[
+                  { required: true, message: "Please select a state" },
+                ]}
+              >
+                <Select
+                  size="large"
+                  showSearch
+                  placeholder="Select state"
+                  optionFilterProp="label"
+                  options={INDIA_STATE_SELECT_OPTIONS}
+                />
+              </Form.Item>
+            ) : null}
 
             <Form.Item
               label="Dashboard priority"
