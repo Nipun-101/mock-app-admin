@@ -79,7 +79,14 @@ function makeDetail(overrides: Partial<AppUserDetail> = {}): AppUserDetail {
       isActive: true,
       gender: "female",
       location: { city: "Bengaluru", state: "KA", country: "IN", timezone: "Asia/Kolkata" },
-      access: { paid: true, usableCount: 2 },
+      access: {
+        paid: true,
+        usableCount: 2,
+        products: [
+          { productId: "p1", productName: "SSC CGL Pack" },
+          { productId: "p2", productName: "RRB NTPC Pack" },
+        ],
+      },
       membershipTier: "gold",
       badgesEarnedCount: 4,
       targetExam: { id: "e1", name: "UPSC" },
@@ -365,7 +372,9 @@ describe("UserDetailPage", () => {
 
     expect(await screen.findByTestId("entitlements-section")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Entitlements" })).toBeInTheDocument();
-    expect(screen.getByText("Paid · 2")).toBeInTheDocument();
+    expect(screen.getByText("SSC CGL Pack")).toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(screen.queryByText("Paid · 2")).not.toBeInTheDocument();
     expect(screen.getByText("Badge · Gold")).toBeInTheDocument();
     expect(screen.queryByText("Profile plan (not used for access)")).not.toBeInTheDocument();
     expect(screen.queryByText("Auto-renew")).not.toBeInTheDocument();

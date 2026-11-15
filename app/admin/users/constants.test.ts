@@ -15,8 +15,28 @@ describe("user card visual tokens", () => {
   it("shows paid access from usable entitlements and free when access is missing", () => {
     expect(accessPresentation(undefined).label).toBe("Free");
     expect(accessPresentation({ paid: false, usableCount: 0 }).label).toBe("Free");
-    expect(accessPresentation({ paid: true, usableCount: 2 }).label).toBe("Paid · 2");
     expect(accessPresentation({ paid: true, usableCount: 0 }).label).toBe("Paid");
+    expect(
+      accessPresentation({
+        paid: true,
+        usableCount: 2,
+        products: [{ productId: "p1", productName: "SSC CGL Pack" }],
+      }).label
+    ).toBe("SSC CGL Pack");
+    expect(
+      accessPresentation({
+        paid: true,
+        usableCount: 3,
+        products: [
+          { productId: "p1", productName: "SSC CGL Pack" },
+          { productId: "p2", productName: "RRB NTPC Pack" },
+          { productId: "p3", productName: "UPSC Prelims Pack" },
+        ],
+      })
+    ).toMatchObject({
+      label: "SSC CGL Pack",
+      extraCount: 2,
+    });
     expect(badgeTierLabel("gold")).toBe("Badge · Gold");
     expect(badgeTierLabel(undefined)).toBe("Badge · No tier");
   });

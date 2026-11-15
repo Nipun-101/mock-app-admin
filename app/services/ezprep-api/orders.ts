@@ -21,6 +21,12 @@ export interface AdminOrderUser {
   username?: string;
 }
 
+export interface AdminOrderItem {
+  productName: string;
+  durationPreset: string;
+  amount: number;
+}
+
 export interface AdminOrder {
   id: string;
   orderNumber: string;
@@ -32,6 +38,8 @@ export interface AdminOrder {
   paymentProvider?: string;
   paidAt?: string;
   createdAt?: string;
+  /** Purchased line items from the order snapshot (list + detail). */
+  items?: AdminOrderItem[];
 }
 
 export interface AdminOrderPayment {
@@ -91,11 +99,7 @@ export interface AdminOrderTax {
 }
 
 export interface AdminOrderDetail extends AdminOrder {
-  items: Array<{
-    productName: string;
-    durationPreset: string;
-    amount: number;
-  }>;
+  items: AdminOrderItem[];
   providerOrderId?: string;
   tax?: AdminOrderTax;
   billing?: { name?: string; state?: string; stateCode?: string };

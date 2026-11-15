@@ -13,11 +13,19 @@ export interface AppUserLocation {
   timezone?: string;
 }
 
+/** Distinct product on a learner's usable entitlements. */
+export interface AppUserAccessProduct {
+  productId: string;
+  productName: string;
+}
+
 /** Usable entitlements right now. Missing means the learner is shown as free. */
 export interface AppUserAccess {
   paid: boolean;
   usableCount: number;
   expiresAt?: string;
+  /** Distinct products from usable entitlements; empty when free or unnamed grants. */
+  products?: AppUserAccessProduct[];
 }
 
 export interface AppUserTargetExam {

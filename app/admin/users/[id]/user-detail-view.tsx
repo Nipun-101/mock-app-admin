@@ -333,9 +333,32 @@ export function UserDetailView({ detail }: { detail: AppUserDetail }) {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            <Tag className="m-0 border-0" style={{ color: access.color, background: access.background }}>
-              {access.label}
-            </Tag>
+            <Tooltip
+              title={
+                access.paid && access.productNames.length > 1
+                  ? access.productNames.join(", ")
+                  : access.paid
+                    ? "What this learner paid for"
+                    : undefined
+              }
+            >
+              <Tag
+                className="m-0 max-w-[16rem] truncate border-0"
+                style={{ color: access.color, background: access.background }}
+              >
+                {access.label}
+              </Tag>
+            </Tooltip>
+            {access.extraCount > 0 ? (
+              <Tooltip title={access.productNames.slice(1).join(", ")}>
+                <Tag
+                  className="m-0 border-0"
+                  style={{ color: access.color, background: access.background }}
+                >
+                  {`+${access.extraCount}`}
+                </Tag>
+              </Tooltip>
+            ) : null}
             <Tooltip title={BADGE_TIER_TOOLTIP}>
               <Tag className="m-0 border-0" style={{ color: tier.color, background: tier.background }}>
                 {badgeTierLabel(profile.membershipTier)}
