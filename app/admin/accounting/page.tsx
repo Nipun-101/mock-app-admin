@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Typography, message } from "antd";
+import { Modal, Typography, message } from "antd";
 import {
   AuditOutlined,
   CheckCircleOutlined,
@@ -27,6 +27,8 @@ import {
   formatPaiseAsRupees,
   type AccountingOverview,
   type MoneyTotal,
+  type PaidUsersByProduct,
+  type PaidUsersByProductRow,
 } from "@/app/services/ezprep-api";
 
 const { Title, Paragraph } = Typography;
@@ -41,6 +43,7 @@ type AccountingCard = {
   accent: string;
   tint: string;
   shadow: string;
+  clickable?: boolean;
 };
 
 type AccountingSection = {
@@ -101,6 +104,7 @@ function sections(overview: AccountingOverview): AccountingSection[] {
           icon: <CrownOutlined />,
           accent: "#1677ff",
           tint: "linear-gradient(180deg, #e6f4ff 0%, #ffffff 72%)",
+          clickable: true,
         }),
         card({
           key: "free-users",
@@ -279,8 +283,14 @@ function sections(overview: AccountingOverview): AccountingSection[] {
   ];
 }
 
-function AccountingCardView({ card: item }: { card: AccountingCard }) {
-  return (
+function AccountingCardView({
+  card: item,
+  onOpen,
+}: {
+  card: AccountingCard;
+  onOpen?: () => void;
+}) {
+  const body = (
     <div
       className="h-full min-w-0 rounded-2xl border border-solid px-4 py-4 sm:min-h-[168px] sm:px-5"
       style={{
@@ -291,12 +301,19 @@ function AccountingCardView({ card: item }: { card: AccountingCard }) {
         boxShadow: item.shadow,
       }}
     >
-      <span
-        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-base sm:h-10 sm:w-10 sm:text-lg"
-        style={{ color: item.accent, background: `${item.accent}18` }}
-      >
-        {item.icon}
-      </span>
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-base sm:h-10 sm:w-10 sm:text-lg"
+          style={{ color: item.accent, background: `${item.accent}18` }}
+        >
+          {item.icon}
+        </span>
+        {item.clickable ? (
+          <span className="text-xs font-medium text-slate-400 transition-colors group-hover:text-slate-600">
+            View details
+          </span>
+        ) : null}
+      </div>
       <p className="mb-0 mt-3 text-sm font-medium text-slate-600">{item.label}</p>
       <p
         className="mb-2 mt-1 break-words text-2xl font-semibold leading-tight sm:text-3xl"
@@ -312,13 +329,154 @@ function AccountingCardView({ card: item }: { card: AccountingCard }) {
       ) : null}
     </div>
   );
+
+  if (!item.clickable || !onOpen) {
+    return body;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left transition-transform duration-200 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{ outlineColor: item.accent }}
+      aria-label={`${item.label}. View details`}
+    >
+      {body}
+    </button>
+  );
 }
 
-// Accounting page for admin users to view the accounting overview
+function sharePercent(count: number, paidUsers: number): number {
+  if (paidUsers <= 0 || count <= 0) {
+    return 0;
+  }
+  return Math.min(100, Math.round((count / paidUsers) * 100));
+}
+
+function barWidth(count: number, maxCount: number): number {
+  if (maxCount <= 0 || count <= 0) {
+    return 0;
+  }
+  return Math.max(8, Math.round((count / maxCount) * 100));
+}
+
+function PaidUsersByProductPanel({ data }: { data: PaidUsersByProduct }) {
+  const maxCount = data.products.reduce(
+    (highest, row) => Math.max(highest, row.userCount),
+    0
+  );
+
+  if (data.products.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+        <p className="mb-1 text-sm font-medium text-slate-700">No product breakdown yet</p>
+        <p className="mb-0 text-xs text-slate-500">
+          Paid users show up here once usable entitlements are tied to a product.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-solid border-[#1677ff33] bg-[linear-gradient(135deg,#e6f4ff_0%,#ffffff_70%)] px-4 py-3">
+        <div>
+          <p className="mb-0 text-xs font-semibold uppercase tracking-[0.14em] text-[#1677ff]">
+            Paid reach
+          </p>
+          <p className="mb-0 mt-1 text-sm text-slate-600">
+            Distinct learners with usable access right now
+          </p>
+        </div>
+        <p className="mb-0 text-3xl font-semibold leading-none text-[#1677ff]">
+          {formatCount(data.paidUsers)}
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-solid border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:grid-cols-[3rem_minmax(0,1fr)_6.5rem_7rem]">
+          <span>#</span>
+          <span>Product</span>
+          <span className="text-right">Users</span>
+          <span className="hidden text-right sm:block">Of paid</span>
+        </div>
+        <ul className="mb-0 list-none p-0">
+          {data.products.map((row, index) => (
+            <PaidUsersProductRow
+              key={row.productId || `${row.productName}-${index}`}
+              row={row}
+              rank={index + 1}
+              paidUsers={data.paidUsers}
+              maxCount={maxCount}
+            />
+          ))}
+        </ul>
+      </div>
+
+      <p className="mb-0 text-xs leading-5 text-slate-500">
+        Learners with more than one active product appear in each matching row, so
+        the column total can exceed {formatCount(data.paidUsers)}.
+      </p>
+    </div>
+  );
+}
+
+function PaidUsersProductRow({
+  row,
+  rank,
+  paidUsers,
+  maxCount,
+}: {
+  row: PaidUsersByProductRow;
+  rank: number;
+  paidUsers: number;
+  maxCount: number;
+}) {
+  const share = sharePercent(row.userCount, paidUsers);
+  const width = barWidth(row.userCount, maxCount);
+
+  return (
+    <li className="border-b border-slate-100 px-4 py-3 last:border-b-0 hover:bg-[#f8fbff]">
+      <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_5.5rem] items-center gap-3 sm:grid-cols-[3rem_minmax(0,1fr)_6.5rem_7rem]">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+          {rank}
+        </span>
+        <div className="min-w-0">
+          <p className="mb-1 truncate text-sm font-semibold text-slate-800">
+            {row.productName}
+          </p>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-[linear-gradient(90deg,#69b1ff_0%,#1677ff_100%)] transition-[width] duration-500"
+              style={{ width: `${width}%` }}
+            />
+          </div>
+          {row.productCode ? (
+            <p className="mb-0 mt-1 truncate text-[11px] uppercase tracking-[0.08em] text-slate-400">
+              {row.productCode}
+            </p>
+          ) : null}
+        </div>
+        <p className="mb-0 text-right text-base font-semibold tabular-nums text-[#1677ff]">
+          {formatCount(row.userCount)}
+        </p>
+        <p className="mb-0 hidden text-right text-sm tabular-nums text-slate-500 sm:block">
+          {share}%
+        </p>
+      </div>
+    </li>
+  );
+}
+
 export default function AccountingPage() {
   const [overview, setOverview] = useState<AccountingOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paidUsersOpen, setPaidUsersOpen] = useState(false);
+  const [paidUsersLoading, setPaidUsersLoading] = useState(false);
+  const [paidUsersBreakdown, setPaidUsersBreakdown] =
+    useState<PaidUsersByProduct | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -346,6 +504,23 @@ export default function AccountingPage() {
     };
   }, []);
 
+  const openPaidUsers = async () => {
+    setPaidUsersOpen(true);
+    if (paidUsersBreakdown) {
+      return;
+    }
+    setPaidUsersLoading(true);
+    try {
+      const response = await accountingApi.getPaidUsersByProduct();
+      setPaidUsersBreakdown(response.data);
+    } catch (reason) {
+      message.error(formatEzPrepError(reason, "Failed to load paid users by product"));
+      setPaidUsersOpen(false);
+    } finally {
+      setPaidUsersLoading(false);
+    }
+  };
+
   if (loading) {
     return <PageLoader />;
   }
@@ -371,14 +546,36 @@ export default function AccountingPage() {
           </Title>
           <Paragraph type="secondary" className="!mb-3 break-words sm:!mb-4">
             {section.intro}
+            {section.title === "People"
+              ? " Click Paid users for the product breakdown."
+              : null}
           </Paragraph>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {section.cards.map((item) => (
-              <AccountingCardView key={item.key} card={item} />
+              <AccountingCardView
+                key={item.key}
+                card={item}
+                onOpen={item.key === "paid-users" ? openPaidUsers : undefined}
+              />
             ))}
           </div>
         </section>
       ))}
+
+      <Modal
+        open={paidUsersOpen}
+        title="Paid users by product"
+        footer={null}
+        width={720}
+        onCancel={() => setPaidUsersOpen(false)}
+        destroyOnHidden
+      >
+        {paidUsersLoading || !paidUsersBreakdown ? (
+          <PageLoader />
+        ) : (
+          <PaidUsersByProductPanel data={paidUsersBreakdown} />
+        )}
+      </Modal>
     </div>
   );
 }

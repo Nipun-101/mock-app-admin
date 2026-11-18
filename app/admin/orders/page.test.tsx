@@ -20,19 +20,39 @@ vi.mock("@/app/services/ezprep-api", async () => {
       ...actual.ordersApi,
       list: vi.fn(),
     },
+    productsApi: {
+      ...actual.productsApi,
+      list: vi.fn(),
+    },
   };
 });
 
-import { ordersApi } from "@/app/services/ezprep-api";
+import { ordersApi, productsApi } from "@/app/services/ezprep-api";
 
 const listOrders = vi.mocked(ordersApi.list);
+const listProducts = vi.mocked(productsApi.list);
 
 describe("OrdersPage flag filter", () => {
   beforeEach(() => {
     searchParams.forEach((_value, key) => searchParams.delete(key));
     push.mockReset();
     listOrders.mockReset();
+    listProducts.mockReset();
     listOrders.mockResolvedValue({ message: "ok", data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 1 } });
+    listProducts.mockResolvedValue({
+      message: "ok",
+      data: [
+        {
+          id: "p1",
+          code: "SSC",
+          name: "SSC CGL Pack",
+          status: "PUBLISHED",
+          version: 1,
+          grants: [],
+        },
+      ],
+      pagination: { total: 1, page: 1, limit: 100, totalPages: 1 },
+    });
   });
 
   it("loads the flag from the query string", async () => {
@@ -44,6 +64,25 @@ describe("OrdersPage flag filter", () => {
       );
     });
     expect(screen.getByText("Unprovisioned")).toBeInTheDocument();
+  });
+
+  it("filters by product and shows the matching order count near the title", async () => {
+    searchParams.set("productId", "p1");
+    listOrders.mockResolvedValue({
+      message: "ok",
+      data: [],
+      pagination: { total: 12, page: 1, limit: 20, totalPages: 1 },
+    });
+
+    render(<OrdersPage />);
+
+    await waitFor(() => {
+      expect(listOrders).toHaveBeenCalledWith(
+        expect.objectContaining({ productId: "p1" })
+      );
+    });
+    expect(await screen.findByText("SSC CGL Pack")).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
   });
 
   it("links the user column to the learner detail page", async () => {

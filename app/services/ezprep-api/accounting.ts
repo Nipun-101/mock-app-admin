@@ -49,10 +49,28 @@ export interface AccountingOverview {
   };
 }
 
+export interface PaidUsersByProductRow {
+  productId: string;
+  productName: string;
+  productCode?: string;
+  userCount: number;
+}
+
+export interface PaidUsersByProduct {
+  paidUsers: number;
+  products: PaidUsersByProductRow[];
+}
+
 export const accountingApi = {
   getOverview() {
     return ezPrepApiClient.get<ApiItemResponse<AccountingOverview>>(
       "/v1/admin/accounting/overview"
+    );
+  },
+
+  getPaidUsersByProduct() {
+    return ezPrepApiClient.get<ApiItemResponse<PaidUsersByProduct>>(
+      "/v1/admin/accounting/paid-users-by-product"
     );
   },
 };

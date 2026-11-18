@@ -8,9 +8,11 @@ import {
   formatEzPrepError,
   formatPaiseAsRupees,
   ordersApi,
+  productsApi,
   type AdminOrder,
   type AdminOrderFlag,
   type OrderStatus,
+  type Product,
 } from "@/app/services/ezprep-api";
 
 const { Title } = Typography;
@@ -91,11 +93,34 @@ export default function OrdersPage() {
   const [flagFilter, setFlagFilter] = useState<AdminOrderFlag | "">(
     flagFromQuery(searchParams?.get("flag") ?? null)
   );
+  const [productFilter, setProductFilter] = useState(
+    searchParams?.get("productId") ?? ""
+  );
+  const [activeProducts, setActiveProducts] = useState<Product[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
     total: 0,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    void productsApi
+      .list({ status: "PUBLISHED", page: 1, limit: 100 })
+      .then((response) => {
+        if (!cancelled) {
+          setActiveProducts(response.data || []);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          message.error(formatEzPrepError(error, "Failed to load products"));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     setTableLoading(true);
@@ -106,6 +131,7 @@ export default function OrdersPage() {
         status: statusFilter || undefined,
         search: search || undefined,
         flag: flagFilter || undefined,
+        productId: productFilter || undefined,
       });
       setOrders(response.data || []);
       setPagination((prev) => ({
@@ -117,16 +143,46 @@ export default function OrdersPage() {
     } finally {
       setTableLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, search, statusFilter, flagFilter]);
+  }, [
+    pagination.current,
+    pagination.pageSize,
+    search,
+    statusFilter,
+    flagFilter,
+    productFilter,
+  ]);
 
   useEffect(() => {
     void fetchOrders();
   }, [fetchOrders]);
 
+  const productOptions = [
+    { value: "", label: "All products" },
+    ...activeProducts.map((product) => ({
+      value: product.id,
+      label: product.name,
+    })),
+  ];
+
   return (
     <div className="space-y-6">
       <Card
-        title={<Title level={4} className="mb-0">Orders</Title>}
+        title={
+          <div className="flex h-8 items-center gap-2">
+            <Title
+              level={4}
+              className="!m-0"
+              style={{ lineHeight: "32px" }}
+            >
+              Orders
+            </Title>
+            {productFilter ? (
+              <Tag color="blue" className="m-0">
+                {pagination.total}
+              </Tag>
+            ) : null}
+          </div>
+        }
         className="shadow-sm"
         extra={
           <div className="flex flex-wrap gap-2">
@@ -137,6 +193,16 @@ export default function OrdersPage() {
               className="w-48 sm:w-64"
               onSearch={(value) => {
                 setSearch(value);
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
+            />
+            <Select
+              aria-label="Product"
+              className="w-52"
+              value={productFilter}
+              options={productOptions}
+              onChange={(value: string) => {
+                setProductFilter(value);
                 setPagination((prev) => ({ ...prev, current: 1 }));
               }}
             />
