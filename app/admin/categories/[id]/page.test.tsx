@@ -138,6 +138,8 @@ describe("EditCategoryPage", { timeout: 15000 }, () => {
         imageUrl: "https://example.com/ssc.png",
         description: "Central exams",
         priority: 0,
+        scope: "central",
+        stateCode: undefined,
       })
     );
     expect(message.success).toHaveBeenCalledWith("Category updated successfully");

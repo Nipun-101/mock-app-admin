@@ -142,6 +142,7 @@ export const ordersApi = {
     status?: OrderStatus;
     search?: string;
     flag?: AdminOrderFlag;
+    productId?: string;
   }) {
     const response = await ezPrepApiClient.get<ApiListResponse<AdminOrder>>(
       "/v1/admin/orders",

@@ -209,6 +209,8 @@ describe("CategoriesPage", { timeout: 15000 }, () => {
         imageUrl: "https://example.com/rrb.png",
         description: "Railway exams",
         priority: 0,
+        scope: "central",
+        stateCode: undefined,
       })
     );
     expect(message.success).toHaveBeenCalledWith("Category created successfully");
